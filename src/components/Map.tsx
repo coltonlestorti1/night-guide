@@ -39,8 +39,8 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [-73.9851, 40.758],
-      zoom: 11,
+      center: [-76.9978, 42.8690], // Geneva, NY
+      zoom: 14,
       pitch: 0,
       attributionControl: false,
     });
