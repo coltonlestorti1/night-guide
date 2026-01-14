@@ -1,6 +1,18 @@
 import { DataSource } from "./DataSource";
 import { Venue, VenueQuery } from "@/data/types";
 
+// Import venue images
+import hogWallowImg from "@/assets/venues/hog-wallow-tavern.jpg";
+import lakeDrumImg from "@/assets/venues/lake-drum-brewing.jpg";
+import eddieObriensImg from "@/assets/venues/eddie-obriens.jpg";
+import theLindenImg from "@/assets/venues/the-linden.jpg";
+import flxLiveImg from "@/assets/venues/flx-live.jpg";
+import beefAndBrewImg from "@/assets/venues/beef-and-brew.jpg";
+import portsCafeImg from "@/assets/venues/ports-cafe.jpg";
+import smithOperaImg from "@/assets/venues/smith-opera-house.jpg";
+import kashongCreekImg from "@/assets/venues/kashong-creek-distillery.jpg";
+import billsboroImg from "@/assets/venues/billsboro-winery.jpg";
+
 /**
  * Demo data source with real Geneva, NY venues for testing.
  * These are actual establishments in Geneva, New York.
@@ -19,6 +31,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 40,
     avg_price_level: 3,
     music_type: "Indie/Alternative",
+    image_url: hogWallowImg,
     venue_stats: {
       crowd_level: "Busy",
       wait_minutes: 5,
@@ -36,6 +49,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 45,
     avg_price_level: 2,
     music_type: "Acoustic/Folk",
+    image_url: lakeDrumImg,
     venue_stats: {
       crowd_level: "Moderate",
       wait_minutes: 0,
@@ -53,6 +67,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 50,
     avg_price_level: 2,
     music_type: "Classic Rock",
+    image_url: eddieObriensImg,
     venue_stats: {
       crowd_level: "Busy",
       wait_minutes: 10,
@@ -70,6 +85,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 45,
     avg_price_level: 4,
     music_type: "Jazz/Lounge",
+    image_url: theLindenImg,
     venue_stats: {
       crowd_level: "Moderate",
       wait_minutes: 0,
@@ -87,6 +103,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 35,
     avg_price_level: 2,
     music_type: "Live Music/Varies",
+    image_url: flxLiveImg,
     venue_stats: {
       crowd_level: "Packed",
       wait_minutes: 15,
@@ -104,6 +121,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 55,
     avg_price_level: 3,
     music_type: "Pub Music",
+    image_url: beefAndBrewImg,
     venue_stats: {
       crowd_level: "Moderate",
       wait_minutes: 5,
@@ -121,6 +139,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 40,
     avg_price_level: 3,
     music_type: "Jazz/Blues",
+    image_url: portsCafeImg,
     venue_stats: {
       crowd_level: "Quiet",
       wait_minutes: 0,
@@ -138,6 +157,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 65,
     avg_price_level: 3,
     music_type: "Live Performances",
+    image_url: smithOperaImg,
     venue_stats: {
       crowd_level: "Varies",
       wait_minutes: 0,
@@ -155,6 +175,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 55,
     avg_price_level: 3,
     music_type: null,
+    image_url: kashongCreekImg,
     venue_stats: {
       crowd_level: "Quiet",
       wait_minutes: 0,
@@ -172,6 +193,7 @@ const GENEVA_VENUES: Venue[] = [
     age_range_max: 60,
     avg_price_level: 3,
     music_type: null,
+    image_url: billsboroImg,
     venue_stats: {
       crowd_level: "Moderate",
       wait_minutes: 0,

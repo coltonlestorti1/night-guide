@@ -10,6 +10,7 @@ export type Venue = {
   age_range_max?: number;
   avg_price_level?: 1 | 2 | 3 | 4 | 5 | null;
   music_type?: string | null;
+  image_url?: string | null;
   venue_stats?: {
     crowd_level?: string | null;
     wait_minutes?: number | null;
