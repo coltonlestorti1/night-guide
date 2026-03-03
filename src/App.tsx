@@ -8,6 +8,7 @@ import MapPage from "@/pages/MapPage";
 import Discover from "@/pages/Discover";
 import Social from "@/pages/Social";
 import Profile from "@/pages/Profile";
+import VenueDetail from "@/pages/VenueDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route index element={<MapPage />} />
             <Route path="discover" element={<Discover />} />
+            <Route path="venue/:id" element={<VenueDetail />} />
             <Route path="social" element={<Social />} />
             <Route path="profile" element={<Profile />} />
           </Route>
