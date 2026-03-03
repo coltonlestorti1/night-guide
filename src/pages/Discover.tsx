@@ -1,8 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { useVenues } from "@/hooks/useVenues";
 import BarCard from "@/components/BarCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Discover = () => {
+  const navigate = useNavigate();
   const { data, isLoading } = useVenues({});
   return (
     <section className="container pt-6 pb-4">
@@ -15,7 +17,7 @@ const Discover = () => {
       ) : data && data.length ? (
         <div className="space-y-3">
           {data.map((v) => (
-            <BarCard key={v.id} venue={v} onClick={() => (window.location.href = `/discover?venue=${v.id}`)} />
+            <BarCard key={v.id} venue={v} onClick={() => navigate(`/discover?venue=${v.id}`)} />
           ))}
         </div>
       ) : (
