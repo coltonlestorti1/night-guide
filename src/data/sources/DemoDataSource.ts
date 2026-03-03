@@ -1,203 +1,187 @@
 import { DataSource } from "./DataSource";
 import { Venue, VenueQuery } from "@/data/types";
 
-// Import venue images
-import hogWallowImg from "@/assets/venues/hog-wallow-tavern.jpg";
-import lakeDrumImg from "@/assets/venues/lake-drum-brewing.jpg";
-import eddieObriensImg from "@/assets/venues/eddie-obriens.jpg";
-import theLindenImg from "@/assets/venues/the-linden.jpg";
-import flxLiveImg from "@/assets/venues/flx-live.jpg";
-import beefAndBrewImg from "@/assets/venues/beef-and-brew.jpg";
-import portsCafeImg from "@/assets/venues/ports-cafe.jpg";
-import smithOperaImg from "@/assets/venues/smith-opera-house.jpg";
-import kashongCreekImg from "@/assets/venues/kashong-creek-distillery.jpg";
-import billsboroImg from "@/assets/venues/billsboro-winery.jpg";
+import parkBarImg from "@/assets/venues/park-bar.jpg";
+import luxFragilImg from "@/assets/venues/lux-fragil.jpg";
+import tascaDoChicoImg from "@/assets/venues/tasca-do-chico.jpg";
+import redFrogImg from "@/assets/venues/red-frog.jpg";
+import ministeriumImg from "@/assets/venues/ministerium.jpg";
+import pensaoAmorImg from "@/assets/venues/pensao-amor.jpg";
+import byTheWineImg from "@/assets/venues/by-the-wine.jpg";
+import urbanBeachImg from "@/assets/venues/urban-beach.jpg";
+import villageUndergroundImg from "@/assets/venues/village-underground.jpg";
+import cincoLoungeImg from "@/assets/venues/cinco-lounge.jpg";
 
-/**
- * Demo data source with real Geneva, NY venues for testing.
- * These are actual establishments in Geneva, New York.
- */
-
-const GENEVA_VENUES: Venue[] = [
+const LISBON_VENUES: Venue[] = [
   {
-    id: "hog-wallow-tavern",
-    title: "Hog Wallow Tavern",
-    latitude: 42.8696,
-    longitude: -76.9983,
+    id: "park-bar",
+    title: "Park Bar",
+    latitude: 38.7139,
+    longitude: -9.1468,
     serves_alcohol: true,
-    venue_type_primary: "cocktail_bar",
-    venue_types: ["cocktail_bar", "bar"],
+    category: "bar",
+    venue_type_primary: "rooftop_bar",
+    venue_types: ["rooftop_bar", "bar"],
     age_range_min: 21,
-    age_range_max: 40,
+    age_range_max: 35,
     avg_price_level: 3,
-    music_type: "Indie/Alternative",
-    image_url: hogWallowImg,
-    venue_stats: {
-      crowd_level: "Busy",
-      wait_minutes: 5,
-    },
+    music_type: "House / Chill",
+    cover_charge: "Free",
+    image_url: parkBarImg,
+    venue_stats: { crowd_level: "high", wait_minutes: 10 },
   },
   {
-    id: "lake-drum-brewing",
-    title: "Lake Drum Brewing",
-    latitude: 42.8712,
-    longitude: -76.9952,
+    id: "lux-fragil",
+    title: "Lux Frágil",
+    latitude: 38.7148,
+    longitude: -9.1218,
     serves_alcohol: true,
-    venue_type_primary: "brewery",
-    venue_types: ["brewery", "bar"],
-    age_range_min: 21,
-    age_range_max: 45,
-    avg_price_level: 2,
-    music_type: "Acoustic/Folk",
-    image_url: lakeDrumImg,
-    venue_stats: {
-      crowd_level: "Moderate",
-      wait_minutes: 0,
-    },
+    category: "club",
+    venue_type_primary: "nightclub",
+    venue_types: ["nightclub", "club"],
+    age_range_min: 18,
+    age_range_max: 35,
+    avg_price_level: 4,
+    music_type: "Techno / Electronic",
+    cover_charge: "€15",
+    image_url: luxFragilImg,
+    venue_stats: { crowd_level: "high", wait_minutes: 20 },
   },
   {
-    id: "eddie-obriens",
-    title: "Eddie O'Brien's Grille & Bar",
-    latitude: 42.8689,
-    longitude: -76.9978,
+    id: "tasca-do-chico",
+    title: "Tasca do Chico",
+    latitude: 38.7128,
+    longitude: -9.1445,
     serves_alcohol: true,
-    venue_type_primary: "bar",
-    venue_types: ["bar", "restaurant"],
+    category: "bar",
+    venue_type_primary: "fado_bar",
+    venue_types: ["fado_bar", "bar"],
     age_range_min: 21,
     age_range_max: 50,
     avg_price_level: 2,
-    music_type: "Classic Rock",
-    image_url: eddieObriensImg,
-    venue_stats: {
-      crowd_level: "Busy",
-      wait_minutes: 10,
-    },
+    music_type: "Fado / Traditional",
+    cover_charge: "Free",
+    image_url: tascaDoChicoImg,
+    venue_stats: { crowd_level: "medium", wait_minutes: 5 },
   },
   {
-    id: "the-linden",
-    title: "The Linden Social Club",
-    latitude: 42.8701,
-    longitude: -76.9965,
+    id: "red-frog",
+    title: "Red Frog Speakeasy",
+    latitude: 38.7195,
+    longitude: -9.1470,
     serves_alcohol: true,
-    venue_type_primary: "lounge",
-    venue_types: ["lounge", "cocktail_bar"],
+    category: "lounge",
+    venue_type_primary: "speakeasy",
+    venue_types: ["speakeasy", "cocktail_bar"],
     age_range_min: 25,
     age_range_max: 45,
     avg_price_level: 4,
-    music_type: "Jazz/Lounge",
-    image_url: theLindenImg,
-    venue_stats: {
-      crowd_level: "Moderate",
-      wait_minutes: 0,
-    },
+    music_type: "Jazz / Soul",
+    cover_charge: "Free",
+    image_url: redFrogImg,
+    venue_stats: { crowd_level: "low", wait_minutes: 0 },
   },
   {
-    id: "flx-live",
-    title: "FLX Live",
-    latitude: 42.8675,
-    longitude: -77.0012,
+    id: "ministerium",
+    title: "Ministerium Club",
+    latitude: 38.7082,
+    longitude: -9.1355,
     serves_alcohol: true,
-    venue_type_primary: "music_venue",
-    venue_types: ["music_venue", "bar"],
+    category: "club",
+    venue_type_primary: "nightclub",
+    venue_types: ["nightclub", "club"],
     age_range_min: 18,
-    age_range_max: 35,
-    avg_price_level: 2,
-    music_type: "Live Music/Varies",
-    image_url: flxLiveImg,
-    venue_stats: {
-      crowd_level: "Packed",
-      wait_minutes: 15,
-    },
-  },
-  {
-    id: "beef-and-brew",
-    title: "Beef & Brew",
-    latitude: 42.8720,
-    longitude: -76.9945,
-    serves_alcohol: true,
-    venue_type_primary: "restaurant",
-    venue_types: ["restaurant", "bar"],
-    age_range_min: 21,
-    age_range_max: 55,
+    age_range_max: 30,
     avg_price_level: 3,
-    music_type: "Pub Music",
-    image_url: beefAndBrewImg,
-    venue_stats: {
-      crowd_level: "Moderate",
-      wait_minutes: 5,
-    },
+    music_type: "Techno / Minimal",
+    cover_charge: "€10",
+    image_url: ministeriumImg,
+    venue_stats: { crowd_level: "high", wait_minutes: 15 },
   },
   {
-    id: "ports-cafe",
-    title: "Port's Café",
-    latitude: 42.8693,
-    longitude: -76.9971,
+    id: "pensao-amor",
+    title: "Pensão Amor",
+    latitude: 38.7072,
+    longitude: -9.1437,
     serves_alcohol: true,
-    venue_type_primary: "cafe_alcohol",
-    venue_types: ["cafe_alcohol", "restaurant"],
+    category: "bar",
+    venue_type_primary: "bar",
+    venue_types: ["bar", "cultural_space"],
     age_range_min: 21,
     age_range_max: 40,
     avg_price_level: 3,
-    music_type: "Jazz/Blues",
-    image_url: portsCafeImg,
-    venue_stats: {
-      crowd_level: "Quiet",
-      wait_minutes: 0,
-    },
+    music_type: "Indie / Eclectic",
+    cover_charge: "Free",
+    image_url: pensaoAmorImg,
+    venue_stats: { crowd_level: "medium", wait_minutes: 5 },
   },
   {
-    id: "smith-opera-house",
-    title: "Smith Opera House",
-    latitude: 42.8698,
-    longitude: -76.9988,
+    id: "by-the-wine",
+    title: "By the Wine",
+    latitude: 38.7107,
+    longitude: -9.1403,
     serves_alcohol: true,
-    venue_type_primary: "music_venue",
-    venue_types: ["music_venue"],
+    category: "lounge",
+    venue_type_primary: "wine_bar",
+    venue_types: ["wine_bar", "lounge"],
+    age_range_min: 25,
+    age_range_max: 50,
+    avg_price_level: 3,
+    music_type: "Ambient / Acoustic",
+    cover_charge: "Free",
+    image_url: byTheWineImg,
+    venue_stats: { crowd_level: "low", wait_minutes: 0 },
+  },
+  {
+    id: "urban-beach",
+    title: "Urban Beach",
+    latitude: 38.7058,
+    longitude: -9.1310,
+    serves_alcohol: true,
+    category: "club",
+    venue_type_primary: "beach_club",
+    venue_types: ["beach_club", "club"],
     age_range_min: 18,
-    age_range_max: 65,
+    age_range_max: 35,
     avg_price_level: 3,
-    music_type: "Live Performances",
-    image_url: smithOperaImg,
-    venue_stats: {
-      crowd_level: "Varies",
-      wait_minutes: 0,
-    },
+    music_type: "Deep House / Tropical",
+    cover_charge: "€10",
+    image_url: urbanBeachImg,
+    venue_stats: { crowd_level: "medium", wait_minutes: 5 },
   },
   {
-    id: "kashong-creek-distillery",
-    title: "Kashong Creek Farm Distillery",
-    latitude: 42.8450,
-    longitude: -77.0120,
+    id: "village-underground",
+    title: "Village Underground",
+    latitude: 38.7205,
+    longitude: -9.1352,
     serves_alcohol: true,
-    venue_type_primary: "distillery",
-    venue_types: ["distillery"],
-    age_range_min: 21,
-    age_range_max: 55,
-    avg_price_level: 3,
-    music_type: null,
-    image_url: kashongCreekImg,
-    venue_stats: {
-      crowd_level: "Quiet",
-      wait_minutes: 0,
-    },
+    category: "club",
+    venue_type_primary: "nightclub",
+    venue_types: ["nightclub", "cultural_space"],
+    age_range_min: 18,
+    age_range_max: 35,
+    avg_price_level: 2,
+    music_type: "Techno / Experimental",
+    cover_charge: "€8",
+    image_url: villageUndergroundImg,
+    venue_stats: { crowd_level: "high", wait_minutes: 10 },
   },
   {
-    id: "billsboro-winery",
-    title: "Billsboro Winery",
-    latitude: 42.8580,
-    longitude: -76.9750,
+    id: "cinco-lounge",
+    title: "Cinco Lounge",
+    latitude: 38.7155,
+    longitude: -9.1500,
     serves_alcohol: true,
-    venue_type_primary: "winery",
-    venue_types: ["winery"],
-    age_range_min: 21,
-    age_range_max: 60,
-    avg_price_level: 3,
-    music_type: null,
-    image_url: billsboroImg,
-    venue_stats: {
-      crowd_level: "Moderate",
-      wait_minutes: 0,
-    },
+    category: "lounge",
+    venue_type_primary: "cocktail_bar",
+    venue_types: ["cocktail_bar", "lounge"],
+    age_range_min: 25,
+    age_range_max: 45,
+    avg_price_level: 4,
+    music_type: "Lounge / Deep House",
+    cover_charge: "Free",
+    image_url: cincoLoungeImg,
+    venue_stats: { crowd_level: "low", wait_minutes: 0 },
   },
 ];
 
@@ -209,29 +193,31 @@ function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
       if (v.longitude < west || v.longitude > east) return false;
       if (v.latitude < south || v.latitude > north) return false;
     }
+    if (q.categories && q.categories.length > 0) {
+      if (!q.categories.includes(v.category)) return false;
+    }
     if (q.types && q.types.length > 0) {
       const venueTypes = v.venue_types ?? [v.venue_type_primary].filter(Boolean);
       if (!q.types.some((t) => venueTypes.includes(t))) return false;
     }
+    if (q.crowdLevel && v.venue_stats?.crowd_level !== q.crowdLevel) return false;
+    if (q.musicVibe && v.music_type && !v.music_type.toLowerCase().includes(q.musicVibe.toLowerCase())) return false;
     if (q.priceMin != null && (v.avg_price_level ?? 0) < q.priceMin) return false;
     if (q.priceMax != null && (v.avg_price_level ?? 5) > q.priceMax) return false;
-    if (q.ageMin != null && (v.age_range_max ?? 99) < q.ageMin) return false;
-    if (q.ageMax != null && (v.age_range_min ?? 0) > q.ageMax) return false;
     return true;
   });
 }
 
 export class DemoDataSource implements DataSource {
-  kind: "demo" = "demo" as any; // Using 'demo' for clarity
-  
+  kind: "demo" = "demo" as any;
+
   async getVenues(q: VenueQuery, _signal?: AbortSignal): Promise<Venue[]> {
-    // Simulate network delay for realistic feel
     await new Promise((r) => setTimeout(r, 300));
-    return filterVenues(GENEVA_VENUES, q);
+    return filterVenues(LISBON_VENUES, q);
   }
-  
+
   async getVenue(id: string, _signal?: AbortSignal): Promise<Venue | null> {
     await new Promise((r) => setTimeout(r, 150));
-    return GENEVA_VENUES.find((v) => v.id === id) ?? null;
+    return LISBON_VENUES.find((v) => v.id === id) ?? null;
   }
 }

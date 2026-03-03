@@ -1,3 +1,6 @@
+export type VenueCategory = "bar" | "club" | "lounge";
+export type CrowdLevel = "low" | "medium" | "high";
+
 export type Venue = {
   id: string;
   title: string;
@@ -6,13 +9,15 @@ export type Venue = {
   serves_alcohol: boolean;
   venue_type_primary?: string;
   venue_types?: string[];
+  category: VenueCategory;
   age_range_min?: number;
   age_range_max?: number;
   avg_price_level?: 1 | 2 | 3 | 4 | 5 | null;
   music_type?: string | null;
   image_url?: string | null;
+  cover_charge?: string | null;
   venue_stats?: {
-    crowd_level?: string | null;
+    crowd_level?: CrowdLevel | null;
     wait_minutes?: number | null;
   } | null;
 };
@@ -31,9 +36,12 @@ export type BBox = [west: number, south: number, east: number, north: number];
 export type VenueQuery = {
   bbox?: BBox;
   types?: string[];
+  categories?: VenueCategory[];
   priceMin?: number;
   priceMax?: number;
   ageMin?: number;
   ageMax?: number;
   hotspots?: boolean;
+  crowdLevel?: CrowdLevel;
+  musicVibe?: string;
 };
