@@ -10,6 +10,7 @@ export type Venue = {
   venue_type_primary?: string;
   venue_types?: string[];
   category: VenueCategory;
+  neighborhood?: string;
   age_range_min?: number;
   age_range_max?: number;
   avg_price_level?: 1 | 2 | 3 | 4 | 5 | null;
