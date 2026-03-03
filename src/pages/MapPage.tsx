@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useConfigStore } from "@/store/config";
 import { useFilterStore } from "@/store/filters";
 import { useVenues } from "@/hooks/useVenues";
@@ -78,6 +79,7 @@ const FilterChips = () => {
 };
 
 const MapPage = () => {
+  const navigate = useNavigate();
   const { mapboxToken } = useConfigStore();
   const filters = useFilterStore();
   const [bbox, setBbox] = useState<BBox | undefined>(undefined);
@@ -166,7 +168,7 @@ const MapPage = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => (window.location.href = `/discover?venue=${selected.id}`)}
+                  onClick={() => navigate(`/discover?venue=${selected.id}`)}
                   className="mt-4 w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
                 >
                   View Details
