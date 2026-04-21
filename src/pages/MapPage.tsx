@@ -14,7 +14,10 @@ import Map from "@/components/Map";
 import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, List, X, MapIcon } from "lucide-react";
+import { MapPin, List, X, MapIcon, KeyRound, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const CATEGORIES: { label: string; value: VenueCategory; color: string }[] = [
   { label: "Bar", value: "bar", color: "bg-[hsl(var(--venue-bar))]" },
@@ -90,16 +93,63 @@ const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean
   );
 };
 
-/* ── No-token fallback ──────────────────────── */
-const NoTokenFallback = () => (
-  <div className="w-full h-[50vh] flex items-center justify-center bg-card rounded-xl border border-border mx-4 mt-4">
-    <div className="text-center px-6">
-      <MapPin className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
-      <h2 className="text-lg font-semibold">Map requires a Mapbox token</h2>
-      <p className="text-sm text-muted-foreground mt-1">Go to <a href="/profile" className="text-primary underline">Profile</a> and paste your token to enable the interactive map.</p>
+/* ── No-token fallback with inline token input ──────────────────────── */
+const NoTokenFallback = () => {
+  const { setConfig } = useConfigStore();
+  const [token, setToken] = useState("");
+
+  const save = () => {
+    const trimmed = token.trim();
+    if (!trimmed.startsWith("pk.")) {
+      toast.error("Invalid token — Mapbox public tokens start with 'pk.'");
+      return;
+    }
+    setConfig({ mapboxToken: trimmed });
+    toast.success("Mapbox token saved — loading map…");
+  };
+
+  return (
+    <div className="w-full min-h-[calc(100vh-10rem)] flex items-center justify-center px-4 pt-20 pb-32">
+      <div className="w-full max-w-md glass rounded-2xl p-6 animate-fade-in">
+        <div className="flex flex-col items-center text-center mb-5">
+          <div className="p-3 rounded-full bg-primary/10 mb-3">
+            <KeyRound className="h-6 w-6 text-primary" />
+          </div>
+          <h2 className="text-lg font-semibold">Connect Mapbox</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Paste your Mapbox public token below to load the live interactive map of Lisbon.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <Input
+            type="password"
+            placeholder="pk.eyJ1Ijoi..."
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && save()}
+            autoFocus
+          />
+          <Button onClick={save} className="w-full">
+            Load Map
+          </Button>
+          <a
+            href="https://account.mapbox.com/access-tokens/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            Get a free token at mapbox.com <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+
+        <p className="text-[11px] text-muted-foreground/70 text-center mt-4">
+          Stored locally in your browser. You can also manage it in the Profile tab.
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ── Loading skeleton ───────────────────────── */
 const MapSkeleton = () => (
