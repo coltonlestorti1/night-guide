@@ -63,6 +63,8 @@
   .glass {
     @apply bg-card/80 backdrop-blur-xl border border-border/50;
   }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @keyframes endz-pulse {
