@@ -44,6 +44,10 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "lux-fragil",
     title: "Lux Frágil",
+    description: "Lisbon's legendary three-floor riverside club, internationally renowned for techno and electronic lineups.",
+    open_now: true,
+    buzz_score: 95,
+    hot_tonight: true,
     latitude: 38.7148,
     longitude: -9.1218,
     serves_alcohol: true,
@@ -62,6 +66,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "tasca-do-chico",
     title: "Tasca do Chico",
+    description: "Tiny, atmospheric Bairro Alto tasca where amateur and professional fadistas perform every night.",
+    open_now: true,
+    buzz_score: 71,
     latitude: 38.7128,
     longitude: -9.1445,
     serves_alcohol: true,
@@ -80,6 +87,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "red-frog",
     title: "Red Frog Speakeasy",
+    description: "Press the doorbell to enter one of Europe's top-rated speakeasies. Elevated craft cocktails, hushed jazz.",
+    open_now: true,
+    buzz_score: 79,
     latitude: 38.7195,
     longitude: -9.1470,
     serves_alcohol: true,
@@ -98,6 +108,10 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "ministerium",
     title: "Ministerium Club",
+    description: "Underground techno club tucked beneath the Terreiro do Paço square — minimal lights, maximum bass.",
+    open_now: true,
+    buzz_score: 82,
+    hot_tonight: true,
     latitude: 38.7082,
     longitude: -9.1355,
     serves_alcohol: true,
@@ -116,6 +130,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "pensao-amor",
     title: "Pensão Amor",
+    description: "Former brothel turned cultural hotspot — burlesque, live music and one of Cais do Sodré's best bars.",
+    open_now: true,
+    buzz_score: 76,
     latitude: 38.7072,
     longitude: -9.1437,
     serves_alcohol: true,
@@ -134,6 +151,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "by-the-wine",
     title: "By the Wine",
+    description: "Vaulted ceiling lined with wine bottles. The José Maria da Fonseca flagship — Portuguese wines by the glass.",
+    open_now: true,
+    buzz_score: 64,
     latitude: 38.7107,
     longitude: -9.1403,
     serves_alcohol: true,
@@ -152,6 +172,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "urban-beach",
     title: "Urban Beach",
+    description: "Riverside open-air club with palm trees, deep house DJs and summer pool parties.",
+    open_now: true,
+    buzz_score: 73,
     latitude: 38.7058,
     longitude: -9.1310,
     serves_alcohol: true,
@@ -170,6 +193,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "village-underground",
     title: "Village Underground",
+    description: "Shipping-container creative hub by the river — live music, DJs and a roaring after-hours crowd.",
+    open_now: true,
+    buzz_score: 80,
     latitude: 38.7205,
     longitude: -9.1352,
     serves_alcohol: true,
@@ -188,6 +214,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "cinco-lounge",
     title: "Cinco Lounge",
+    description: "Award-winning cocktail lounge run by London-trained bartenders — low light, deep sofas, serious drinks.",
+    open_now: true,
+    buzz_score: 70,
     latitude: 38.7155,
     longitude: -9.1500,
     serves_alcohol: true,
@@ -206,6 +235,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "cheers-bar",
     title: "Cheers",
+    description: "High-energy student favourite in Bairro Alto — Top 40, cheap shots, packed every weekend.",
+    open_now: true,
+    buzz_score: 78,
     latitude: 38.7115,
     longitude: -9.1425,
     serves_alcohol: true,
@@ -224,6 +256,9 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "bairro-alto-bar",
     title: "Bairro Alto Bar",
+    description: "Classic neighbourhood bar at the heart of the nightlife district — easy beers, indie tunes, spilled-onto-the-street vibes.",
+    open_now: true,
+    buzz_score: 68,
     latitude: 38.7133,
     longitude: -9.1455,
     serves_alcohol: true,
