@@ -21,6 +21,11 @@ export const LISBON_VENUES: Venue[] = [
   {
     id: "park-bar",
     title: "Park Bar",
+    description: "Iconic rooftop above a parking garage with panoramic Lisbon views, sunset DJs and a chill house vibe.",
+    open_now: true,
+    buzz_score: 88,
+    hot_tonight: true,
+    editors_pick: true,
     latitude: 38.7139,
     longitude: -9.1468,
     serves_alcohol: true,
