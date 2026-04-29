@@ -20,7 +20,10 @@ const Tab = ({ to, label, Icon }: { to: string; label: string; Icon: any }) => {
 
 const BottomTabs = () => {
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 border-t bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+    <nav
+      className="fixed bottom-0 inset-x-0 z-50 border-t bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       <div className="mx-auto max-w-3xl flex items-center">
         <Tab to="/" label="Map" Icon={Map} />
         <Tab to="/discover" label="Discover" Icon={Compass} />
