@@ -1,90 +1,140 @@
 /**
- * MapPage — investor-demo-ready Lisbon nightlife map with filters,
- * map/list toggle, results counter, clear filters, and bottom sheet.
+ * MapPage — investor-demo-ready Lisbon nightlife map.
  *
- * MAPBOX_TOKEN: Provide via the Profile tab or set VITE_MAPBOX_TOKEN env var.
+ * MAPBOX_TOKEN: Provide via Profile tab, the inline setup card on this page,
+ * or set VITE_MAPBOX_TOKEN env var. Token is stored locally via useConfigStore.
  */
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useConfigStore } from "@/store/config";
 import { useFilterStore } from "@/store/filters";
+import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
 import { BBox, Venue, VenueCategory } from "@/data/types";
 import Map from "@/components/Map";
 import BarCard from "@/components/BarCard";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, List, X, MapIcon, KeyRound, ExternalLink } from "lucide-react";
+import {
+  MapPin, List, X, MapIcon, KeyRound, ExternalLink, Search, Bookmark,
+  Navigation as NavigationIcon, Flame, Star, Sparkles
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-const CATEGORIES: { label: string; value: VenueCategory; color: string }[] = [
-  { label: "Bar", value: "bar", color: "bg-[hsl(var(--venue-bar))]" },
-  { label: "Club", value: "club", color: "bg-[hsl(var(--venue-club))]" },
-  { label: "Lounge", value: "lounge", color: "bg-[hsl(var(--venue-lounge))]" },
+const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" }[] = [
+  { label: "All", value: "all" },
+  { label: "Bars", value: "bar" },
+  { label: "Clubs", value: "club" },
+  { label: "Lounges", value: "lounge" },
+  { label: "Hot Tonight", value: "hot" },
+  { label: "Music", value: "music" },
 ];
 
-const MUSIC_VIBES = ["Techno", "House", "Jazz", "Fado", "Indie", "Ambient", "Pop"];
+const MUSIC_VIBES = ["Techno", "House", "Jazz", "Fado", "Indie", "Pop", "Ambient"];
 
-/* ── Filter bar ─────────────────────────────── */
+/* ── Header ────────────────────────────────── */
+const TopHeader = () => {
+  const { search, set } = useFilterStore();
+  return (
+    <div className="fixed top-0 left-0 right-0 z-40 px-3 pt-3 pb-2 bg-gradient-to-b from-background via-background/95 to-background/0">
+      <div className="mx-auto max-w-xl">
+        <div className="flex items-baseline justify-between gap-3 px-1">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-rose-400 bg-clip-text text-transparent">
+              ENDZ
+            </h1>
+            <p className="text-xs text-muted-foreground -mt-0.5">Find your night in Lisbon</p>
+          </div>
+        </div>
+        <div className="relative mt-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search ?? ""}
+            onChange={(e) => set({ search: e.target.value || undefined })}
+            placeholder="Search bars, clubs, lounges…"
+            className="pl-9 h-10 rounded-xl bg-card/80 backdrop-blur-xl border-border/60"
+            aria-label="Search venues"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Filter chips ──────────────────────────── */
 const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean }) => {
   const { categories, crowdLevel, musicVibe, set, reset } = useFilterStore();
+  const [musicOpen, setMusicOpen] = useState(false);
 
-  const toggleCategory = (cat: VenueCategory) => {
-    const next = categories.includes(cat) ? categories.filter((c) => c !== cat) : [...categories, cat];
-    set({ categories: next });
+  const isActive = (v: string) => {
+    if (v === "all") return categories.length === 0 && !crowdLevel && !musicVibe;
+    if (v === "hot") return crowdLevel === "high";
+    if (v === "music") return !!musicVibe;
+    return categories.includes(v as VenueCategory);
+  };
+
+  const handle = (v: string) => {
+    if (v === "all") return reset();
+    if (v === "hot") return set({ crowdLevel: crowdLevel === "high" ? undefined : "high" });
+    if (v === "music") return setMusicOpen((o) => !o);
+    const cat = v as VenueCategory;
+    set({ categories: categories.includes(cat) ? categories.filter((c) => c !== cat) : [...categories, cat] });
   };
 
   return (
-    <div className="fixed top-3 left-0 right-0 z-40 px-3">
-      <div className="mx-auto max-w-xl flex flex-wrap items-center gap-2 p-2 rounded-2xl glass animate-fade-in">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.value}
-            className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-              categories.includes(c.value)
-                ? `${c.color} text-white border-transparent`
-                : "bg-secondary text-foreground border-border hover:bg-secondary/80"
-            }`}
-            onClick={() => toggleCategory(c.value)}
-            aria-pressed={categories.includes(c.value)}
-          >
-            {c.label}
-          </button>
-        ))}
+    <div className="fixed top-[6.25rem] left-0 right-0 z-30 px-3">
+      <div className="mx-auto max-w-xl">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+          {PRIMARY_FILTERS.map((f) => {
+            const active = isActive(f.value);
+            return (
+              <button
+                key={f.value}
+                onClick={() => handle(f.value)}
+                className={cn(
+                  "shrink-0 text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
+                  active
+                    ? "bg-primary text-primary-foreground border-transparent shadow-md shadow-primary/30"
+                    : "bg-card/80 backdrop-blur-xl text-foreground border-border/60 hover:bg-secondary"
+                )}
+                aria-pressed={active}
+              >
+                {f.value === "hot" && "🔥 "}
+                {f.value === "music" && "🎵 "}
+                {f.label}
+                {f.value === "music" && musicVibe ? `: ${musicVibe}` : ""}
+              </button>
+            );
+          })}
+        </div>
 
-        <div className="w-px bg-border/50 self-stretch" />
+        {musicOpen && (
+          <div className="mt-2 flex flex-wrap gap-2 p-2 rounded-2xl glass animate-fade-in">
+            {MUSIC_VIBES.map((v) => (
+              <button
+                key={v}
+                onClick={() => { set({ musicVibe: musicVibe === v ? undefined : v }); }}
+                className={cn(
+                  "text-xs px-3 py-1 rounded-full border transition-colors",
+                  musicVibe === v ? "bg-primary text-primary-foreground border-transparent" : "bg-secondary border-border"
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        )}
 
-        <button
-          className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-            crowdLevel === "high"
-              ? "bg-primary text-primary-foreground border-transparent"
-              : "bg-secondary text-foreground border-border hover:bg-secondary/80"
-          }`}
-          onClick={() => set({ crowdLevel: crowdLevel === "high" ? undefined : "high" })}
-          aria-pressed={crowdLevel === "high"}
-        >
-          🔥 Busy
-        </button>
-
-        <select
-          value={musicVibe ?? ""}
-          onChange={(e) => set({ musicVibe: e.target.value || undefined })}
-          className="text-sm px-3 py-1.5 rounded-full border bg-secondary text-foreground border-border appearance-none cursor-pointer"
-        >
-          <option value="">🎵 All Music</option>
-          {MUSIC_VIBES.map((v) => (
-            <option key={v} value={v}>{v}</option>
-          ))}
-        </select>
-
-        {/* results counter + clear */}
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">{count} spots</span>
+        <div className="flex items-center justify-between mt-2 px-1">
+          <span className="text-xs text-muted-foreground">
+            <span className="text-foreground font-semibold">{count}</span> spots found
+          </span>
           {hasFilters && (
-            <button onClick={reset} className="text-xs text-primary flex items-center gap-0.5 hover:underline" aria-label="Clear filters">
-              <X className="h-3 w-3" /> Clear
+            <button onClick={reset} className="text-xs text-primary flex items-center gap-1 hover:underline">
+              <X className="h-3 w-3" /> Clear filters
             </button>
           )}
         </div>
@@ -93,8 +143,8 @@ const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean
   );
 };
 
-/* ── No-token fallback with inline token input ──────────────────────── */
-const NoTokenFallback = () => {
+/* ── No-token fallback ─────────────────────── */
+const NoTokenFallback = ({ onBrowseList }: { onBrowseList: () => void }) => {
   const { setConfig } = useConfigStore();
   const [token, setToken] = useState("");
 
@@ -109,15 +159,15 @@ const NoTokenFallback = () => {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-10rem)] flex items-center justify-center px-4 pt-20 pb-32">
-      <div className="w-full max-w-md glass rounded-2xl p-6 animate-fade-in">
+    <div className="w-full min-h-[calc(100vh-12rem)] flex items-center justify-center px-4 pt-44 pb-32">
+      <div className="w-full max-w-md glass rounded-3xl p-6 animate-fade-in shadow-2xl">
         <div className="flex flex-col items-center text-center mb-5">
-          <div className="p-3 rounded-full bg-primary/10 mb-3">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/30 to-rose-400/20 mb-3">
             <KeyRound className="h-6 w-6 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold">Connect Mapbox</h2>
+          <h2 className="text-lg font-semibold">Unlock the live map</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Paste your Mapbox public token below to load the live interactive map of Lisbon.
+            Add your Mapbox token to unlock the live interactive map.
           </p>
         </div>
 
@@ -130,9 +180,7 @@ const NoTokenFallback = () => {
             onKeyDown={(e) => e.key === "Enter" && save()}
             autoFocus
           />
-          <Button onClick={save} className="w-full">
-            Load Map
-          </Button>
+          <Button onClick={save} className="w-full h-11 rounded-xl">Save & Load Map</Button>
           <a
             href="https://account.mapbox.com/access-tokens/"
             target="_blank"
@@ -143,70 +191,74 @@ const NoTokenFallback = () => {
           </a>
         </div>
 
-        <p className="text-[11px] text-muted-foreground/70 text-center mt-4">
-          Stored locally in your browser. You can also manage it in the Profile tab.
-        </p>
+        <div className="mt-5 pt-5 border-t border-border/50 text-center">
+          <p className="text-xs text-muted-foreground mb-2">Or browse without a map</p>
+          <Button variant="secondary" className="w-full" onClick={onBrowseList}>
+            <List className="h-4 w-4 mr-2" /> Open list view
+          </Button>
+        </div>
       </div>
     </div>
   );
 };
 
-/* ── Loading skeleton ───────────────────────── */
-const MapSkeleton = () => (
-  <div className="w-full h-[calc(100vh-5rem)] relative">
-    <Skeleton className="w-full h-full rounded-none" />
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="text-center animate-pulse">
-        <MapPin className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-        <p className="text-sm text-muted-foreground">Loading map…</p>
-      </div>
-    </div>
-  </div>
-);
-
-/* ── Main page ──────────────────────────────── */
+/* ── Main page ─────────────────────────────── */
 const MapPage = () => {
   const navigate = useNavigate();
   const { mapboxToken } = useConfigStore();
   const filters = useFilterStore();
+  const { ids: savedIds, toggle: toggleSaved } = useSavedStore();
   const [bbox, setBbox] = useState<BBox | undefined>(undefined);
   const [selected, setSelected] = useState<Venue | null>(null);
   const [view, setView] = useState<"map" | "list">("map");
-  const [mapReady, setMapReady] = useState(false);
 
-  const hasFilters = filters.categories.length > 0 || !!filters.crowdLevel || !!filters.musicVibe;
+  const hasFilters =
+    filters.categories.length > 0 || !!filters.crowdLevel || !!filters.musicVibe || !!filters.search;
 
-  const { data, isLoading, isError, refetch } = useVenues({
-    bbox: view === "map" ? bbox : undefined, // in list view show all
+  const baseQuery = {
     categories: filters.categories.length > 0 ? filters.categories : undefined,
     crowdLevel: filters.crowdLevel,
     musicVibe: filters.musicVibe,
+    search: filters.search,
+  };
+
+  const { data, isLoading, isError, refetch } = useVenues({
+    ...baseQuery,
+    bbox: view === "map" ? bbox : undefined,
   });
 
   const venues = data ?? [];
+  const selectedSaved = selected ? savedIds.includes(selected.id) : false;
+
+  const openDirections = (v: Venue) => {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${v.latitude},${v.longitude}`, "_blank");
+  };
 
   return (
     <section aria-labelledby="map-heading" className="relative">
       <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — Lisbon</h1>
 
+      <TopHeader />
       <FilterChips count={venues.length} hasFilters={hasFilters} />
 
       {/* Map / List toggle */}
       <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
-        <div className="flex rounded-full glass shadow-lg overflow-hidden">
+        <div className="flex rounded-full glass shadow-xl overflow-hidden">
           <button
             onClick={() => setView("map")}
-            className={`px-4 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors ${
+            className={cn(
+              "px-5 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors",
               view === "map" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-secondary"
-            }`}
+            )}
           >
             <MapIcon className="h-4 w-4" /> Map
           </button>
           <button
             onClick={() => setView("list")}
-            className={`px-4 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors ${
+            className={cn(
+              "px-5 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors",
               view === "list" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-secondary"
-            }`}
+            )}
           >
             <List className="h-4 w-4" /> List
           </button>
@@ -216,7 +268,7 @@ const MapPage = () => {
       {view === "map" ? (
         <>
           {!mapboxToken ? (
-            <NoTokenFallback />
+            <NoTokenFallback onBrowseList={() => setView("list")} />
           ) : (
             <div className="w-full h-[calc(100vh-5rem)]">
               <Map
@@ -227,47 +279,22 @@ const MapPage = () => {
                   const v = venues.find((x) => x.id === id) || null;
                   setSelected(v);
                 }}
-                onViewportChanged={(b) => {
-                  setBbox(b);
-                  if (!mapReady) setMapReady(true);
-                }}
+                onViewportChanged={(b) => setBbox(b)}
               />
             </div>
           )}
-
-          {/* Bottom venue preview cards (map view) */}
-          <div className="absolute bottom-28 left-0 right-0 px-4 z-30">
-            <div className="mx-auto max-w-md">
-              {isLoading ? (
-                <div className="space-y-3 animate-fade-in">
-                  <Skeleton className="h-24 w-full rounded-xl" />
-                  <Skeleton className="h-24 w-full rounded-xl" />
-                </div>
-              ) : isError ? (
-                <div className="text-center glass rounded-xl p-4 animate-fade-in">
-                  <p className="text-sm text-muted-foreground">Unable to load venues.</p>
-                  <button className="underline mt-2 text-primary" onClick={() => refetch()}>Retry</button>
-                </div>
-              ) : venues.length > 0 ? (
-                <div className="space-y-3 animate-fade-in">
-                  {venues.slice(0, 3).map((v) => (
-                    <BarCard key={v.id} venue={v} onClick={() => setSelected(v)} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center glass rounded-xl p-4 animate-fade-in">
-                  <p className="text-sm text-muted-foreground">No venues match your filters.</p>
-                </div>
-              )}
-            </div>
-          </div>
         </>
       ) : (
         /* List view */
-        <div className="pt-20 pb-32 px-4 max-w-lg mx-auto">
+        <div className="pt-44 pb-32 px-4 max-w-lg mx-auto">
           {isLoading ? (
             <div className="space-y-3">
-              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
+            </div>
+          ) : isError ? (
+            <div className="text-center glass rounded-2xl p-6">
+              <p className="text-sm text-muted-foreground">Unable to load venues.</p>
+              <button className="underline mt-2 text-primary" onClick={() => refetch()}>Retry</button>
             </div>
           ) : venues.length > 0 ? (
             <div className="space-y-3 animate-fade-in">
@@ -276,60 +303,111 @@ const MapPage = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center glass rounded-xl p-6 animate-fade-in">
-              <p className="text-muted-foreground">No venues match your filters.</p>
+            <div className="text-center glass rounded-2xl p-8 animate-fade-in">
+              <Sparkles className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="font-medium">No spots match your filters</p>
+              <p className="text-sm text-muted-foreground mt-1">Try clearing a filter to see more places.</p>
+              {hasFilters && (
+                <Button variant="secondary" size="sm" className="mt-4" onClick={() => filters.reset()}>
+                  Clear filters
+                </Button>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Venue bottom sheet */}
+      {/* Bottom sheet — venue preview */}
       <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DrawerContent className="bg-card border-border">
-          <DrawerHeader>
-            <DrawerTitle className="text-lg">{selected?.title}</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-6">
-            {selected && (
-              <div className="animate-fade-in">
-                <div className="w-full h-48 rounded-xl overflow-hidden mb-4 bg-secondary">
-                  <img
-                    src={selected.image_url || ""}
-                    alt={selected.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
+          {selected && (
+            <div className="px-4 pt-2 pb-6 max-w-lg mx-auto w-full animate-fade-in">
+              {/* Hero image */}
+              <div className="relative w-full h-44 rounded-2xl overflow-hidden mb-4 bg-secondary">
+                <img
+                  src={selected.image_url || ""}
+                  alt={selected.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const t = e.target as HTMLImageElement;
+                    t.style.display = "none";
+                    (t.parentElement as HTMLElement).style.background =
+                      "linear-gradient(135deg, hsl(var(--primary)/0.4), hsl(var(--accent)/0.2))";
+                  }}
+                />
+                <button
+                  onClick={() => setSelected(null)}
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 backdrop-blur flex items-center justify-center hover:bg-black/80 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4 text-white" />
+                </button>
+                <div className="absolute top-2 left-2 flex gap-1.5">
+                  {selected.hot_tonight && (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500 text-white">
+                      <Flame className="h-3 w-3" /> Hot Tonight
+                    </span>
+                  )}
+                  {selected.editors_pick && (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-400 text-black">
+                      <Star className="h-3 w-3" /> Editor's Pick
+                    </span>
+                  )}
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium text-white ${
+              </div>
+
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold leading-tight truncate">{selected.title}</h2>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide text-white",
                       selected.category === "bar" ? "bg-[hsl(var(--venue-bar))]"
                       : selected.category === "club" ? "bg-[hsl(var(--venue-club))]"
                       : "bg-[hsl(var(--venue-lounge))]"
-                    }`}>
-                      {selected.category}
-                    </span>
+                    )}>{selected.category}</span>
                     {selected.neighborhood && (
                       <span className="text-xs text-muted-foreground">📍 {selected.neighborhood}</span>
                     )}
-                    {selected.music_type && <span className="text-muted-foreground">🎵 {selected.music_type}</span>}
-                  </div>
-                  <div className="flex gap-4 text-muted-foreground">
-                    {selected.venue_stats?.crowd_level && (
-                      <span>👥 {selected.venue_stats.crowd_level}</span>
-                    )}
-                    {selected.cover_charge && <span>🎫 {selected.cover_charge}</span>}
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/venue/${selected.id}`)}
-                  className="mt-4 w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+                  onClick={() => toggleSaved(selected.id)}
+                  className="shrink-0 h-10 w-10 rounded-full bg-secondary hover:bg-secondary/70 flex items-center justify-center transition-colors"
+                  aria-label={selectedSaved ? "Unsave" : "Save"}
                 >
-                  View Details
+                  <Bookmark className={cn("h-5 w-5", selectedSaved ? "fill-primary text-primary" : "text-foreground")} />
                 </button>
               </div>
-            )}
-          </div>
+
+              {/* Stats grid */}
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="rounded-xl bg-secondary/60 p-2.5 text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Music</div>
+                  <div className="text-xs font-medium mt-0.5 truncate">{selected.music_type ?? "—"}</div>
+                </div>
+                <div className="rounded-xl bg-secondary/60 p-2.5 text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Buzz</div>
+                  <div className="text-xs font-semibold text-primary mt-0.5">⚡ {selected.buzz_score ?? "—"}</div>
+                </div>
+                <div className="rounded-xl bg-secondary/60 p-2.5 text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Cover</div>
+                  <div className="text-xs font-medium mt-0.5">{selected.cover_charge ?? "—"}</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <Button variant="secondary" className="h-11 rounded-xl" onClick={() => openDirections(selected)}>
+                  <NavigationIcon className="h-4 w-4 mr-2" /> Directions
+                </Button>
+                <Button className="h-11 rounded-xl" onClick={() => navigate(`/venue/${selected.id}`)}>
+                  View Details
+                </Button>
+              </div>
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
     </section>
