@@ -289,7 +289,7 @@ const MapPage = () => {
         </>
       ) : (
         /* List view */
-        <div className="pt-44 pb-32 px-4 max-w-lg mx-auto">
+        <div className="pt-44 px-4 max-w-lg mx-auto" style={{ paddingBottom: "calc(170px + env(safe-area-inset-bottom))" }}>
           {isLoading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
