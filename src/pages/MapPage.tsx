@@ -159,9 +159,9 @@ const NoTokenFallback = ({ onBrowseList }: { onBrowseList: () => void }) => {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-12rem)] flex items-center justify-center px-4 pt-44 pb-32">
-      <div className="w-full max-w-md glass rounded-3xl p-6 animate-fade-in shadow-2xl">
-        <div className="flex flex-col items-center text-center mb-5">
+    <div className="w-full flex items-start justify-center px-4 pt-44 pb-44 sm:pb-40">
+      <div className="w-[92%] sm:w-full max-w-[640px] glass rounded-3xl p-5 sm:p-6 animate-fade-in shadow-2xl">
+        <div className="flex flex-col items-center text-center mb-4">
           <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/30 to-rose-400/20 mb-3">
             <KeyRound className="h-6 w-6 text-primary" />
           </div>
