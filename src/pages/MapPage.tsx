@@ -241,8 +241,11 @@ const MapPage = () => {
       <TopHeader />
       <FilterChips count={venues.length} hasFilters={hasFilters} />
 
-      {/* Map / List toggle */}
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
+      {/* Map / List toggle — sits clearly above the bottom navigation */}
+      <div
+        className="fixed left-1/2 -translate-x-1/2 z-40"
+        style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
+      >
         <div className="flex rounded-full glass shadow-xl overflow-hidden">
           <button
             onClick={() => setView("map")}
