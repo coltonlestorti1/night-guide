@@ -1,8 +1,9 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Index = () => {
-  // Redirect to Map page as the default landing
-  window.location.replace("/");
+  const navigate = useNavigate();
+  useEffect(() => { navigate("/", { replace: true }); }, [navigate]);
   return null;
 };
 

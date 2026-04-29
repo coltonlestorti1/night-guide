@@ -1,8 +1,8 @@
 /**
- * Mapbox GL map component with category-colored markers, clustering,
- * and viewport state preservation.
+ * Mapbox GL map component with category-colored branded markers,
+ * selected-marker pulse, legend, and viewport state preservation.
  *
- * MAPBOX_TOKEN: Set via Profile screen or env var VITE_MAPBOX_TOKEN.
+ * MAPBOX_TOKEN: Set via Profile screen, MapPage inline input, or VITE_MAPBOX_TOKEN.
  */
 import React, { useCallback, useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
@@ -24,6 +24,12 @@ const CATEGORY_COLORS: Record<VenueCategory, string> = {
   bar: "#3b82f6",
   club: "#ef4444",
   lounge: "#a855f7",
+};
+
+const CATEGORY_GLYPH: Record<VenueCategory, string> = {
+  bar: "🍸",
+  club: "🎧",
+  lounge: "🛋️",
 };
 
 const debounce = (fn: (...args: any[]) => void, ms: number) => {
@@ -51,22 +57,52 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
     venues.forEach((v) => {
       const color = CATEGORY_COLORS[v.category] || "#3b82f6";
       const isSelected = v.id === selectedId;
-      const el = document.createElement("div");
-      el.style.width = isSelected ? "22px" : "16px";
-      el.style.height = isSelected ? "22px" : "16px";
-      el.style.borderRadius = "50%";
-      el.style.backgroundColor = color;
-      el.style.border = isSelected ? "3px solid #fff" : "2px solid rgba(0,0,0,0.4)";
-      el.style.cursor = "pointer";
-      el.style.transition = "transform 0.2s, width 0.2s, height 0.2s";
-      el.style.boxShadow = isSelected ? `0 0 12px ${color}` : `0 2px 6px rgba(0,0,0,0.3)`;
-      if (isSelected) el.style.zIndex = "10";
 
-      const marker = new mapboxgl.Marker({ element: el })
+      const wrapper = document.createElement("div");
+      wrapper.className = "endz-marker";
+      wrapper.style.position = "relative";
+      wrapper.style.width = "36px";
+      wrapper.style.height = "36px";
+      wrapper.style.cursor = "pointer";
+      if (isSelected) wrapper.style.zIndex = "10";
+
+      if (isSelected) {
+        const pulse = document.createElement("div");
+        pulse.style.position = "absolute";
+        pulse.style.inset = "-6px";
+        pulse.style.borderRadius = "50%";
+        pulse.style.background = color;
+        pulse.style.opacity = "0.35";
+        pulse.style.animation = "endz-pulse 1.6s ease-out infinite";
+        wrapper.appendChild(pulse);
+      }
+
+      const pin = document.createElement("div");
+      pin.style.position = "relative";
+      pin.style.width = "100%";
+      pin.style.height = "100%";
+      pin.style.borderRadius = "50%";
+      pin.style.background = `radial-gradient(circle at 30% 30%, ${color}, ${color}cc)`;
+      pin.style.border = isSelected ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.85)";
+      pin.style.boxShadow = isSelected
+        ? `0 0 18px ${color}, 0 4px 10px rgba(0,0,0,0.5)`
+        : "0 3px 8px rgba(0,0,0,0.45)";
+      pin.style.display = "flex";
+      pin.style.alignItems = "center";
+      pin.style.justifyContent = "center";
+      pin.style.fontSize = "16px";
+      pin.style.transition = "transform 0.2s";
+      pin.textContent = CATEGORY_GLYPH[v.category];
+      wrapper.appendChild(pin);
+
+      wrapper.addEventListener("mouseenter", () => { pin.style.transform = "scale(1.12)"; });
+      wrapper.addEventListener("mouseleave", () => { pin.style.transform = "scale(1)"; });
+
+      const marker = new mapboxgl.Marker({ element: wrapper, anchor: "center" })
         .setLngLat([v.longitude, v.latitude])
         .addTo(map.current!);
 
-      el.addEventListener("click", (e) => {
+      wrapper.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelect?.(v.id);
       });
@@ -109,6 +145,7 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
       clearMarkers();
       map.current?.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
   useEffect(() => {
@@ -138,22 +175,32 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
     map.current?.flyTo({ center: [-9.1393, 38.7223], zoom: 13, duration: 1200 });
   }, []);
 
-  if (!accessToken) return null; // fallback handled by parent
+  if (!accessToken) return null;
 
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full" aria-label="Nightlife map" />
-      <div className="absolute bottom-28 right-4 z-40 flex flex-col gap-2">
+
+      {/* Legend */}
+      <div className="absolute top-32 left-3 z-30 glass rounded-xl px-3 py-2 text-[11px] space-y-1 animate-fade-in shadow-lg">
+        <div className="font-semibold text-foreground/80 uppercase tracking-wide text-[10px] mb-1">Legend</div>
+        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--venue-bar))]" /> Bar</div>
+        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--venue-club))]" /> Club</div>
+        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--venue-lounge))]" /> Lounge</div>
+      </div>
+
+      {/* Floating action buttons */}
+      <div className="absolute bottom-44 right-4 z-40 flex flex-col gap-2">
         <button
           onClick={handleRecenter}
-          className="p-3 rounded-full glass shadow-lg hover:scale-105 transition-transform"
+          className="p-3 rounded-full glass shadow-xl hover:scale-105 active:scale-95 transition-transform"
           aria-label="Recenter on Lisbon"
         >
           <LocateFixed className="h-5 w-5 text-primary" />
         </button>
         <button
           onClick={handleLocateMe}
-          className="p-3 rounded-full glass shadow-lg hover:scale-105 transition-transform"
+          className="p-3 rounded-full glass shadow-xl hover:scale-105 active:scale-95 transition-transform"
           aria-label="Locate me"
         >
           <Navigation className="h-5 w-5 text-primary" />

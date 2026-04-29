@@ -11,6 +11,7 @@ export type Filters = {
   hotspots?: boolean;
   crowdLevel?: CrowdLevel;
   musicVibe?: string;
+  search?: string;
 };
 
 interface FilterState extends Filters {
@@ -18,7 +19,7 @@ interface FilterState extends Filters {
   reset: () => void;
 }
 
-export const useFilterStore = create<FilterState>((set) => ({
+const EMPTY: Filters = {
   types: [],
   categories: [],
   priceMin: undefined,
@@ -28,17 +29,11 @@ export const useFilterStore = create<FilterState>((set) => ({
   hotspots: false,
   crowdLevel: undefined,
   musicVibe: undefined,
+  search: undefined,
+};
+
+export const useFilterStore = create<FilterState>((set) => ({
+  ...EMPTY,
   set: (partial) => set((s) => ({ ...s, ...partial })),
-  reset: () =>
-    set({
-      types: [],
-      categories: [],
-      priceMin: undefined,
-      priceMax: undefined,
-      ageMin: undefined,
-      ageMax: undefined,
-      hotspots: false,
-      crowdLevel: undefined,
-      musicVibe: undefined,
-    }),
+  reset: () => set({ ...EMPTY }),
 }));
