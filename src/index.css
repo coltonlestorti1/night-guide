@@ -64,3 +64,9 @@
     @apply bg-card/80 backdrop-blur-xl border border-border/50;
   }
 }
+
+@keyframes endz-pulse {
+  0%   { transform: scale(0.8); opacity: 0.55; }
+  70%  { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
