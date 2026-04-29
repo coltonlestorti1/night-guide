@@ -17,6 +17,11 @@ export type Venue = {
   music_type?: string | null;
   image_url?: string | null;
   cover_charge?: string | null;
+  description?: string | null;
+  open_now?: boolean | null;
+  buzz_score?: number | null; // 0–100
+  hot_tonight?: boolean;
+  editors_pick?: boolean;
   venue_stats?: {
     crowd_level?: CrowdLevel | null;
     wait_minutes?: number | null;
@@ -45,4 +50,5 @@ export type VenueQuery = {
   hotspots?: boolean;
   crowdLevel?: CrowdLevel;
   musicVibe?: string;
+  search?: string;
 };
