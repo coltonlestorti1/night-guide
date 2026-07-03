@@ -161,18 +161,18 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
           toast.success("Found your location");
         },
         () => {
-          toast.info("Location unavailable — showing Lisbon center");
-          map.current?.flyTo({ center: [-9.1393, 38.7223], zoom: 13, duration: 1500 });
+          toast.info("Location unavailable — showing East Village center");
+          map.current?.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
         }
       );
     } else {
       toast.info("Geolocation not supported");
-      map.current.flyTo({ center: [-9.1393, 38.7223], zoom: 13, duration: 1500 });
+      map.current.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
     }
   }, []);
 
   const handleRecenter = useCallback(() => {
-    map.current?.flyTo({ center: [-9.1393, 38.7223], zoom: 13, duration: 1200 });
+    map.current?.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1200 });
   }, []);
 
   if (!accessToken) return null;
@@ -194,7 +194,7 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
         <button
           onClick={handleRecenter}
           className="p-3 rounded-full glass shadow-xl hover:scale-105 active:scale-95 transition-transform"
-          aria-label="Recenter on Lisbon"
+          aria-label="Recenter on East Village"
         >
           <LocateFixed className="h-5 w-5 text-primary" />
         </button>

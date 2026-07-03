@@ -1,5 +1,5 @@
 /**
- * MapPage — investor-demo-ready Lisbon nightlife map.
+ * MapPage — investor-demo-ready East Village nightlife map.
  *
  * MAPBOX_TOKEN precedence: the VITE_MAPBOX_TOKEN env var (build-time,
  * what production deploys use) takes priority. If it's unset, falls back
@@ -49,7 +49,7 @@ const TopHeader = () => {
             <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-rose-400 bg-clip-text text-transparent">
               ENDZ
             </h1>
-            <p className="text-xs text-muted-foreground -mt-0.5">Find your night in Lisbon</p>
+            <p className="text-xs text-muted-foreground -mt-0.5">Find your night in the East Village</p>
           </div>
         </div>
         <div className="relative mt-2">
@@ -240,7 +240,7 @@ const MapPage = () => {
 
   return (
     <section aria-labelledby="map-heading" className="relative">
-      <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — Lisbon</h1>
+      <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — East Village</h1>
 
       <TopHeader />
       <FilterChips count={venues.length} hasFilters={hasFilters} />

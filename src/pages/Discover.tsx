@@ -12,7 +12,7 @@ const Discover = () => {
     <section className="container pt-6 pb-24 max-w-lg">
       <header className="mb-5">
         <h1 className="text-2xl font-bold tracking-tight">Discover</h1>
-        <p className="text-sm text-muted-foreground">Trending nightlife in Lisbon tonight</p>
+        <p className="text-sm text-muted-foreground">Trending nightlife in the East Village tonight</p>
       </header>
       {isLoading ? (
         <div className="space-y-3">

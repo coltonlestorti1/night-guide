@@ -8,7 +8,7 @@ interface MapViewState {
 }
 
 export const useMapViewStore = create<MapViewState>((set) => ({
-  center: [-9.1393, 38.7223],
-  zoom: 13,
+  center: [-73.9833, 40.7270],
+  zoom: 15,
   setView: (center, zoom) => set({ center, zoom }),
 }));

@@ -1,6 +1,6 @@
 import { DataSource } from "./DataSource";
 import { Venue, VenueQuery } from "@/data/types";
-import { LISBON_VENUES } from "@/data/venues";
+import { EAST_VILLAGE_VENUES } from "@/data/venues";
 
 function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
   return venues.filter((v) => {
@@ -35,11 +35,11 @@ export class DemoDataSource implements DataSource {
 
   async getVenues(q: VenueQuery, _signal?: AbortSignal): Promise<Venue[]> {
     await new Promise((r) => setTimeout(r, 300));
-    return filterVenues(LISBON_VENUES, q);
+    return filterVenues(EAST_VILLAGE_VENUES, q);
   }
 
   async getVenue(id: string, _signal?: AbortSignal): Promise<Venue | null> {
     await new Promise((r) => setTimeout(r, 150));
-    return LISBON_VENUES.find((v) => v.id === id) ?? null;
+    return EAST_VILLAGE_VENUES.find((v) => v.id === id) ?? null;
   }
 }

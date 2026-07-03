@@ -8,6 +8,6 @@ export function resolveDataSource(): DataSource {
   const { apiBaseUrl, supabaseUrl, supabaseAnonKey } = useConfigStore.getState();
   if (apiBaseUrl) return new ApiDataSource(apiBaseUrl);
   if (supabaseUrl && supabaseAnonKey) return new SupabaseDataSource();
-  // Default to demo data with 12 Lisbon nightlife venues
+  // Default to demo data with 19 East Village nightlife venues
   return new DemoDataSource();
 }
