@@ -1,8 +1,11 @@
 /**
  * MapPage — investor-demo-ready Lisbon nightlife map.
  *
- * MAPBOX_TOKEN: Provide via Profile tab, the inline setup card on this page,
- * or set VITE_MAPBOX_TOKEN env var. Token is stored locally via useConfigStore.
+ * MAPBOX_TOKEN precedence: the VITE_MAPBOX_TOKEN env var (build-time,
+ * what production deploys use) takes priority. If it's unset, falls back
+ * to the token saved locally via the Profile tab or the inline setup card
+ * on this page (useConfigStore) — this keeps local dev working without a
+ * .env.local file, and keeps the manual-entry flow testable.
  */
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -205,7 +208,8 @@ const NoTokenFallback = ({ onBrowseList }: { onBrowseList: () => void }) => {
 /* ── Main page ─────────────────────────────── */
 const MapPage = () => {
   const navigate = useNavigate();
-  const { mapboxToken } = useConfigStore();
+  const { mapboxToken: storedMapboxToken } = useConfigStore();
+  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || storedMapboxToken;
   const filters = useFilterStore();
   const { ids: savedIds, toggle: toggleSaved } = useSavedStore();
   const [bbox, setBbox] = useState<BBox | undefined>(undefined);
