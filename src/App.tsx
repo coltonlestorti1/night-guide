@@ -10,6 +10,7 @@ import Discover from "@/pages/Discover";
 import Social from "@/pages/Social";
 import Profile from "@/pages/Profile";
 import VenueDetail from "@/pages/VenueDetail";
+import PickUsername from "@/pages/PickUsername";
 import NotFound from "./pages/NotFound";
 import { useAuthStore } from "@/store/auth";
 
@@ -34,6 +35,7 @@ const App = () => {
               <Route path="social" element={<Social />} />
               <Route path="profile" element={<Profile />} />
             </Route>
+            <Route path="welcome" element={<PickUsername />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
