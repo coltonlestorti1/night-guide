@@ -1,47 +1,122 @@
 import { useState } from "react";
 import { useConfigStore } from "@/store/config";
+import { useAuthStore } from "@/store/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const Profile = () => {
+/** Developer-only config (Mapbox token, API base URL, Supabase overrides). */
+const DevSettings = () => {
   const { apiBaseUrl, mapboxToken, supabaseUrl, supabaseAnonKey, setConfig } = useConfigStore();
   const [api, setApi] = useState(apiBaseUrl ?? "");
   const [token, setToken] = useState(mapboxToken ?? "");
   const [sUrl, setSUrl] = useState(supabaseUrl ?? "");
   const [sAnon, setSAnon] = useState(supabaseAnonKey ?? "");
+  const [open, setOpen] = useState(false);
 
-  const save = () => setConfig({ apiBaseUrl: api || undefined, mapboxToken: token || undefined, supabaseUrl: sUrl || undefined, supabaseAnonKey: sAnon || undefined });
+  const save = () =>
+    setConfig({
+      apiBaseUrl: api || undefined,
+      mapboxToken: token || undefined,
+      supabaseUrl: sUrl || undefined,
+      supabaseAnonKey: sAnon || undefined,
+    });
 
   return (
-    <section className="container pt-6 pb-24">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Profile & Connections</h1>
-        <p className="text-sm text-muted-foreground">Manage API keys and data sources</p>
-      </header>
-      <div className="grid gap-6 max-w-2xl">
+    <Collapsible open={open} onOpenChange={setOpen} className="mt-10">
+      <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+        <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+        Developer settings
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-4 grid gap-4 max-w-2xl">
         <div className="space-y-2">
           <label className="text-sm font-medium">Public API Base URL</label>
           <Input placeholder="https://api.yourdomain.com" value={api} onChange={(e) => setApi(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Optional. If provided, the app will fetch venues from /venues endpoints.</p>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Mapbox Public Token</label>
           <Input placeholder="pk.***" value={token} onChange={(e) => setToken(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Required to enable the interactive map.</p>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Supabase URL</label>
           <Input placeholder="https://xyzcompany.supabase.co" value={sUrl} onChange={(e) => setSUrl(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium">Supabase Anon Key</label>
-          <Input placeholder="eyJhbGci..." value={sAnon} onChange={(e) => setSAnon(e.target.value)} />
+          <label className="text-sm font-medium">Supabase Publishable Key</label>
+          <Input placeholder="sb_publishable_..." value={sAnon} onChange={(e) => setSAnon(e.target.value)} />
         </div>
-        <div className="flex gap-2">
-          <Button onClick={save} className="">Save</Button>
-          <a className="underline self-center" href="https://docs.lovable.dev/integrations/supabase/" target="_blank" rel="noreferrer">Connect Supabase</a>
+        <div>
+          <Button onClick={save} variant="secondary" size="sm">Save</Button>
         </div>
-      </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
+const Profile = () => {
+  const { status, session, profile, signInWithGoogle, signOut } = useAuthStore();
+  const [signingIn, setSigningIn] = useState(false);
+
+  const handleSignIn = async () => {
+    setSigningIn(true);
+    await signInWithGoogle();
+    // OAuth redirects away; if it didn't (config missing), release the button
+    setTimeout(() => setSigningIn(false), 4000);
+  };
+
+  const meta = session?.user.user_metadata as { full_name?: string; name?: string; avatar_url?: string; picture?: string } | undefined;
+  const displayName = profile?.display_name || meta?.full_name || meta?.name || "";
+  const avatarUrl = profile?.avatar_url || meta?.avatar_url || meta?.picture || "";
+
+  return (
+    <section className="container pt-6 pb-24 max-w-lg">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
+      </header>
+
+      {status === "loading" ? (
+        <div className="glass rounded-3xl p-6 flex items-center gap-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      ) : status === "signedOut" ? (
+        <div className="glass rounded-3xl p-6 text-center animate-fade-in">
+          <h2 className="text-lg font-semibold">Find out where your friends are tonight.</h2>
+          <p className="text-sm text-muted-foreground mt-1 mb-5">
+            Sign in to check in, add friends, and show up on the map.
+          </p>
+          <Button onClick={handleSignIn} disabled={signingIn} className="w-full h-11 rounded-xl">
+            {signingIn ? "Opening Google…" : "Continue with Google"}
+          </Button>
+        </div>
+      ) : (
+        <div className="glass rounded-3xl p-6 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={avatarUrl} alt={displayName} />
+              <AvatarFallback>{(displayName || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="font-semibold truncate">{displayName || "You"}</div>
+              {profile?.username && (
+                <div className="text-sm text-muted-foreground truncate">@{profile.username}</div>
+              )}
+            </div>
+          </div>
+          <Button onClick={signOut} variant="secondary" className="w-full h-11 rounded-xl mt-5">
+            <LogOut className="h-4 w-4 mr-2" /> Sign out
+          </Button>
+        </div>
+      )}
+
+      <DevSettings />
     </section>
   );
 };
