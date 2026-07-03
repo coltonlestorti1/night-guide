@@ -37,6 +37,15 @@ const PickUsername = () => {
     if (status === "signedIn") navigate("/");
   }, [status, navigate]);
 
+  // Session can arrive after mount (direct load on /welcome while restoring);
+  // fill the suggestion once it does, unless the user already typed something.
+  useEffect(() => {
+    if (!username && session?.user.email) {
+      setUsername(suggestUsername(session.user.email));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+
   // Debounced availability check
   useEffect(() => {
     setError("");
