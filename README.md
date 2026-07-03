@@ -50,6 +50,20 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
+## Configuration
+
+The map needs a Mapbox public token to render.
+
+**Local development:**
+1. Copy `.env.example` to `.env.local`
+2. Get a free token at [account.mapbox.com/access-tokens](https://account.mapbox.com/access-tokens/) (50,000 map loads/month free)
+3. Set `VITE_MAPBOX_TOKEN=pk.your_token` in `.env.local`
+4. Restart `npm run dev` (Vite only reads env files at server start)
+
+Without a token set, the app still runs — it falls back to a manual-entry screen where you can paste a token directly (handy for quick testing without touching `.env.local`).
+
+**Production (Vercel):** set `VITE_MAPBOX_TOKEN` as an environment variable in the Vercel project settings (Project → Settings → Environment Variables) before deploying. Also add your production domain to the token's URL restrictions in the Mapbox dashboard (account.mapbox.com → your token → "URL restrictions") so the token can't be used from other sites.
+
 ## What technologies are used for this project?
 
 This project is built with:
