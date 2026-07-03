@@ -2,7 +2,7 @@ import { DataSource } from "./DataSource";
 import { Venue, VenueQuery } from "@/data/types";
 import { EAST_VILLAGE_VENUES } from "@/data/venues";
 
-function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
+export function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
   return venues.filter((v) => {
     if (!v.serves_alcohol) return false;
     if (q.bbox) {

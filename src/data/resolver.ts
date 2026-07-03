@@ -3,11 +3,13 @@ import { ApiDataSource } from "./sources/ApiDataSource";
 import { SupabaseDataSource } from "./sources/SupabaseDataSource";
 import { DemoDataSource } from "./sources/DemoDataSource";
 import { DataSource } from "./sources/DataSource";
+import { getSupabase } from "@/lib/supabase";
 
 export function resolveDataSource(): DataSource {
-  const { apiBaseUrl, supabaseUrl, supabaseAnonKey } = useConfigStore.getState();
+  const { apiBaseUrl } = useConfigStore.getState();
   if (apiBaseUrl) return new ApiDataSource(apiBaseUrl);
-  if (supabaseUrl && supabaseAnonKey) return new SupabaseDataSource();
-  // Default to demo data with 19 East Village nightlife venues
+  // Live backend whenever the Supabase client is configured (env vars or Profile tab)
+  if (getSupabase()) return new SupabaseDataSource();
+  // Demo dataset only as the no-config fallback
   return new DemoDataSource();
 }
