@@ -1,15 +1,10 @@
 /**
  * MapPage — investor-demo-ready East Village nightlife map.
- *
- * MAPBOX_TOKEN precedence: the VITE_MAPBOX_TOKEN env var (build-time,
- * what production deploys use) takes priority. If it's unset, falls back
- * to the token saved locally via the Profile tab or the inline setup card
- * on this page (useConfigStore) — this keeps local dev working without a
- * .env.local file, and keeps the manual-entry flow testable.
+ * Map tiles are free and keyless (MapLibre + OpenFreeMap), so the map
+ * renders unconditionally — no token setup screen exists.
  */
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useConfigStore } from "@/store/config";
 import { useFilterStore } from "@/store/filters";
 import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
@@ -19,12 +14,11 @@ import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  MapPin, List, X, MapIcon, KeyRound, ExternalLink, Search, Bookmark,
+  MapPin, List, X, MapIcon, Search, Bookmark,
   Navigation as NavigationIcon, Flame, Star, Sparkles
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" }[] = [
@@ -146,70 +140,9 @@ const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean
   );
 };
 
-/* ── No-token fallback ─────────────────────── */
-const NoTokenFallback = ({ onBrowseList }: { onBrowseList: () => void }) => {
-  const { setConfig } = useConfigStore();
-  const [token, setToken] = useState("");
-
-  const save = () => {
-    const trimmed = token.trim();
-    if (!trimmed.startsWith("pk.")) {
-      toast.error("Invalid token — Mapbox public tokens start with 'pk.'");
-      return;
-    }
-    setConfig({ mapboxToken: trimmed });
-    toast.success("Mapbox token saved — loading map…");
-  };
-
-  return (
-    <div className="w-full flex items-start justify-center px-4 pt-44 pb-44 sm:pb-40">
-      <div className="w-[92%] sm:w-full max-w-[640px] glass rounded-3xl p-5 sm:p-6 animate-fade-in shadow-2xl">
-        <div className="flex flex-col items-center text-center mb-4">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/30 to-rose-400/20 mb-3">
-            <KeyRound className="h-6 w-6 text-primary" />
-          </div>
-          <h2 className="text-lg font-semibold">Unlock the live map</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Add your Mapbox token to unlock the live interactive map.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <Input
-            type="password"
-            placeholder="pk.eyJ1Ijoi..."
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && save()}
-            autoFocus
-          />
-          <Button onClick={save} className="w-full h-11 rounded-xl">Save & Load Map</Button>
-          <a
-            href="https://account.mapbox.com/access-tokens/"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-          >
-            Get a free token at mapbox.com <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-
-        <div className="mt-5 pt-5 border-t border-border/50 text-center">
-          <p className="text-xs text-muted-foreground mb-2">Or browse without a map</p>
-          <Button variant="secondary" className="w-full" onClick={onBrowseList}>
-            <List className="h-4 w-4 mr-2" /> Open list view
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 /* ── Main page ─────────────────────────────── */
 const MapPage = () => {
   const navigate = useNavigate();
-  const { mapboxToken: storedMapboxToken } = useConfigStore();
-  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || storedMapboxToken;
   const filters = useFilterStore();
   const { ids: savedIds, toggle: toggleSaved } = useSavedStore();
   const [bbox, setBbox] = useState<BBox | undefined>(undefined);
@@ -273,24 +206,17 @@ const MapPage = () => {
       </div>
 
       {view === "map" ? (
-        <>
-          {!mapboxToken ? (
-            <NoTokenFallback onBrowseList={() => setView("list")} />
-          ) : (
-            <div className="w-full h-[calc(100vh-5rem)]">
-              <Map
-                accessToken={mapboxToken}
-                venues={venues}
-                selectedId={selected?.id}
-                onSelect={(id) => {
-                  const v = venues.find((x) => x.id === id) || null;
-                  setSelected(v);
-                }}
-                onViewportChanged={(b) => setBbox(b)}
-              />
-            </div>
-          )}
-        </>
+        <div className="w-full h-[calc(100vh-5rem)]">
+          <Map
+            venues={venues}
+            selectedId={selected?.id}
+            onSelect={(id) => {
+              const v = venues.find((x) => x.id === id) || null;
+              setSelected(v);
+            }}
+            onViewportChanged={(b) => setBbox(b)}
+          />
+        </div>
       ) : (
         /* List view */
         <div className="pt-44 px-4 max-w-lg mx-auto" style={{ paddingBottom: "calc(170px + env(safe-area-inset-bottom))" }}>

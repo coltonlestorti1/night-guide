@@ -1,19 +1,19 @@
 /**
- * Mapbox GL map component with category-colored branded markers,
+ * MapLibre GL map component with category-colored branded markers,
  * selected-marker pulse, legend, and viewport state preservation.
  *
- * MAPBOX_TOKEN: Set via Profile screen, MapPage inline input, or VITE_MAPBOX_TOKEN.
+ * Tiles come from OpenFreeMap (no key, no account). OSM attribution is
+ * mandatory — the compact attribution control handles it; never disable it.
  */
 import React, { useCallback, useEffect, useRef } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { Venue, BBox, VenueCategory } from "@/data/types";
 import { Navigation, LocateFixed } from "lucide-react";
 import { useMapViewStore } from "@/store/mapState";
 import { toast } from "sonner";
 
 export type MapProps = {
-  accessToken?: string;
   venues: Venue[];
   selectedId?: string;
   onSelect?: (id: string) => void;
@@ -40,10 +40,10 @@ const debounce = (fn: (...args: any[]) => void, ms: number) => {
   };
 };
 
-const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, onViewportChanged }) => {
+const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const map = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
   const { center, zoom, setView } = useMapViewStore();
 
   const clearMarkers = useCallback(() => {
@@ -98,7 +98,7 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
       wrapper.addEventListener("mouseenter", () => { pin.style.transform = "scale(1.12)"; });
       wrapper.addEventListener("mouseleave", () => { pin.style.transform = "scale(1)"; });
 
-      const marker = new mapboxgl.Marker({ element: wrapper, anchor: "center" })
+      const marker = new maplibregl.Marker({ element: wrapper, anchor: "center" })
         .setLngLat([v.longitude, v.latitude])
         .addTo(map.current!);
 
@@ -112,19 +112,18 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
   }, [venues, selectedId, onSelect, clearMarkers]);
 
   useEffect(() => {
-    if (!mapContainer.current || !accessToken) return;
+    if (!mapContainer.current) return;
 
-    mapboxgl.accessToken = accessToken;
-    map.current = new mapboxgl.Map({
+    map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: "https://tiles.openfreemap.org/styles/dark",
       center,
       zoom,
       pitch: 0,
-      attributionControl: false,
+      attributionControl: { compact: true },
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
 
     const onMoveEnd = debounce(() => {
       if (!map.current) return;
@@ -146,7 +145,7 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
       map.current?.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, []);
 
   useEffect(() => {
     if (map.current?.loaded()) addMarkers();
@@ -174,8 +173,6 @@ const Map: React.FC<MapProps> = ({ accessToken, venues, selectedId, onSelect, on
   const handleRecenter = useCallback(() => {
     map.current?.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1200 });
   }, []);
-
-  if (!accessToken) return null;
 
   return (
     <div className="relative w-full h-full">
