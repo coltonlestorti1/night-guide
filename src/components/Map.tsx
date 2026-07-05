@@ -60,7 +60,8 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
 
       const wrapper = document.createElement("div");
       wrapper.className = "endz-marker";
-      wrapper.style.position = "relative";
+      // No inline position here — it would override .maplibregl-marker's
+      // position:absolute and break geo-anchoring (pins stack in page flow).
       wrapper.style.width = "36px";
       wrapper.style.height = "36px";
       wrapper.style.cursor = "pointer";
