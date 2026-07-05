@@ -60,11 +60,14 @@ let channel: RealtimeChannel | null = null;
 export function subscribeActivity(onChanged: () => void): () => void {
   const supabase = getSupabase();
   if (!supabase) return () => {};
-  channel = supabase.channel("venue-activity");
-  channel.on("broadcast", { event: "changed" }, onChanged).subscribe();
+  const ch = supabase.channel("venue-activity");
+  ch.on("broadcast", { event: "changed" }, onChanged).subscribe();
+  channel = ch;
   return () => {
-    if (channel) supabase.removeChannel(channel);
-    channel = null;
+    // Only clear the shared reference if it still points at OUR channel —
+    // a newer subscriber may have replaced it.
+    if (channel === ch) channel = null;
+    supabase.removeChannel(ch);
   };
 }
 
