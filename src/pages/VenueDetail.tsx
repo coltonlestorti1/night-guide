@@ -3,8 +3,26 @@ import { useVenue } from "@/hooks/useVenue";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useSavedStore } from "@/store/saved";
-import { ArrowLeft, Bookmark, Navigation as NavIcon, Flame, Star, MapPin, Music2, Ticket } from "lucide-react";
+import { ArrowLeft, Bookmark, Navigation as NavIcon, Flame, Star, MapPin, Music2, Ticket, DollarSign, Users, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Venue } from "@/data/types";
+
+/**
+ * Stat tiles render only for data the venue actually has — no permanent
+ * "—" placeholders. Buzz/Cover slots resurface automatically once real
+ * check-in data starts populating those fields.
+ */
+const statTiles = (v: Venue) => {
+  const tiles: { label: string; icon: React.ReactNode; value: string; accent?: boolean }[] = [];
+  if (v.buzz_score != null) tiles.push({ label: "Buzz", icon: <Zap className="h-3 w-3" />, value: String(v.buzz_score), accent: true });
+  if (v.music_type) tiles.push({ label: "Music", icon: <Music2 className="h-3 w-3" />, value: v.music_type });
+  if (v.avg_price_level) tiles.push({ label: "Price", icon: <DollarSign className="h-3 w-3" />, value: "$".repeat(v.avg_price_level) });
+  if (v.age_range_min && v.age_range_max) tiles.push({ label: "Ages", icon: <Users className="h-3 w-3" />, value: `${v.age_range_min}–${v.age_range_max}` });
+  if (v.cover_charge) tiles.push({ label: "Cover", icon: <Ticket className="h-3 w-3" />, value: v.cover_charge });
+  return tiles;
+};
+
+const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
 
 const VenueDetail = () => {
   const { id } = useParams();
@@ -84,24 +102,20 @@ const VenueDetail = () => {
 
           {/* Body */}
           <div className="container pt-5 space-y-5 max-w-2xl">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-secondary/60 p-3 text-center">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Buzz</div>
-                <div className="text-base font-bold text-primary mt-0.5">⚡ {data.buzz_score ?? "—"}</div>
+            {statTiles(data).length > 0 && (
+              <div className={cn("grid gap-2", GRID_COLS[Math.min(statTiles(data).length, 3)])}>
+                {statTiles(data).map((t) => (
+                  <div key={t.label} className="rounded-xl bg-secondary/60 p-3 text-center">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center justify-center gap-1">
+                      {t.icon} {t.label}
+                    </div>
+                    <div className={cn("text-xs font-medium mt-0.5 truncate", t.accent && "text-base font-bold text-primary")}>
+                      {t.value}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="rounded-xl bg-secondary/60 p-3 text-center">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center justify-center gap-1">
-                  <Music2 className="h-3 w-3" /> Music
-                </div>
-                <div className="text-xs font-medium mt-0.5 truncate">{data.music_type ?? "—"}</div>
-              </div>
-              <div className="rounded-xl bg-secondary/60 p-3 text-center">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center justify-center gap-1">
-                  <Ticket className="h-3 w-3" /> Cover
-                </div>
-                <div className="text-xs font-medium mt-0.5">{data.cover_charge ?? "—"}</div>
-              </div>
-            </div>
+            )}
 
             {data.description && (
               <div>

@@ -30,7 +30,9 @@ const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "
   { label: "Music", value: "music" },
 ];
 
-const MUSIC_VIBES = ["Techno", "House", "Jazz", "Fado", "Indie", "Pop", "Ambient"];
+// Keep in sync with the music genres that actually exist in the venue data —
+// a vibe chip with zero matches is a dead-end filter.
+const MUSIC_VIBES = ["Rock", "Pop", "Jazz", "Indie", "Country", "Latin", "Mixed"];
 
 /* ── Header ────────────────────────────────── */
 const TopHeader = () => {
