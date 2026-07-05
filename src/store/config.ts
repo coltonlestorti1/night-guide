@@ -3,7 +3,6 @@ import { persist } from "zustand/middleware";
 
 export type AppConfig = {
   apiBaseUrl?: string;
-  mapboxToken?: string;
   supabaseUrl?: string;
   supabaseAnonKey?: string;
 };
@@ -16,7 +15,6 @@ export const useConfigStore = create<ConfigState>()(
   persist(
     (set) => ({
       apiBaseUrl: undefined,
-      mapboxToken: undefined,
       supabaseUrl: undefined,
       supabaseAnonKey: undefined,
       setConfig: (cfg) => set((s) => ({ ...s, ...cfg })),

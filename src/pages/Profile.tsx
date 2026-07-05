@@ -9,11 +9,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Developer-only config (Mapbox token, API base URL, Supabase overrides). */
+/** Developer-only config (API base URL, Supabase overrides). */
 const DevSettings = () => {
-  const { apiBaseUrl, mapboxToken, supabaseUrl, supabaseAnonKey, setConfig } = useConfigStore();
+  const { apiBaseUrl, supabaseUrl, supabaseAnonKey, setConfig } = useConfigStore();
   const [api, setApi] = useState(apiBaseUrl ?? "");
-  const [token, setToken] = useState(mapboxToken ?? "");
   const [sUrl, setSUrl] = useState(supabaseUrl ?? "");
   const [sAnon, setSAnon] = useState(supabaseAnonKey ?? "");
   const [open, setOpen] = useState(false);
@@ -21,7 +20,6 @@ const DevSettings = () => {
   const save = () =>
     setConfig({
       apiBaseUrl: api || undefined,
-      mapboxToken: token || undefined,
       supabaseUrl: sUrl || undefined,
       supabaseAnonKey: sAnon || undefined,
     });
@@ -36,10 +34,6 @@ const DevSettings = () => {
         <div className="space-y-2">
           <label className="text-sm font-medium">Public API Base URL</label>
           <Input placeholder="https://api.yourdomain.com" value={api} onChange={(e) => setApi(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Mapbox Public Token</label>
-          <Input placeholder="pk.***" value={token} onChange={(e) => setToken(e.target.value)} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Supabase URL</label>

@@ -52,17 +52,16 @@ npm run dev
 
 ## Configuration
 
-The map needs a Mapbox public token to render.
+The map needs no configuration — tiles come from [OpenFreeMap](https://openfreemap.org) via MapLibre GL (no API key, no account; attribution is shown automatically).
 
-**Local development:**
+**Supabase (backend):**
 1. Copy `.env.example` to `.env.local`
-2. Get a free token at [account.mapbox.com/access-tokens](https://account.mapbox.com/access-tokens/) (50,000 map loads/month free)
-3. Set `VITE_MAPBOX_TOKEN=pk.your_token` in `.env.local`
-4. Restart `npm run dev` (Vite only reads env files at server start)
+2. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from your Supabase project (Settings → Data API / API Keys)
+3. Restart `npm run dev` (Vite only reads env files at server start)
 
-Without a token set, the app still runs — it falls back to a manual-entry screen where you can paste a token directly (handy for quick testing without touching `.env.local`).
+Without Supabase configured, the app falls back to a built-in demo venue dataset.
 
-**Production (Vercel):** set `VITE_MAPBOX_TOKEN` as an environment variable in the Vercel project settings (Project → Settings → Environment Variables) before deploying. Also add your production domain to the token's URL restrictions in the Mapbox dashboard (account.mapbox.com → your token → "URL restrictions") so the token can't be used from other sites.
+**Production (Vercel):** set the two Supabase env vars in the Vercel project settings (Project → Settings → Environment Variables) before deploying.
 
 ## What technologies are used for this project?
 
