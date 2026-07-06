@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useFilterStore } from "@/store/filters";
 import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
+import { useVenueActivity } from "@/hooks/useCheckIns";
 import { BBox, Venue, VenueCategory } from "@/data/types";
 import Map from "@/components/Map";
 import BarCard from "@/components/BarCard";
@@ -171,6 +172,11 @@ const MapPage = () => {
   const venues = data ?? [];
   const selectedSaved = selected ? savedIds.includes(selected.id) : false;
 
+  const { data: activityData } = useVenueActivity();
+  const activityCounts = activityData
+    ? Object.fromEntries(Object.entries(activityData).map(([id, a]) => [id, a.count]))
+    : undefined;
+
   const openDirections = (v: Venue) => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${v.latitude},${v.longitude}`, "_blank");
   };
@@ -213,6 +219,7 @@ const MapPage = () => {
         <div className="w-full h-[calc(100vh-5rem)]">
           <Map
             venues={venues}
+            activity={activityCounts}
             selectedId={selected?.id}
             onSelect={(id) => {
               const v = venues.find((x) => x.id === id) || null;

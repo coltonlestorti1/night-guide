@@ -18,6 +18,8 @@ export type MapProps = {
   selectedId?: string;
   onSelect?: (id: string) => void;
   onViewportChanged?: (bbox: BBox) => void;
+  /** venueId -> active check-in count; drives pin tiers and badges */
+  activity?: Record<string, number>;
 };
 
 const CATEGORY_COLORS: Record<VenueCategory, string> = {
@@ -40,7 +42,7 @@ const debounce = (fn: (...args: any[]) => void, ms: number) => {
   };
 };
 
-const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged }) => {
+const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged, activity }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -57,6 +59,10 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     venues.forEach((v) => {
       const color = CATEGORY_COLORS[v.category] || "#3b82f6";
       const isSelected = v.id === selectedId;
+      const count = activity?.[v.id] ?? 0;
+      // Activity tiers: 0 = as-is, 1-2 = badge, 3-5 = badge + bigger, 6+ = badge + bigger + glow
+      const scale = count >= 3 ? 1.15 : 1;
+      const hot = count >= 6;
 
       const wrapper = document.createElement("div");
       wrapper.className = "endz-marker";
@@ -87,6 +93,8 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       pin.style.border = isSelected ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.85)";
       pin.style.boxShadow = isSelected
         ? `0 0 18px ${color}, 0 4px 10px rgba(0,0,0,0.5)`
+        : hot
+        ? `0 0 14px ${color}, 0 3px 8px rgba(0,0,0,0.45)`
         : "0 3px 8px rgba(0,0,0,0.45)";
       pin.style.display = "flex";
       pin.style.alignItems = "center";
@@ -96,8 +104,32 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       pin.textContent = CATEGORY_GLYPH[v.category];
       wrapper.appendChild(pin);
 
-      wrapper.addEventListener("mouseenter", () => { pin.style.transform = "scale(1.12)"; });
-      wrapper.addEventListener("mouseleave", () => { pin.style.transform = "scale(1)"; });
+      if (scale !== 1) pin.style.transform = `scale(${scale})`;
+
+      if (count > 0) {
+        const badge = document.createElement("div");
+        badge.textContent = String(count);
+        badge.style.position = "absolute";
+        badge.style.top = "-4px";
+        badge.style.right = "-4px";
+        badge.style.minWidth = "16px";
+        badge.style.height = "16px";
+        badge.style.padding = "0 4px";
+        badge.style.borderRadius = "8px";
+        badge.style.background = "hsl(var(--primary))";
+        badge.style.color = "hsl(var(--primary-foreground))";
+        badge.style.fontSize = "10px";
+        badge.style.fontWeight = "700";
+        badge.style.display = "flex";
+        badge.style.alignItems = "center";
+        badge.style.justifyContent = "center";
+        badge.style.border = "1.5px solid rgba(255,255,255,0.85)";
+        badge.style.zIndex = "2";
+        wrapper.appendChild(badge);
+      }
+
+      wrapper.addEventListener("mouseenter", () => { pin.style.transform = `scale(${scale * 1.12})`; });
+      wrapper.addEventListener("mouseleave", () => { pin.style.transform = scale !== 1 ? `scale(${scale})` : "scale(1)"; });
 
       const marker = new maplibregl.Marker({ element: wrapper, anchor: "center" })
         .setLngLat([v.longitude, v.latitude])
@@ -110,7 +142,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
 
       markersRef.current.push(marker);
     });
-  }, [venues, selectedId, onSelect, clearMarkers]);
+  }, [venues, selectedId, onSelect, clearMarkers, activity]);
 
   useEffect(() => {
     if (!mapContainer.current) return;
