@@ -41,7 +41,8 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     if (!userId || busy) return;
     setBusy(true);
     setError("");
-    // Optimistic: flip both caches immediately
+    // Optimistic: flip the cache immediately; snapshot for synchronous revert on failure
+    const prev = queryClient.getQueryData(["my-check-in", userId]);
     queryClient.setQueryData(["my-check-in", userId], {
       id: "optimistic",
       venue_id: venueId,
@@ -52,6 +53,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
       await checkIn(userId, venueId);
       pokeActivity();
     } catch {
+      queryClient.setQueryData(["my-check-in", userId], prev);
       setError("That didn't go through — try again.");
     } finally {
       refresh();
@@ -63,11 +65,14 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     if (!userId || busy) return;
     setBusy(true);
     setError("");
+    // Optimistic: flip the cache immediately; snapshot for synchronous revert on failure
+    const prev = queryClient.getQueryData(["my-check-in", userId]);
     queryClient.setQueryData(["my-check-in", userId], null);
     try {
       await checkOut(userId);
       pokeActivity();
     } catch {
+      queryClient.setQueryData(["my-check-in", userId], prev);
       setError("That didn't go through — try again.");
     } finally {
       refresh();
@@ -100,7 +105,11 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
         </p>
       )}
 
-      {status !== "signedIn" ? (
+      {status === "needsUsername" ? (
+        <Button className="w-full h-12 rounded-xl" onClick={() => navigate("/welcome")}>
+          Finish setup to check in
+        </Button>
+      ) : status !== "signedIn" ? (
         <Button className="w-full h-12 rounded-xl" onClick={() => navigate("/profile")}>
           Sign in to check in
         </Button>
