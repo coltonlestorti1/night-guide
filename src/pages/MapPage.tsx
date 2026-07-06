@@ -20,6 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import VenueStatTiles from "@/components/VenueStatTiles";
+import CheckInCard from "@/components/CheckInCard";
 
 const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" }[] = [
   { label: "All", value: "all" },
@@ -316,21 +318,11 @@ const MapPage = () => {
                 </button>
               </div>
 
-              {/* Stats grid */}
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                <div className="rounded-xl bg-secondary/60 p-2.5 text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Music</div>
-                  <div className="text-xs font-medium mt-0.5 truncate">{selected.music_type ?? "—"}</div>
-                </div>
-                <div className="rounded-xl bg-secondary/60 p-2.5 text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Buzz</div>
-                  <div className="text-xs font-semibold text-primary mt-0.5">⚡ {selected.buzz_score ?? "—"}</div>
-                </div>
-                <div className="rounded-xl bg-secondary/60 p-2.5 text-center">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Cover</div>
-                  <div className="text-xs font-medium mt-0.5">{selected.cover_charge ?? "—"}</div>
-                </div>
+              {/* Stats */}
+              <div className="mt-3">
+                <VenueStatTiles venue={selected} compact />
               </div>
+              <CheckInCard venueId={selected.id} />
 
               {/* Actions */}
               <div className="grid grid-cols-2 gap-2 mt-4">
