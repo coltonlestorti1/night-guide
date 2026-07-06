@@ -173,9 +173,15 @@ const MapPage = () => {
   const selectedSaved = selected ? savedIds.includes(selected.id) : false;
 
   const { data: activityData } = useVenueActivity();
-  const activityCounts = activityData
-    ? Object.fromEntries(Object.entries(activityData).map(([id, a]) => [id, a.count]))
-    : undefined;
+  // Memoized: a new object reference here rebuilds every map marker via
+  // addMarkers' dependency array — only do that when activity actually changes.
+  const activityCounts = useMemo(
+    () =>
+      activityData
+        ? Object.fromEntries(Object.entries(activityData).map(([id, a]) => [id, a.count]))
+        : undefined,
+    [activityData]
+  );
 
   const openDirections = (v: Venue) => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${v.latitude},${v.longitude}`, "_blank");
