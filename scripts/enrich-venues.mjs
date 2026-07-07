@@ -126,6 +126,77 @@ async function refresh() {
   console.log(`\nWrote ${ENRICHMENT_PATH} (${Object.keys(out).length} venues, fetchedAt ${fetchedAt}).`);
 }
 
+// East Village bounding box (beachhead locked — see 2026-07-06 venue-expansion spec)
+const EV_BBOX = { latMin: 40.7205, latMax: 40.7345, lngMin: -73.993, lngMax: -73.974 };
+const DISCOVER_QUERIES = [
+  "bars in East Village Manhattan",
+  "clubs in East Village Manhattan",
+  "cocktail lounges in East Village Manhattan",
+];
+const PRICE_FROM_LEVEL = {
+  PRICE_LEVEL_INEXPENSIVE: "$",
+  PRICE_LEVEL_MODERATE: "$$",
+  PRICE_LEVEL_EXPENSIVE: "$$$",
+  PRICE_LEVEL_VERY_EXPENSIVE: "$$$$",
+};
+
+async function discover() {
+  const key = requireApiKey();
+  const known = existsSync(PLACE_IDS_PATH)
+    ? new Set(Object.values(JSON.parse(readFileSync(PLACE_IDS_PATH, "utf8"))).filter(Boolean).map((e) => e.placeId))
+    : new Set();
+  const seen = new Map();
+  for (const textQuery of DISCOVER_QUERIES) {
+    const data = await googleFetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask":
+          "places.id,places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel",
+      },
+      body: JSON.stringify({ textQuery, pageSize: 20 }),
+    });
+    for (const p of data.places ?? []) seen.set(p.id, p);
+    await sleep(200);
+  }
+  if (seen.size > 100) { console.error(`refusing to process ${seen.size} results (>100 guard)`); process.exit(1); }
+  const candidates = [...seen.values()]
+    .filter((p) => {
+      const { latitude: lat, longitude: lng } = p.location ?? {};
+      return (
+        lat >= EV_BBOX.latMin && lat <= EV_BBOX.latMax &&
+        lng >= EV_BBOX.lngMin && lng <= EV_BBOX.lngMax &&
+        (p.types ?? []).some((t) => t === "bar" || t === "night_club") &&
+        (p.userRatingCount ?? 0) >= 100 &&
+        !known.has(p.id)
+      );
+    })
+    .map((p) => ({
+      placeId: p.id,
+      name: p.displayName?.text ?? "",
+      address: p.formattedAddress ?? "",
+      lat: p.location.latitude,
+      lng: p.location.longitude,
+      category: (p.types ?? []).includes("night_club") ? "club" : "bar",
+      rating: p.rating ?? null,
+      userRatingCount: p.userRatingCount ?? 0,
+      price: PRICE_FROM_LEVEL[p.priceLevel] ?? null,
+      score: (p.rating ?? 0) * Math.log10(Math.max(p.userRatingCount ?? 1, 1)),
+      approved: true,
+    }))
+    .sort((a, b) => b.score - a.score);
+  writeFileSync(join(SCRIPTS, "venue-candidates.json"), JSON.stringify(candidates, null, 2) + "\n");
+  console.log(` #  ${"NAME".padEnd(32)} ${"RATING".padEnd(7)} ${"REVIEWS".padEnd(8)} ${"PRICE".padEnd(6)} ADDRESS`);
+  candidates.forEach((c, i) =>
+    console.log(
+      `${String(i + 1).padStart(2)}  ${c.name.slice(0, 31).padEnd(32)} ${String(c.rating ?? "—").padEnd(7)} ${String(c.userRatingCount).padEnd(8)} ${(c.price ?? "—").padEnd(6)} ${c.address.replace(", New York, NY", "").replace(", USA", "")}`,
+    ),
+  );
+  console.log(`\n${candidates.length} candidates -> scripts/venue-candidates.json (all pre-approved; tell me numbers to REMOVE).`);
+  console.log("Existing venues are never touched by this pipeline. The Grafton is the anchor — untouchable.");
+}
+
 function runTest() {
   const place = JSON.parse(readFileSync(join(SCRIPTS, "fixtures/place-details.sample.json"), "utf8"));
   const out = transformPlace(place, "2026-07-06T00:00:00.000Z");
@@ -147,4 +218,5 @@ const cmd = process.argv[2];
 if (cmd === "test") runTest();
 else if (cmd === "resolve") await resolve();
 else if (cmd === "refresh") await refresh();
-else { console.error("usage: node scripts/enrich-venues.mjs <test|resolve|refresh> [--popular-times]"); process.exit(1); }
+else if (cmd === "discover") await discover();
+else { console.error("usage: node scripts/enrich-venues.mjs <test|resolve|refresh|discover> [--popular-times]"); process.exit(1); }
