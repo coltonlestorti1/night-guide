@@ -1,0 +1,81 @@
+{
+  "The Grafton": {
+    "placeId": "ChIJd3-uGZ1ZwokR2fCvxWdgWqY",
+    "matchedName": "The Grafton",
+    "address": "126 1st Ave, New York, NY 10009, USA"
+  },
+  "Standings": {
+    "placeId": "ChIJLXPphJxZwokRNVmngCybEpQ",
+    "matchedName": "Standings",
+    "address": "43 E 7th St, New York, NY 10003, USA"
+  },
+  "International Bar": {
+    "placeId": "ChIJlUueGJ1ZwokRlBb3NEfYFF8",
+    "matchedName": "The International Bar",
+    "address": "102 1st Ave, New York, NY 10009, USA"
+  },
+  "Coyote Ugly Saloon": {
+    "placeId": "ChIJ7buqpp1ZwokRk-t076OO99E",
+    "matchedName": "Coyote Ugly New York",
+    "address": "233 E 14th St, New York, NY 10003, USA"
+  },
+  "Niagara Bar": {
+    "placeId": "ChIJq-A7UZ1ZwokRC9nHZurb4iQ",
+    "matchedName": "Niagara",
+    "address": "112 Avenue A, New York, NY 10009, USA"
+  },
+  "Paul's Cocktail Lounge": null,
+  "Lucy's Bar": {
+    "placeId": "ChIJ3WRZYp1ZwokRI0GzAf4kCIQ",
+    "matchedName": "Lucy's",
+    "address": "135 Avenue A, New York, NY 10009, USA"
+  },
+  "Doc Holliday's": {
+    "placeId": "ChIJwRcz2HdZwokR_I0BuB3PkFc",
+    "matchedName": "Doc Holliday's",
+    "address": "141 Avenue A, New York, NY 10009, USA"
+  },
+  "Cienfuegos": {
+    "placeId": "ChIJObMZS51ZwokRWouOc3qwUmc",
+    "matchedName": "Cienfuegos",
+    "address": "95 Avenue A, New York, NY 10009, USA"
+  },
+  "The Library": {
+    "placeId": "ChIJQwDts4NZwokR1G-QaglL6H0",
+    "matchedName": "The Library",
+    "address": "7 Avenue A, New York, NY 10009, USA"
+  },
+  "Manitoba's": null,
+  "Death & Co": {
+    "placeId": "ChIJKU1MNJ1ZwokRQ7eiWK511vI",
+    "matchedName": "Death & Co East Village",
+    "address": "433 E 6th St, New York, NY 10009, USA"
+  },
+  "The Summit Bar": {
+    "placeId": "ChIJG4L6XndZwokR7CIyJVdM4CI",
+    "matchedName": "The Summit Bar & Cafe",
+    "address": "133 Loisaida Ave, New York, NY 10009, USA"
+  },
+  "Alphabet City Beer Co": {
+    "placeId": "ChIJWaWbwHlZwokRj1wHkvB84zE",
+    "matchedName": "Alphabet City Beer Co.",
+    "address": "96 Loisaida Ave, New York, NY 10009, USA"
+  },
+  "The Bourgeois Pig": null,
+  "KGB Bar": {
+    "placeId": "ChIJMbtTs4RZwokRB3Bd_3yH7AA",
+    "matchedName": "KGB Bar",
+    "address": "85 E 4th St, New York, NY 10003, USA"
+  },
+  "McSorley's Old Ale House": {
+    "placeId": "ChIJGdCSd5tZwokRfYvMyzO7qtE",
+    "matchedName": "McSorley’s Old Ale House",
+    "address": "15 E 7th St, New York, NY 10003, USA"
+  },
+  "Angel's Share": null,
+  "Beauty Bar": {
+    "placeId": "ChIJbU-JV55ZwokRRgid16uv0jA",
+    "matchedName": "Beauty Bar",
+    "address": "231 E 14th St, New York, NY 10003, USA"
+  }
+}

@@ -1,1 +1,1114 @@
-{}
+{
+  "The Grafton": {
+    "placeId": "ChIJd3-uGZ1ZwokR2fCvxWdgWqY",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.4,
+    "userRatingCount": 456,
+    "priceRange": "$10–40",
+    "editorialSummary": "This laid-back Irish bar offers pub grub, pints & plenty of TVs for catching the game.",
+    "phone": "(212) 228-8580",
+    "websiteUri": "http://www.thegraftonnyc.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=11986999357014536409&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 14,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 14,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 14,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 14,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 30,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 30,
+        "closeDayOffset": 1
+      }
+    ],
+    "happyHour": [
+      {
+        "day": 1,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 2,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 3,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 4,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 5,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      }
+    ]
+  },
+  "Standings": {
+    "placeId": "ChIJLXPphJxZwokRNVmngCybEpQ",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.6,
+    "userRatingCount": 157,
+    "priceRange": "$10–20",
+    "editorialSummary": "Pennant-lined walls, TVs & craft beers keep sports fans in the rooting spirit at this tiny bar.",
+    "phone": "(212) 420-0671",
+    "googleMapsUri": "https://maps.google.com/?cid=10669761082633443637&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "International Bar": {
+    "placeId": "ChIJlUueGJ1ZwokRlBb3NEfYFF8",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.2,
+    "userRatingCount": 340,
+    "priceRange": "$1–30",
+    "editorialSummary": "Small, spare East barroom drawing locals who like their drinking with no pretensions.",
+    "phone": "(212) 777-1643",
+    "websiteUri": "http://www.internationalbarnyc.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=6851338733480253076&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 10,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 10,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 10,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 10,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 10,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 10,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 10,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "Coyote Ugly Saloon": {
+    "placeId": "ChIJ7buqpp1ZwokRk-t076OO99E",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4,
+    "userRatingCount": 831,
+    "priceRange": "$10–20",
+    "editorialSummary": "Outpost of a festive saloon chain with female bartenders, bartop dancing & body shots.",
+    "phone": "(646) 360-3018",
+    "websiteUri": "https://www.coyoteuglysaloon.com/newyork/",
+    "googleMapsUri": "https://maps.google.com/?cid=15129718307922701203&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ],
+    "happyHour": [
+      {
+        "day": 0,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 1,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 3,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 4,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 5,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 6,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      }
+    ]
+  },
+  "Niagara Bar": {
+    "placeId": "ChIJq-A7UZ1ZwokRC9nHZurb4iQ",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 3.4,
+    "userRatingCount": 651,
+    "priceRange": "$10–20",
+    "editorialSummary": "This longtime watering hole on a busy Alphabet City corner features DJ-spun tunes & a photo booth.",
+    "phone": "(212) 420-9517",
+    "websiteUri": "http://niagaranyc.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=2657928529895217419&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 14,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 15,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 15,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 15,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 15,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 15,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 14,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "Lucy's Bar": {
+    "placeId": "ChIJ3WRZYp1ZwokRI0GzAf4kCIQ",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.2,
+    "userRatingCount": 285,
+    "priceRange": "$20–30",
+    "editorialSummary": "Easygoing hangout, famed for its eponymous owner, features pool, video games & a laid-back vibe.",
+    "websiteUri": "https://www.lucysbarnyc.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=9513894886188990755&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "Doc Holliday's": {
+    "placeId": "ChIJwRcz2HdZwokR_I0BuB3PkFc",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.1,
+    "userRatingCount": 461,
+    "priceRange": "$10–50",
+    "editorialSummary": "Texas roadhouse-style bar in the East Village with biker bartenders & country music on the jukebox.",
+    "phone": "(212) 979-0312",
+    "websiteUri": "http://www.instagram.com/dochollidaysnyc",
+    "googleMapsUri": "https://maps.google.com/?cid=6309770804494175740&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "Cienfuegos": {
+    "placeId": "ChIJObMZS51ZwokRWouOc3qwUmc",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.5,
+    "userRatingCount": 280,
+    "editorialSummary": "Fancy rum cocktails are paired with Latin small plates at this second-floor East Village lounge.",
+    "phone": "(212) 614-6818",
+    "websiteUri": "http://www.cienfuegosny.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=7445207173968071514&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "CLOSED_PERMANENTLY"
+  },
+  "The Library": {
+    "placeId": "ChIJQwDts4NZwokR1G-QaglL6H0",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.3,
+    "userRatingCount": 708,
+    "priceRange": "$10–20",
+    "editorialSummary": "Longtime barroom with cheap drinks, crowd-pleasing jukebox & B movies projected on the walls.",
+    "websiteUri": "https://thelibrary-ny.shop/",
+    "googleMapsUri": "https://maps.google.com/?cid=9072583953152503764&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "Death & Co": {
+    "placeId": "ChIJKU1MNJ1ZwokRQ7eiWK511vI",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.5,
+    "userRatingCount": 2102,
+    "editorialSummary": "Bartenders in bow ties & suspenders recall the speakeasy era at this dark, moody cocktail lounge.",
+    "phone": "(212) 388-0882",
+    "websiteUri": "http://www.deathandcompany.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=17498302793866458947&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 18,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 18,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 18,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 18,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 18,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 18,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 18,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "The Summit Bar": {
+    "placeId": "ChIJG4L6XndZwokR7CIyJVdM4CI",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.7,
+    "userRatingCount": 436,
+    "priceRange": "$1–60",
+    "editorialSummary": "Crystal chandeliers & wood/steel benches contribute to a sophisticated scene at this cocktail bar.",
+    "phone": "(347) 465-7911",
+    "websiteUri": "http://thesummitbarandcafe.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=2513092529242645228&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 3,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ],
+    "happyHour": [
+      {
+        "day": 1,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 2,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 3,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 4,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      },
+      {
+        "day": 5,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 19,
+        "closeMinute": 0,
+        "closeDayOffset": 0
+      }
+    ]
+  },
+  "Alphabet City Beer Co": {
+    "placeId": "ChIJWaWbwHlZwokRj1wHkvB84zE",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.6,
+    "userRatingCount": 598,
+    "priceRange": "$20–30",
+    "editorialSummary": "Cozy bar/beer store with tap selections, growler fills, a cheese & meat counter & bottles to go.",
+    "phone": "(646) 422-7103",
+    "websiteUri": "https://www.abcbeer.co/",
+    "googleMapsUri": "https://maps.google.com/?cid=3594854300255739023&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 0,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 0,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 0,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 0,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 0,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 9,
+        "openMinute": 0,
+        "closeHour": 2,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "KGB Bar": {
+    "placeId": "ChIJMbtTs4RZwokRB3Bd_3yH7AA",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.3,
+    "userRatingCount": 639,
+    "priceRange": "$10–40",
+    "editorialSummary": "Readings & publication parties are regular events at this tiny Soviet-themed watering hole.",
+    "phone": "(347) 441-4481",
+    "websiteUri": "http://www.kgbbar.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=66577065433722887&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 19,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 19,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 19,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 19,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 19,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 19,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 19,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "McSorley's Old Ale House": {
+    "placeId": "ChIJGdCSd5tZwokRfYvMyzO7qtE",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.7,
+    "userRatingCount": 8816,
+    "priceRange": "$10–20",
+    "editorialSummary": "Old-time bar with Irish bartenders, 2 kinds of ale (light or dark) & sawdust on the floor.",
+    "websiteUri": "http://mcsorleysoldalehouse.nyc/",
+    "googleMapsUri": "https://maps.google.com/?cid=15108093731104656253&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 12,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 1,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 11,
+        "openMinute": 0,
+        "closeHour": 1,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  },
+  "Beauty Bar": {
+    "placeId": "ChIJbU-JV55ZwokRRgid16uv0jA",
+    "fetchedAt": "2026-07-07T03:10:41.768Z",
+    "rating": 4.3,
+    "userRatingCount": 810,
+    "priceRange": "$10–20",
+    "editorialSummary": "Nightclub chain featuring martinis, DJs & dancing in a retro-salon setting. Most offer manicures.",
+    "phone": "(212) 539-1389",
+    "websiteUri": "http://thebeautybar.com/",
+    "googleMapsUri": "https://maps.google.com/?cid=3518067411521439814&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
+    "businessStatus": "OPERATIONAL",
+    "hours": [
+      {
+        "day": 0,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 2,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 3,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 4,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 5,
+        "openHour": 17,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      },
+      {
+        "day": 6,
+        "openHour": 16,
+        "openMinute": 0,
+        "closeHour": 4,
+        "closeMinute": 0,
+        "closeDayOffset": 1
+      }
+    ]
+  }
+}
