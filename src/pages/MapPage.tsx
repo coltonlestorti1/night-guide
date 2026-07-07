@@ -24,10 +24,12 @@ import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
+import VibeFinder from "@/components/VibeFinder";
 import { venueMatches } from "@/lib/searchMatch";
 import { getEnrichment, computeOpenState } from "@/data/enrichment";
 
-const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" }[] = [
+const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" }[] = [
+  { label: "Find the move", value: "vibe-finder" },
   { label: "All", value: "all" },
   { label: "Bars", value: "bar" },
   { label: "Clubs", value: "club" },
@@ -129,7 +131,7 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
 };
 
 /* ── Filter chips ──────────────────────────── */
-const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean }) => {
+const FilterChips = ({ count, hasFilters, onVibeFinder }: { count: number; hasFilters: boolean; onVibeFinder: () => void }) => {
   const { categories, crowdLevel, musicVibe, set, reset } = useFilterStore();
   const [musicOpen, setMusicOpen] = useState(false);
 
@@ -137,10 +139,12 @@ const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean
     if (v === "all") return categories.length === 0 && !crowdLevel && !musicVibe;
     if (v === "hot") return crowdLevel === "high";
     if (v === "music") return !!musicVibe;
+    if (v === "vibe-finder") return false;
     return categories.includes(v as VenueCategory);
   };
 
   const handle = (v: string) => {
+    if (v === "vibe-finder") return onVibeFinder();
     if (v === "all") return reset();
     if (v === "hot") return set({ crowdLevel: crowdLevel === "high" ? undefined : "high" });
     if (v === "music") return setMusicOpen((o) => !o);
@@ -168,6 +172,7 @@ const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean
               >
                 {f.value === "hot" && "🔥 "}
                 {f.value === "music" && "🎵 "}
+                {f.value === "vibe-finder" && "✨ "}
                 {f.label}
                 {f.value === "music" && musicVibe ? `: ${musicVibe}` : ""}
               </button>
@@ -215,6 +220,7 @@ const MapPage = () => {
   const [bbox, setBbox] = useState<BBox | undefined>(undefined);
   const [selected, setSelected] = useState<Venue | null>(null);
   const [view, setView] = useState<"map" | "list">("map");
+  const [vibeOpen, setVibeOpen] = useState(false);
 
   const hasFilters =
     filters.categories.length > 0 || !!filters.crowdLevel || !!filters.musicVibe || !!filters.search;
@@ -254,7 +260,14 @@ const MapPage = () => {
       <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — East Village</h1>
 
       <TopHeader venues={venues} onPick={(v) => setSelected(v)} />
-      <FilterChips count={venues.length} hasFilters={hasFilters} />
+      <FilterChips count={venues.length} hasFilters={hasFilters} onVibeFinder={() => setVibeOpen(true)} />
+      <VibeFinder
+        open={vibeOpen}
+        onOpenChange={setVibeOpen}
+        venues={venues}
+        activity={activityData}
+        onPick={(v) => setSelected(v)}
+      />
 
       {/* Map / List toggle — sits clearly above the bottom navigation */}
       <div
