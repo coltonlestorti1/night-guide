@@ -1,6 +1,7 @@
 import { DataSource } from "./DataSource";
 import { Venue, VenueQuery } from "@/data/types";
 import { EAST_VILLAGE_VENUES } from "@/data/venues";
+import { venueMatches } from "@/lib/searchMatch";
 
 export function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
   return venues.filter((v) => {
@@ -21,11 +22,7 @@ export function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
     if (q.musicVibe && v.music_type && !v.music_type.toLowerCase().includes(q.musicVibe.toLowerCase())) return false;
     if (q.priceMin != null && (v.avg_price_level ?? 0) < q.priceMin) return false;
     if (q.priceMax != null && (v.avg_price_level ?? 5) > q.priceMax) return false;
-    if (q.search) {
-      const s = q.search.toLowerCase();
-      const hay = `${v.title} ${v.neighborhood ?? ""} ${v.music_type ?? ""} ${v.category}`.toLowerCase();
-      if (!hay.includes(s)) return false;
-    }
+    if (q.search && !venueMatches(v, q.search)) return false;
     return true;
   });
 }
