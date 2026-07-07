@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useVenues } from "@/hooks/useVenues";
 import BarCard from "@/components/BarCard";
+import HappyHourRail from "@/components/HappyHourRail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles } from "lucide-react";
 
@@ -19,11 +20,15 @@ const Discover = () => {
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
         </div>
       ) : data && data.length ? (
-        <div className="space-y-3">
-          {data.map((v) => (
-            <BarCard key={v.id} venue={v} onClick={() => navigate(`/venue/${v.id}`)} />
-          ))}
-        </div>
+        <>
+          <HappyHourRail venues={data} onPick={(v) => navigate(`/venue/${v.id}`)} />
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">All spots</h2>
+          <div className="space-y-3">
+            {data.map((v) => (
+              <BarCard key={v.id} venue={v} onClick={() => navigate(`/venue/${v.id}`)} />
+            ))}
+          </div>
+        </>
       ) : (
         <div className="text-center glass rounded-2xl p-8">
           <Sparkles className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
