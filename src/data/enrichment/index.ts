@@ -67,6 +67,17 @@ export function describeWeeklyPeriods(ps: WeeklyPeriod[]): string[] {
   );
 }
 
+/** True when `now` falls inside any weekly period (same math as computeOpenState). */
+export function isWithinPeriods(periods: WeeklyPeriod[] | undefined, now: Date = new Date()): boolean {
+  if (!periods || periods.length === 0) return false;
+  const nowMin = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+  return periods.some((p) => {
+    const start = p.day * 1440 + p.openHour * 60 + p.openMinute;
+    const end = (p.day + p.closeDayOffset) * 1440 + p.closeHour * 60 + p.closeMinute;
+    return (start <= nowMin && nowMin < end) || (end > WEEK_MIN && nowMin < end - WEEK_MIN);
+  });
+}
+
 export type OpenState = { open: boolean; closesAt?: string; opensAt?: string };
 
 export function computeOpenState(hours: WeeklyPeriod[] | undefined, now: Date = new Date()): OpenState | null {
