@@ -205,7 +205,7 @@
     "userRatingCount": 528,
     "price": null,
     "score": 11.435062474642011,
-    "approved": true
+    "approved": false
   },
   {
     "placeId": "ChIJe-lFm_VZwokRpZ2tEFhS6f4",
@@ -374,7 +374,7 @@
     "userRatingCount": 287,
     "price": "$",
     "score": 9.83152758693597,
-    "approved": true
+    "approved": false
   },
   {
     "placeId": "ChIJ7QfWz5VZwokRMwX7VtNhwvw",
@@ -387,7 +387,7 @@
     "userRatingCount": 247,
     "price": null,
     "score": 9.09224842238673,
-    "approved": true
+    "approved": false
   },
   {
     "placeId": "ChIJyVOaMJtZwokRdMND4_f_L-U",
@@ -400,7 +400,7 @@
     "userRatingCount": 451,
     "price": null,
     "score": 8.758782588197269,
-    "approved": true
+    "approved": false
   },
   {
     "placeId": "ChIJd5X6lqdZwokRmTT4LVSpAl4",
