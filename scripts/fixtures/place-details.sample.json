@@ -1,0 +1,35 @@
+{
+  "id": "ChIJTESTGraftonPlaceId",
+  "displayName": { "text": "The Grafton", "languageCode": "en" },
+  "rating": 4.5,
+  "userRatingCount": 823,
+  "businessStatus": "OPERATIONAL",
+  "nationalPhoneNumber": "(212) 228-8580",
+  "websiteUri": "https://thegraftonnyc.com/",
+  "googleMapsUri": "https://maps.google.com/?cid=123",
+  "editorialSummary": { "text": "This laid-back Irish bar offers pub grub, pints & plenty of TVs for catching the game.", "languageCode": "en" },
+  "priceRange": { "startPrice": { "currencyCode": "USD", "units": "10" }, "endPrice": { "currencyCode": "USD", "units": "40" } },
+  "regularOpeningHours": {
+    "periods": [
+      { "open": { "day": 1, "hour": 12, "minute": 0 }, "close": { "day": 2, "hour": 2, "minute": 0 } },
+      { "open": { "day": 2, "hour": 12, "minute": 0 }, "close": { "day": 3, "hour": 2, "minute": 0 } },
+      { "open": { "day": 3, "hour": 12, "minute": 0 }, "close": { "day": 4, "hour": 2, "minute": 0 } },
+      { "open": { "day": 4, "hour": 12, "minute": 0 }, "close": { "day": 5, "hour": 2, "minute": 0 } },
+      { "open": { "day": 5, "hour": 12, "minute": 0 }, "close": { "day": 6, "hour": 3, "minute": 0 } },
+      { "open": { "day": 6, "hour": 11, "minute": 0 }, "close": { "day": 0, "hour": 3, "minute": 0 } },
+      { "open": { "day": 0, "hour": 11, "minute": 0 }, "close": { "day": 1, "hour": 1, "minute": 0 } }
+    ]
+  },
+  "regularSecondaryOpeningHours": [
+    {
+      "secondaryHoursType": "HAPPY_HOUR",
+      "periods": [
+        { "open": { "day": 1, "hour": 16, "minute": 0 }, "close": { "day": 1, "hour": 19, "minute": 0 } },
+        { "open": { "day": 2, "hour": 16, "minute": 0 }, "close": { "day": 2, "hour": 19, "minute": 0 } },
+        { "open": { "day": 3, "hour": 16, "minute": 0 }, "close": { "day": 3, "hour": 19, "minute": 0 } },
+        { "open": { "day": 4, "hour": 16, "minute": 0 }, "close": { "day": 4, "hour": 19, "minute": 0 } },
+        { "open": { "day": 5, "hour": 16, "minute": 0 }, "close": { "day": 5, "hour": 19, "minute": 0 } }
+      ]
+    }
+  ]
+}
