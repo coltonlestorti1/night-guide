@@ -1,0 +1,153 @@
+/**
+ * "Find the move" — three quick taps, top-3 picks from real data.
+ * Free concierge v1: scoring lives in src/lib/vibeScore.ts (no LLM, no cost);
+ * a Claude-backed scorer can replace it later without touching this UI.
+ */
+import { useMemo, useState } from "react";
+import { Venue } from "@/data/types";
+import { scoreVenues, VibePrefs } from "@/lib/vibeScore";
+import BarCard from "@/components/BarCard";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+type Activity = Record<string, { count: number; vibe?: string }> | undefined;
+
+const VIBES = [
+  { value: "chill", label: "😌 Chill" },
+  { value: "lively", label: "📈 Lively" },
+  { value: "packed", label: "🔥 Packed" },
+] as const;
+const DRINKS = [
+  { value: "beer", label: "🍺 Cheap beers" },
+  { value: "cocktails", label: "🍸 Cocktails" },
+  { value: undefined, label: "🤷 Whatever" },
+] as const;
+const WHENS = [
+  { value: "now", label: "⚡ Right now" },
+  { value: "later", label: "🌙 Later tonight" },
+] as const;
+
+const Chip = ({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    aria-pressed={active}
+    className={cn(
+      "text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
+      active ? "bg-primary text-primary-foreground border-transparent shadow-md shadow-primary/30" : "bg-secondary border-border hover:bg-secondary/70",
+    )}
+  >
+    {children}
+  </button>
+);
+
+export default function VibeFinder({
+  open,
+  onOpenChange,
+  venues,
+  activity,
+  onPick,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  venues: Venue[];
+  activity: Activity;
+  onPick: (v: Venue) => void;
+}) {
+  const [vibe, setVibe] = useState<VibePrefs["vibe"]>(undefined);
+  const [drinks, setDrinks] = useState<VibePrefs["drinks"]>(undefined);
+  const [when, setWhen] = useState<VibePrefs["when"]>("now");
+  const [page, setPage] = useState<number | null>(null); // null = answers screen
+
+  const ranked = useMemo(
+    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when }, activity)),
+    [page, venues, vibe, drinks, when, activity],
+  );
+  const results = page === null ? [] : ranked.slice(page * 3, page * 3 + 3);
+
+  const reset = () => setPage(null);
+
+  return (
+    <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+      <DrawerContent className="bg-card border-border">
+        <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full">
+          <h2 className="text-lg font-bold mb-1">✨ Find the move</h2>
+
+          {page === null ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-4">Three taps. We'll pull the spots that actually fit.</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">What's the vibe?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {VIBES.map((o) => (
+                      <Chip key={o.value} active={vibe === o.value} onClick={() => setVibe(vibe === o.value ? undefined : o.value)}>
+                        {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Drinks?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {DRINKS.map((o) => (
+                      <Chip key={o.label} active={drinks === o.value} onClick={() => setDrinks(o.value)}>
+                        {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">When?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {WHENS.map((o) => (
+                      <Chip key={o.value} active={when === o.value} onClick={() => setWhen(o.value)}>
+                        {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <Button className="w-full h-11 rounded-xl mt-5" onClick={() => setPage(0)}>
+                Show me the move
+              </Button>
+            </>
+          ) : results.length > 0 ? (
+            <>
+              <div className="space-y-2.5 mt-2">
+                {results.map(({ venue, reasons }) => (
+                  <div key={venue.id}>
+                    <BarCard venue={venue} onClick={() => { onPick(venue); onOpenChange(false); reset(); }} />
+                    {reasons.length > 0 && (
+                      <p className="text-[11px] text-primary/90 mt-1 px-1">{reasons.join(" · ")}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <Button variant="secondary" className="h-11 rounded-xl" onClick={reset}>
+                  Change answers
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="h-11 rounded-xl"
+                  onClick={() => setPage(((page + 1) * 3 >= ranked.length ? 0 : page + 1))}
+                >
+                  Not these — 3 more
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="font-medium">Nothing open matches right now.</p>
+              <p className="text-sm text-muted-foreground mt-1">Try "Later tonight" or loosen a pick.</p>
+              <Button variant="secondary" className="mt-4 rounded-xl" onClick={reset}>
+                Change answers
+              </Button>
+            </div>
+          )}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}

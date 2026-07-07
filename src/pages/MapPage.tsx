@@ -23,8 +23,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
+import VenueQuickInfo from "@/components/VenueQuickInfo";
+import VibeFinder from "@/components/VibeFinder";
+import { venueMatches } from "@/lib/searchMatch";
+import { getEnrichment, computeOpenState } from "@/data/enrichment";
 
-const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" }[] = [
+const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" }[] = [
+  { label: "Find the move", value: "vibe-finder" },
   { label: "All", value: "all" },
   { label: "Bars", value: "bar" },
   { label: "Clubs", value: "club" },
@@ -38,8 +43,19 @@ const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "
 const MUSIC_VIBES = ["Rock", "Pop", "Jazz", "Indie", "Country", "Latin", "Mixed"];
 
 /* ── Header ────────────────────────────────── */
-const TopHeader = () => {
+const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => void }) => {
   const { search, set } = useFilterStore();
+  const [focused, setFocused] = useState(false);
+  const query = search ?? "";
+  const results = focused && query.trim().length >= 2
+    ? venues.filter((v) => venueMatches(v, query)).slice(0, 6)
+    : [];
+
+  const pick = (v: Venue) => {
+    setFocused(false);
+    onPick(v);
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 z-40 px-3 pt-3 pb-2 bg-gradient-to-b from-background via-background/95 to-background/0">
       <div className="mx-auto max-w-xl">
@@ -54,20 +70,68 @@ const TopHeader = () => {
         <div className="relative mt-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            value={search ?? ""}
+            value={query}
             onChange={(e) => set({ search: e.target.value || undefined })}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && results.length > 0) pick(results[0]);
+              if (e.key === "Escape") setFocused(false);
+            }}
             placeholder="Search bars, clubs, lounges…"
             className="pl-9 h-10 rounded-xl bg-card/80 backdrop-blur-xl border-border/60"
             aria-label="Search venues"
+            role="combobox"
+            aria-expanded={results.length > 0}
           />
+          {results.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 rounded-xl glass shadow-2xl overflow-hidden z-50 animate-fade-in" role="listbox">
+              {results.map((v) => (
+                <button
+                  key={v.id}
+                  role="option"
+                  aria-selected={false}
+                  onMouseDown={(e) => { e.preventDefault(); pick(v); }}
+                  className="w-full text-left px-3 py-2.5 hover:bg-accent/15 flex items-center gap-2 border-b border-border/40 last:border-0"
+                >
+                  <span className="font-medium text-sm truncate">{v.title}</span>
+                  <span className={cn(
+                    "shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide text-white",
+                    v.category === "bar" ? "bg-[hsl(var(--venue-bar))]"
+                    : v.category === "club" ? "bg-[hsl(var(--venue-club))]"
+                    : "bg-[hsl(var(--venue-lounge))]"
+                  )}>{v.category}</span>
+                  <span className="ml-auto shrink-0"><QuickInfoInline venue={v} /></span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
+/** One-line open/rating summary for dropdown rows; nothing without data. */
+const QuickInfoInline = ({ venue }: { venue: Venue }) => {
+  const e = getEnrichment(venue.title);
+  if (!e) return null;
+  const state = computeOpenState(e.hours);
+  return (
+    <span className="text-[11px] text-muted-foreground">
+      {state && (
+        <span className={state.open ? "text-emerald-400" : "text-rose-400"}>
+          {state.open ? "Open" : "Closed"}
+        </span>
+      )}
+      {state && e.rating != null && " · "}
+      {e.rating != null && `★ ${e.rating.toFixed(1)}`}
+    </span>
+  );
+};
+
 /* ── Filter chips ──────────────────────────── */
-const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean }) => {
+const FilterChips = ({ count, hasFilters, onVibeFinder }: { count: number; hasFilters: boolean; onVibeFinder: () => void }) => {
   const { categories, crowdLevel, musicVibe, set, reset } = useFilterStore();
   const [musicOpen, setMusicOpen] = useState(false);
 
@@ -75,10 +139,12 @@ const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean
     if (v === "all") return categories.length === 0 && !crowdLevel && !musicVibe;
     if (v === "hot") return crowdLevel === "high";
     if (v === "music") return !!musicVibe;
+    if (v === "vibe-finder") return false;
     return categories.includes(v as VenueCategory);
   };
 
   const handle = (v: string) => {
+    if (v === "vibe-finder") return onVibeFinder();
     if (v === "all") return reset();
     if (v === "hot") return set({ crowdLevel: crowdLevel === "high" ? undefined : "high" });
     if (v === "music") return setMusicOpen((o) => !o);
@@ -106,6 +172,7 @@ const FilterChips = ({ count, hasFilters }: { count: number; hasFilters: boolean
               >
                 {f.value === "hot" && "🔥 "}
                 {f.value === "music" && "🎵 "}
+                {f.value === "vibe-finder" && "✨ "}
                 {f.label}
                 {f.value === "music" && musicVibe ? `: ${musicVibe}` : ""}
               </button>
@@ -153,6 +220,7 @@ const MapPage = () => {
   const [bbox, setBbox] = useState<BBox | undefined>(undefined);
   const [selected, setSelected] = useState<Venue | null>(null);
   const [view, setView] = useState<"map" | "list">("map");
+  const [vibeOpen, setVibeOpen] = useState(false);
 
   const hasFilters =
     filters.categories.length > 0 || !!filters.crowdLevel || !!filters.musicVibe || !!filters.search;
@@ -168,6 +236,8 @@ const MapPage = () => {
     ...baseQuery,
     bbox: view === "map" ? bbox : undefined,
   });
+  // Find the move scores the full venue set — never the search/filter subset.
+  const { data: allVenues } = useVenues({});
 
   const venues = data ?? [];
   const selectedSaved = selected ? savedIds.includes(selected.id) : false;
@@ -191,8 +261,15 @@ const MapPage = () => {
     <section aria-labelledby="map-heading" className="relative">
       <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — East Village</h1>
 
-      <TopHeader />
-      <FilterChips count={venues.length} hasFilters={hasFilters} />
+      <TopHeader venues={venues} onPick={(v) => setSelected(v)} />
+      <FilterChips count={venues.length} hasFilters={hasFilters} onVibeFinder={() => setVibeOpen(true)} />
+      <VibeFinder
+        open={vibeOpen}
+        onOpenChange={setVibeOpen}
+        venues={allVenues ?? venues}
+        activity={activityData}
+        onPick={(v) => setSelected(v)}
+      />
 
       {/* Map / List toggle — sits clearly above the bottom navigation */}
       <div
@@ -330,6 +407,8 @@ const MapPage = () => {
                   <Bookmark className={cn("h-5 w-5", selectedSaved ? "fill-primary text-primary" : "text-foreground")} />
                 </button>
               </div>
+
+              <VenueQuickInfo venue={selected} />
 
               {/* Stats */}
               <div className="mt-3">

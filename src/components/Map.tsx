@@ -184,6 +184,20 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     if (map.current?.loaded()) addMarkers();
   }, [addMarkers]);
 
+  // Fly to the selected venue (e.g. picked from the search dropdown) so the
+  // pin is on screen when its drawer opens.
+  useEffect(() => {
+    if (!map.current || !selectedId) return;
+    const v = venues.find((x) => x.id === selectedId);
+    if (!v) return;
+    map.current.flyTo({
+      center: [v.longitude, v.latitude],
+      zoom: Math.max(map.current.getZoom(), 15),
+      duration: 900,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   const handleLocateMe = useCallback(() => {
     if (!map.current) return;
     if ("geolocation" in navigator) {
