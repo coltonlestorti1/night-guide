@@ -6,7 +6,7 @@
  */
 import { Venue } from "@/data/types";
 import { getEnrichment, computeOpenState, isWithinPeriods, formatTime } from "@/data/enrichment";
-import { normalize } from "@/lib/searchMatch";
+import { isCocktailSpot } from "@/lib/venueTraits";
 
 export type VibePrefs = {
   vibe?: "chill" | "lively" | "packed";
@@ -74,8 +74,7 @@ export function scoreVenues(
     } else if (prefs.drinks === "cocktails") {
       if (venue.category === "lounge" || venue.category === "club") score += 1;
       if ((venue.avg_price_level ?? 0) >= 3) score += 0.5;
-      const text = normalize(`${venue.title} ${venue.description ?? ""}`);
-      if (text.includes("cocktail") || text.includes("speakeasy")) {
+      if (isCocktailSpot(venue)) {
         score += 1;
         reasons.push("Cocktail spot");
       }
@@ -84,7 +83,7 @@ export function scoreVenues(
     if (e?.happyHour && isWithinPeriods(e.happyHour, now)) {
       score += 1.5;
       const ends = e.happyHour.find((p) => isWithinPeriods([p], now));
-      reasons.push(ends ? `Happy hour til ${formatTime(ends.closeHour, ends.closeMinute)}` : "Happy hour now");
+      reasons.push(ends ? `🥂 Happy hour til ${formatTime(ends.closeHour, ends.closeMinute)}` : "Happy hour now");
     }
 
     scored.push({ venue, score, reasons: reasons.slice(0, 3) });

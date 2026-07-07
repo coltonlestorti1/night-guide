@@ -4,7 +4,7 @@
  * no enrichment exists — the drawer stays clean for data-less venues.
  */
 import { Venue } from "@/data/types";
-import { getEnrichment, computeOpenState, describeWeeklyPeriods } from "@/data/enrichment";
+import { getEnrichment, computeOpenState, describeWeeklyPeriods, getHappyHourState } from "@/data/enrichment";
 import { cn } from "@/lib/utils";
 
 export default function VenueQuickInfo({ venue }: { venue: Venue }) {
@@ -36,9 +36,14 @@ export default function VenueQuickInfo({ venue }: { venue: Venue }) {
           ))}
         </p>
       )}
-      {e.happyHour && (
-        <p className="text-xs text-primary">🍸 Happy hour {describeWeeklyPeriods(e.happyHour).join(" · ")}</p>
-      )}
+      {e.happyHour && (() => {
+        const hh = getHappyHourState(e.happyHour);
+        if (hh.status === "active")
+          return <p className="text-xs text-amber-400 font-medium">🥂 Happy hour now · til {hh.endsAt}</p>;
+        if (hh.status === "upcoming-today")
+          return <p className="text-xs text-primary">🥂 Happy hour starts {hh.startsAt}</p>;
+        return <p className="text-xs text-primary">🥂 Happy hour {describeWeeklyPeriods(e.happyHour).join(" · ")}</p>;
+      })()}
     </div>
   );
 }

@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { Venue } from "@/data/types";
-import { getEnrichment, computeOpenState, describeWeeklyPeriods } from "@/data/enrichment";
+import { getEnrichment, computeOpenState, describeWeeklyPeriods, getHappyHourState } from "@/data/enrichment";
 import { Star, Clock, DollarSign, Martini, Phone, Globe, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,13 +42,25 @@ export default function VenueInfoCard({ venue }: { venue: Venue }) {
         </div>
       )}
 
-      {e.happyHour && (
-        <div className="flex items-start gap-2 text-sm">
-          <Martini className="h-4 w-4 text-primary mt-0.5" />
-          <span><span className="font-medium text-primary">Happy hour</span>{" "}
-            <span className="text-muted-foreground">{describeWeeklyPeriods(e.happyHour).join(" · ")}</span></span>
-        </div>
-      )}
+      {e.happyHour && (() => {
+        const hh = getHappyHourState(e.happyHour);
+        return (
+          <div className="flex items-start gap-2 text-sm">
+            <Martini className={cn("h-4 w-4 mt-0.5", hh.status === "active" ? "text-amber-400" : "text-primary")} />
+            <span>
+              {hh.status === "active" ? (
+                <span className="font-medium text-amber-400">Happy hour now · til {hh.endsAt}</span>
+              ) : (
+                <span className="font-medium text-primary">Happy hour</span>
+              )}{" "}
+              <span className="text-muted-foreground">
+                {describeWeeklyPeriods(e.happyHour).join(" · ")}
+                {hh.status === "upcoming-today" && ` · starts ${hh.startsAt}`}
+              </span>
+            </span>
+          </div>
+        );
+      })()}
 
       {e.priceRange && (
         <div className="flex items-center gap-2 text-sm">

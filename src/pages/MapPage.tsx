@@ -26,11 +26,13 @@ import CheckInCard from "@/components/CheckInCard";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
 import VibeFinder from "@/components/VibeFinder";
 import { venueMatches } from "@/lib/searchMatch";
-import { getEnrichment, computeOpenState } from "@/data/enrichment";
+import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
+import { useMinuteTick } from "@/hooks/useMinuteTick";
 
-const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" }[] = [
+const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour" }[] = [
   { label: "Find the move", value: "vibe-finder" },
   { label: "All", value: "all" },
+  { label: "Happy hour", value: "happy-hour" },
   { label: "Bars", value: "bar" },
   { label: "Clubs", value: "club" },
   { label: "Lounges", value: "lounge" },
@@ -131,7 +133,7 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
 };
 
 /* ── Filter chips ──────────────────────────── */
-const FilterChips = ({ count, hasFilters, onVibeFinder }: { count: number; hasFilters: boolean; onVibeFinder: () => void }) => {
+const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour }: { count: number; hasFilters: boolean; onVibeFinder: () => void; hhActive: boolean; onHappyHour: () => void }) => {
   const { categories, crowdLevel, musicVibe, set, reset } = useFilterStore();
   const [musicOpen, setMusicOpen] = useState(false);
 
@@ -140,11 +142,13 @@ const FilterChips = ({ count, hasFilters, onVibeFinder }: { count: number; hasFi
     if (v === "hot") return crowdLevel === "high";
     if (v === "music") return !!musicVibe;
     if (v === "vibe-finder") return false;
+    if (v === "happy-hour") return hhActive;
     return categories.includes(v as VenueCategory);
   };
 
   const handle = (v: string) => {
     if (v === "vibe-finder") return onVibeFinder();
+    if (v === "happy-hour") return onHappyHour();
     if (v === "all") return reset();
     if (v === "hot") return set({ crowdLevel: crowdLevel === "high" ? undefined : "high" });
     if (v === "music") return setMusicOpen((o) => !o);
@@ -173,6 +177,7 @@ const FilterChips = ({ count, hasFilters, onVibeFinder }: { count: number; hasFi
                 {f.value === "hot" && "🔥 "}
                 {f.value === "music" && "🎵 "}
                 {f.value === "vibe-finder" && "✨ "}
+                {f.value === "happy-hour" && "🥂 "}
                 {f.label}
                 {f.value === "music" && musicVibe ? `: ${musicVibe}` : ""}
               </button>
@@ -221,6 +226,7 @@ const MapPage = () => {
   const [selected, setSelected] = useState<Venue | null>(null);
   const [view, setView] = useState<"map" | "list">("map");
   const [vibeOpen, setVibeOpen] = useState(false);
+  const [hhFilter, setHhFilter] = useState(false);
 
   const hasFilters =
     filters.categories.length > 0 || !!filters.crowdLevel || !!filters.musicVibe || !!filters.search;
@@ -242,6 +248,20 @@ const MapPage = () => {
   const venues = data ?? [];
   const selectedSaved = selected ? savedIds.includes(selected.id) : false;
 
+  const tick = useMinuteTick();
+  // Venue ids whose happy hour is running right now; refreshed each minute.
+  const hhActiveIds = useMemo(() => {
+    void tick;
+    const ids = new Set<string>();
+    for (const v of venues) {
+      if (getHappyHourState(getEnrichment(v.title)?.happyHour).status === "active") ids.add(v.id);
+    }
+    return ids;
+  }, [venues, tick]);
+
+  // 🥂 chip narrows the displayed venues to active happy hours only.
+  const displayVenues = hhFilter ? venues.filter((v) => hhActiveIds.has(v.id)) : venues;
+
   const { data: activityData } = useVenueActivity();
   // Memoized: a new object reference here rebuilds every map marker via
   // addMarkers' dependency array — only do that when activity actually changes.
@@ -262,7 +282,13 @@ const MapPage = () => {
       <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — East Village</h1>
 
       <TopHeader venues={venues} onPick={(v) => setSelected(v)} />
-      <FilterChips count={venues.length} hasFilters={hasFilters} onVibeFinder={() => setVibeOpen(true)} />
+      <FilterChips
+        count={displayVenues.length}
+        hasFilters={hasFilters}
+        onVibeFinder={() => setVibeOpen(true)}
+        hhActive={hhFilter}
+        onHappyHour={() => setHhFilter((f) => !f)}
+      />
       <VibeFinder
         open={vibeOpen}
         onOpenChange={setVibeOpen}
@@ -301,8 +327,9 @@ const MapPage = () => {
       {view === "map" ? (
         <div className="w-full h-[calc(100vh-5rem)]">
           <Map
-            venues={venues}
+            venues={displayVenues}
             activity={activityCounts}
+            happyHour={hhActiveIds}
             selectedId={selected?.id}
             onSelect={(id) => {
               const v = venues.find((x) => x.id === id) || null;
@@ -323,11 +350,20 @@ const MapPage = () => {
               <p className="text-sm text-muted-foreground">Unable to load venues.</p>
               <button className="underline mt-2 text-primary" onClick={() => refetch()}>Retry</button>
             </div>
-          ) : venues.length > 0 ? (
+          ) : displayVenues.length > 0 ? (
             <div className="space-y-3 animate-fade-in">
-              {venues.map((v) => (
+              {displayVenues.map((v) => (
                 <BarCard key={v.id} venue={v} onClick={() => setSelected(v)} />
               ))}
+            </div>
+          ) : hhFilter ? (
+            <div className="text-center glass rounded-2xl p-8 animate-fade-in">
+              <span className="text-2xl">🥂</span>
+              <p className="font-medium mt-2">No happy hours running</p>
+              <p className="text-sm text-muted-foreground mt-1">Most kick off around 4 PM.</p>
+              <Button variant="secondary" size="sm" className="mt-4" onClick={() => navigate("/discover")}>
+                See the week's happy hours →
+              </Button>
             </div>
           ) : (
             <div className="text-center glass rounded-2xl p-8 animate-fade-in">
