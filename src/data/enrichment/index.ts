@@ -78,6 +78,36 @@ export function isWithinPeriods(periods: WeeklyPeriod[] | undefined, now: Date =
   });
 }
 
+export type HappyHourState =
+  | { status: "active"; endsAt: string }
+  | { status: "upcoming-today"; startsAt: string }
+  | { status: "none" };
+
+/** Live happy-hour state: running now, later today, or not today. */
+export function getHappyHourState(happyHour: WeeklyPeriod[] | undefined, now: Date = new Date()): HappyHourState {
+  if (!happyHour || happyHour.length === 0) return { status: "none" };
+  const nowMin = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+  for (const p of happyHour) {
+    const start = p.day * 1440 + p.openHour * 60 + p.openMinute;
+    const end = (p.day + p.closeDayOffset) * 1440 + p.closeHour * 60 + p.closeMinute;
+    if ((start <= nowMin && nowMin < end) || (end > WEEK_MIN && nowMin < end - WEEK_MIN)) {
+      return { status: "active", endsAt: formatTime(p.closeHour, p.closeMinute) };
+    }
+  }
+  const upcoming = happyHour
+    .filter((p) => p.day === now.getDay() && p.day * 1440 + p.openHour * 60 + p.openMinute > nowMin)
+    .sort((a, b) => a.openHour * 60 + a.openMinute - (b.openHour * 60 + b.openMinute))[0];
+  if (upcoming) return { status: "upcoming-today", startsAt: formatTime(upcoming.openHour, upcoming.openMinute) };
+  return { status: "none" };
+}
+
+/** All happy-hour periods on a given weekday (0 = Sunday), sorted by start. */
+export function getHappyHourPeriodsForDay(happyHour: WeeklyPeriod[] | undefined, day: number): WeeklyPeriod[] {
+  return (happyHour ?? [])
+    .filter((p) => p.day === day)
+    .sort((a, b) => a.openHour * 60 + a.openMinute - (b.openHour * 60 + b.openMinute));
+}
+
 export type OpenState = { open: boolean; closesAt?: string; opensAt?: string };
 
 export function computeOpenState(hours: WeeklyPeriod[] | undefined, now: Date = new Date()): OpenState | null {
