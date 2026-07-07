@@ -83,7 +83,7 @@ export function scoreVenues(
     if (e?.happyHour && isWithinPeriods(e.happyHour, now)) {
       score += 1.5;
       const ends = e.happyHour.find((p) => isWithinPeriods([p], now));
-      reasons.push(ends ? `Happy hour til ${formatTime(ends.closeHour, ends.closeMinute)}` : "Happy hour now");
+      reasons.push(ends ? `🥂 Happy hour til ${formatTime(ends.closeHour, ends.closeMinute)}` : "Happy hour now");
     }
 
     scored.push({ venue, score, reasons: reasons.slice(0, 3) });
