@@ -26,7 +26,8 @@ import CheckInCard from "@/components/CheckInCard";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
 import VibeFinder from "@/components/VibeFinder";
 import { venueMatches } from "@/lib/searchMatch";
-import { getEnrichment, computeOpenState } from "@/data/enrichment";
+import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
+import { useMinuteTick } from "@/hooks/useMinuteTick";
 
 const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" }[] = [
   { label: "Find the move", value: "vibe-finder" },
@@ -242,6 +243,17 @@ const MapPage = () => {
   const venues = data ?? [];
   const selectedSaved = selected ? savedIds.includes(selected.id) : false;
 
+  const tick = useMinuteTick();
+  // Venue ids whose happy hour is running right now; refreshed each minute.
+  const hhActiveIds = useMemo(() => {
+    void tick;
+    const ids = new Set<string>();
+    for (const v of venues) {
+      if (getHappyHourState(getEnrichment(v.title)?.happyHour).status === "active") ids.add(v.id);
+    }
+    return ids;
+  }, [venues, tick]);
+
   const { data: activityData } = useVenueActivity();
   // Memoized: a new object reference here rebuilds every map marker via
   // addMarkers' dependency array — only do that when activity actually changes.
@@ -303,6 +315,7 @@ const MapPage = () => {
           <Map
             venues={venues}
             activity={activityCounts}
+            happyHour={hhActiveIds}
             selectedId={selected?.id}
             onSelect={(id) => {
               const v = venues.find((x) => x.id === id) || null;
