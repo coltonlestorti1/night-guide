@@ -7,6 +7,9 @@ import { ArrowLeft, Bookmark, Navigation as NavIcon, Flame, Star, MapPin } from 
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
+import VenueInfoCard from "@/components/VenueInfoCard";
+import PopularTimesChart from "@/components/PopularTimesChart";
+import { getEnrichment, getSpecials } from "@/data/enrichment";
 
 const VenueDetail = () => {
   const { id } = useParams();
@@ -89,12 +92,35 @@ const VenueDetail = () => {
             <VenueStatTiles venue={data} />
             <CheckInCard venueId={data.id} />
 
-            {data.description && (
+            {getEnrichment(data.title)?.popularTimes && (
+              <PopularTimesChart data={getEnrichment(data.title)!.popularTimes!} />
+            )}
+
+            {getSpecials(data.title).length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">About</h2>
-                <p className="text-sm leading-relaxed text-foreground/90">{data.description}</p>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">Specials</h2>
+                <ul className="space-y-2">
+                  {getSpecials(data.title).map((s) => (
+                    <li key={s.title} className="rounded-xl bg-secondary/60 p-3">
+                      <p className="text-sm font-medium">{s.title}</p>
+                      {s.description && <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
+
+            {(data.description || getEnrichment(data.title)?.editorialSummary) && (
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">About</h2>
+                <p className="text-sm leading-relaxed text-foreground/90">
+                  {data.description ?? getEnrichment(data.title)?.editorialSummary}
+                </p>
+                {!data.description && <p className="text-[10px] text-muted-foreground/70 mt-1">Description: Google</p>}
+              </div>
+            )}
+
+            <VenueInfoCard venue={data} />
           </div>
         </>
       ) : (
