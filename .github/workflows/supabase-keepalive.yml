@@ -1,0 +1,21 @@
+# Pings Supabase twice a week so the free-tier project never auto-pauses
+# (7-day idle limit). Hits the anonymous venue_activity RPC — public by
+# design, returns counts only. The publishable key below ships in every
+# client bundle already; it is not a secret.
+name: Supabase keep-alive
+on:
+  schedule:
+    - cron: "0 12 * * 1,4" # Mon + Thu, 12:00 UTC
+  workflow_dispatch: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping venue_activity RPC
+        run: |
+          KEY="sb_publishable_fwcWLqz7HiSCRQvUs78gzg_4ihnrLoz"
+          curl -sf -X POST \
+            "https://nqafzgryzjbtwpvzjagr.supabase.co/rest/v1/rpc/venue_activity" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" -d '{}' \
+            && echo "Supabase awake."
