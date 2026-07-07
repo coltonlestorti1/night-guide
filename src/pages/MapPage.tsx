@@ -236,6 +236,8 @@ const MapPage = () => {
     ...baseQuery,
     bbox: view === "map" ? bbox : undefined,
   });
+  // Find the move scores the full venue set — never the search/filter subset.
+  const { data: allVenues } = useVenues({});
 
   const venues = data ?? [];
   const selectedSaved = selected ? savedIds.includes(selected.id) : false;
@@ -264,7 +266,7 @@ const MapPage = () => {
       <VibeFinder
         open={vibeOpen}
         onOpenChange={setVibeOpen}
-        venues={venues}
+        venues={allVenues ?? venues}
         activity={activityData}
         onPick={(v) => setSelected(v)}
       />
