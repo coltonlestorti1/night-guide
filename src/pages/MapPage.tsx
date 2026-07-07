@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
+import VenueQuickInfo from "@/components/VenueQuickInfo";
 
 const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" }[] = [
   { label: "All", value: "all" },
@@ -330,6 +331,8 @@ const MapPage = () => {
                   <Bookmark className={cn("h-5 w-5", selectedSaved ? "fill-primary text-primary" : "text-foreground")} />
                 </button>
               </div>
+
+              <VenueQuickInfo venue={selected} />
 
               {/* Stats */}
               <div className="mt-3">
