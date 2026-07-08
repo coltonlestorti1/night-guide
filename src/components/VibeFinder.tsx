@@ -7,25 +7,26 @@ import { useMemo, useState } from "react";
 import { Venue } from "@/data/types";
 import { scoreVenues, VibePrefs } from "@/lib/vibeScore";
 import BarCard from "@/components/BarCard";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles } from "lucide-react";
 
 type Activity = Record<string, { count: number; vibe?: string }> | undefined;
 
 const VIBES = [
-  { value: "chill", label: "😌 Chill" },
-  { value: "lively", label: "📈 Lively" },
-  { value: "packed", label: "🔥 Packed" },
+  { value: "chill", label: "Chill", Icon: Sofa },
+  { value: "lively", label: "Lively", Icon: TrendingUp },
+  { value: "packed", label: "Packed", Icon: Flame },
 ] as const;
 const DRINKS = [
-  { value: "beer", label: "🍺 Cheap beers" },
-  { value: "cocktails", label: "🍸 Cocktails" },
-  { value: undefined, label: "🤷 Whatever" },
+  { value: "beer", label: "Cheap beers", Icon: Beer },
+  { value: "cocktails", label: "Cocktails", Icon: Martini },
+  { value: undefined, label: "Whatever", Icon: Shuffle },
 ] as const;
 const WHENS = [
-  { value: "now", label: "⚡ Right now" },
-  { value: "later", label: "🌙 Later tonight" },
+  { value: "now", label: "Right now", Icon: Zap },
+  { value: "later", label: "Later tonight", Icon: Moon },
 ] as const;
 
 const Chip = ({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) => (
@@ -33,8 +34,8 @@ const Chip = ({ active, children, onClick }: { active: boolean; children: React.
     onClick={onClick}
     aria-pressed={active}
     className={cn(
-      "text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
-      active ? "bg-primary text-primary-foreground border-transparent shadow-md shadow-primary/30" : "bg-secondary border-border hover:bg-secondary/70",
+      "inline-flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
+      active ? "bg-primary text-primary-foreground border-transparent shadow-glow" : "bg-secondary border-border hover:bg-secondary/70",
     )}
   >
     {children}
@@ -70,8 +71,11 @@ export default function VibeFinder({
   return (
     <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DrawerContent className="bg-card border-border">
+        <DrawerTitle className="sr-only">Find the move</DrawerTitle>
         <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full">
-          <h2 className="text-lg font-bold mb-1">✨ Find the move</h2>
+          <h2 className="text-lg font-display font-bold mb-1 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" /> Find the move
+          </h2>
 
           {page === null ? (
             <>
@@ -82,7 +86,7 @@ export default function VibeFinder({
                   <div className="flex gap-2 flex-wrap">
                     {VIBES.map((o) => (
                       <Chip key={o.value} active={vibe === o.value} onClick={() => setVibe(vibe === o.value ? undefined : o.value)}>
-                        {o.label}
+                        <o.Icon className="h-4 w-4" /> {o.label}
                       </Chip>
                     ))}
                   </div>
@@ -92,7 +96,7 @@ export default function VibeFinder({
                   <div className="flex gap-2 flex-wrap">
                     {DRINKS.map((o) => (
                       <Chip key={o.label} active={drinks === o.value} onClick={() => setDrinks(o.value)}>
-                        {o.label}
+                        <o.Icon className="h-4 w-4" /> {o.label}
                       </Chip>
                     ))}
                   </div>
@@ -102,7 +106,7 @@ export default function VibeFinder({
                   <div className="flex gap-2 flex-wrap">
                     {WHENS.map((o) => (
                       <Chip key={o.value} active={when === o.value} onClick={() => setWhen(o.value)}>
-                        {o.label}
+                        <o.Icon className="h-4 w-4" /> {o.label}
                       </Chip>
                     ))}
                   </div>
