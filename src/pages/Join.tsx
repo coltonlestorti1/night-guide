@@ -23,6 +23,14 @@ const schema = z.object({
 });
 type FormValues = { name: string; contact: string };
 
+// ── EDIT ME per event ──────────────────────────────────────────────
+// Shows a small "catch us at ___" line. Set to null to hide it entirely.
+const EVENT: { name: string; when: string } | null = {
+  name: "our launch night",
+  when: "this Saturday",
+};
+// ───────────────────────────────────────────────────────────────────
+
 export default function Join() {
   const [params] = useSearchParams();
   const source = params.get("source") || "link";
@@ -86,6 +94,16 @@ export default function Join() {
             <p className="mt-2 text-sm text-muted-foreground">
               Launching soon — get in before everyone else.
             </p>
+
+            {EVENT && (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-xs font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                Catch us at {EVENT.name} · {EVENT.when}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-3" noValidate>
               <div>

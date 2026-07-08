@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/auth";
 import { useMyCheckIn, useVenueActivity } from "@/hooks/useCheckIns";
 import { checkIn, checkOut, setVibe, pokeActivity, Vibe } from "@/lib/checkins";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const VIBES: { value: Vibe; label: string }[] = [
@@ -22,6 +23,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
   const queryClient = useQueryClient();
   const status = useAuthStore((s) => s.status);
   const userId = useAuthStore((s) => s.session?.user.id);
+  const signInAsGuest = useAuthStore((s) => s.signInAsGuest);
   const { data: mine } = useMyCheckIn();
   const { data: activity } = useVenueActivity();
   const [busy, setBusy] = useState(false);
@@ -55,6 +57,23 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     } catch {
       queryClient.setQueryData(["my-check-in", userId], prev);
       setError("That didn't go through — try again.");
+    } finally {
+      refresh();
+      setBusy(false);
+    }
+  };
+
+  // Event flow: become an anonymous guest, then immediately check in.
+  const doGuestCheckIn = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const uid = await signInAsGuest();
+      await checkIn(uid, venueId);
+      pokeActivity();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That didn't go through — try again.");
     } finally {
       refresh();
       setBusy(false);
@@ -110,9 +129,17 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
           Finish setup to check in
         </Button>
       ) : status !== "signedIn" ? (
-        <Button className="w-full h-12 rounded-xl" onClick={() => navigate("/profile")}>
-          Sign in to check in
-        </Button>
+        <div className="space-y-2">
+          <Button className="w-full h-12 rounded-xl" disabled={busy} onClick={doGuestCheckIn}>
+            {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Check in as guest"}
+          </Button>
+          <button
+            onClick={() => navigate("/profile")}
+            className="w-full text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            or sign in with Google
+          </button>
+        </div>
       ) : checkedInHere ? (
         <div className="animate-fade-in">
           <div className="flex items-center justify-between">

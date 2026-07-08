@@ -19,6 +19,7 @@ interface AuthState {
   init: () => void;
   refreshProfile: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInAsGuest: () => Promise<string>;
   signOut: () => Promise<void>;
 }
 
@@ -74,6 +75,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/profile` },
     });
+  },
+
+  // No-login "guest" identity for events: anonymous auth mints a real
+  // authenticated user, so the existing check-in RLS just works. We create the
+  // profile row the check_ins FK requires and return the new user id.
+  // Requires "Anonymous sign-ins" enabled in Supabase (Auth → Providers).
+  signInAsGuest: async () => {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error("Guest check-in isn't available right now.");
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error || !data.user) {
+      throw new Error("Guest check-in isn't turned on yet.");
+    }
+    const uid = data.user.id;
+    const username = `guest_${uid.replace(/-/g, "").slice(0, 12)}`;
+    // Best-effort: the check_ins FK needs a matching profiles row.
+    await supabase
+      .from("profiles")
+      .insert({ id: uid, username, display_name: "Guest", ghost_mode: false });
+    await get().refreshProfile();
+    return uid;
   },
 
   signOut: async () => {
