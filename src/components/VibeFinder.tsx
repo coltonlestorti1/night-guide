@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { Venue } from "@/data/types";
 import { scoreVenues, VibePrefs } from "@/lib/vibeScore";
 import BarCard from "@/components/BarCard";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles } from "lucide-react";
@@ -72,6 +72,7 @@ export default function VibeFinder({
     <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DrawerContent className="bg-card border-border">
         <DrawerTitle className="sr-only">Find the move</DrawerTitle>
+        <DrawerDescription className="sr-only">Answer three quick questions to get venue picks that fit.</DrawerDescription>
         <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full">
           <h2 className="text-lg font-display font-bold mb-1 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" /> Find the move

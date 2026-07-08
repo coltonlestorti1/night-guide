@@ -12,7 +12,7 @@ import { useVenueActivity } from "@/hooks/useCheckIns";
 import { BBox, Venue, VenueCategory } from "@/data/types";
 import Map from "@/components/Map";
 import BarCard from "@/components/BarCard";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MapPin, List, X, MapIcon, Search, Bookmark,
@@ -81,13 +81,13 @@ const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => 
               if (e.key === "Escape") setFocused(false);
             }}
             placeholder="Search bars, clubs, lounges…"
-            className="pl-9 h-10 rounded-xl bg-card/80 backdrop-blur-xl border-border/60"
+            className="pl-9 h-10 rounded-xl bg-card/80 backdrop-blur-xl border-border/60 transition-shadow focus-visible:shadow-glow focus-visible:border-primary/50"
             aria-label="Search venues"
             role="combobox"
             aria-expanded={results.length > 0}
           />
           {results.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-xl glass shadow-2xl overflow-hidden z-50 animate-fade-in" role="listbox">
+            <div className="absolute top-full left-0 right-0 mt-1 rounded-xl glass shadow-float overflow-hidden z-50 animate-fade-in" role="listbox">
               {results.map((v) => (
                 <button
                   key={v.id}
@@ -305,25 +305,25 @@ const MapPage = () => {
         className="fixed left-1/2 -translate-x-1/2 z-40"
         style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
       >
-        <div className="flex rounded-full glass shadow-xl overflow-hidden">
-          <button
-            onClick={() => setView("map")}
-            className={cn(
-              "px-5 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors",
-              view === "map" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-secondary"
-            )}
-          >
-            <MapIcon className="h-4 w-4" /> Map
-          </button>
-          <button
-            onClick={() => setView("list")}
-            className={cn(
-              "px-5 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors",
-              view === "list" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-secondary"
-            )}
-          >
-            <List className="h-4 w-4" /> List
-          </button>
+        <div className="relative flex rounded-full glass shadow-float overflow-hidden p-1">
+          <span
+            className="absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-full bg-primary transition-transform duration-200 ease-out"
+            style={{ transform: view === "map" ? "translateX(0)" : "translateX(100%)" }}
+            aria-hidden="true"
+          />
+          {(["map", "list"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={cn(
+                "relative z-10 px-5 py-2 text-sm font-medium flex items-center gap-1.5 transition-colors",
+                view === v ? "text-primary-foreground" : "text-foreground"
+              )}
+            >
+              {v === "map" ? <MapIcon className="h-4 w-4" /> : <List className="h-4 w-4" />}
+              {v === "map" ? "Map" : "List"}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -386,8 +386,10 @@ const MapPage = () => {
       {/* Bottom sheet — venue preview */}
       <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DrawerContent className="bg-card border-border">
+          <DrawerTitle className="sr-only">{selected?.title ?? "Venue details"}</DrawerTitle>
+          <DrawerDescription className="sr-only">Venue activity, hours, and actions.</DrawerDescription>
           {selected && (
-            <div className="px-4 pt-2 pb-6 max-w-lg mx-auto w-full animate-fade-in">
+            <div className="px-4 pt-2 pb-6 max-w-lg mx-auto w-full animate-slide-up">
               {/* Hero image */}
               <div className="relative w-full h-44 rounded-2xl overflow-hidden mb-4 bg-secondary">
                 <img
@@ -401,6 +403,7 @@ const MapPage = () => {
                       "linear-gradient(135deg, hsl(var(--primary)/0.4), hsl(var(--accent)/0.2))";
                   }}
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                 <button
                   onClick={() => setSelected(null)}
                   className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 backdrop-blur flex items-center justify-center hover:bg-black/80 transition-colors"
@@ -425,7 +428,7 @@ const MapPage = () => {
               {/* Header */}
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="min-w-0">
-                  <h2 className="text-xl font-bold leading-tight truncate">{selected.title}</h2>
+                  <h2 className="text-xl font-display font-bold leading-tight truncate">{selected.title}</h2>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide text-white",
@@ -434,7 +437,7 @@ const MapPage = () => {
                       : "bg-[hsl(var(--venue-lounge))]"
                     )}>{selected.category}</span>
                     {selected.neighborhood && (
-                      <span className="text-xs text-muted-foreground">📍 {selected.neighborhood}</span>
+                      <span className="text-xs text-muted-foreground inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {selected.neighborhood}</span>
                     )}
                   </div>
                 </div>
