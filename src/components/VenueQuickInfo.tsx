@@ -6,6 +6,7 @@
 import { Venue } from "@/data/types";
 import { getEnrichment, computeOpenState, describeWeeklyPeriods, getHappyHourState } from "@/data/enrichment";
 import { cn } from "@/lib/utils";
+import { Wine } from "lucide-react";
 
 export default function VenueQuickInfo({ venue }: { venue: Venue }) {
   const e = getEnrichment(venue.title);
@@ -39,10 +40,10 @@ export default function VenueQuickInfo({ venue }: { venue: Venue }) {
       {e.happyHour && (() => {
         const hh = getHappyHourState(e.happyHour);
         if (hh.status === "active")
-          return <p className="text-xs text-amber-400 font-medium">🥂 Happy hour now · til {hh.endsAt}</p>;
+          return <p className="text-xs text-amber-400 font-medium"><Wine className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />Happy hour now · til {hh.endsAt}</p>;
         if (hh.status === "upcoming-today")
-          return <p className="text-xs text-primary">🥂 Happy hour starts {hh.startsAt}</p>;
-        return <p className="text-xs text-primary">🥂 Happy hour {describeWeeklyPeriods(e.happyHour).join(" · ")}</p>;
+          return <p className="text-xs text-primary"><Wine className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />Happy hour starts {hh.startsAt}</p>;
+        return <p className="text-xs text-primary"><Wine className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />Happy hour {describeWeeklyPeriods(e.happyHour).join(" · ")}</p>;
       })()}
     </div>
   );

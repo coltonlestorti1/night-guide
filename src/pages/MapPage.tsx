@@ -16,7 +16,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MapPin, List, X, MapIcon, Search, Bookmark,
-  Navigation as NavigationIcon, Flame, Star, Sparkles
+  Navigation as NavigationIcon, Flame, Star, Sparkles, Music, Wine
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,15 +29,15 @@ import { venueMatches } from "@/lib/searchMatch";
 import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
 
-const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour" }[] = [
-  { label: "Find the move", value: "vibe-finder" },
+const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour"; Icon?: React.ComponentType<{ className?: string }> }[] = [
+  { label: "Find the move", value: "vibe-finder", Icon: Sparkles },
   { label: "All", value: "all" },
-  { label: "Happy hour", value: "happy-hour" },
+  { label: "Happy hour", value: "happy-hour", Icon: Wine },
   { label: "Bars", value: "bar" },
   { label: "Clubs", value: "club" },
   { label: "Lounges", value: "lounge" },
-  { label: "Hot Tonight", value: "hot" },
-  { label: "Music", value: "music" },
+  { label: "Hot Tonight", value: "hot", Icon: Flame },
+  { label: "Music", value: "music", Icon: Music },
 ];
 
 // Keep in sync with the music genres that actually exist in the venue data —
@@ -159,7 +159,13 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour }:
   return (
     <div className="fixed top-[6.25rem] left-0 right-0 z-30 px-3">
       <div className="mx-auto max-w-xl">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+        <div
+          className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1"
+          style={{
+            maskImage: "linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
+            WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
+          }}
+        >
           {PRIMARY_FILTERS.map((f) => {
             const active = isActive(f.value);
             return (
@@ -167,17 +173,14 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour }:
                 key={f.value}
                 onClick={() => handle(f.value)}
                 className={cn(
-                  "shrink-0 text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
+                  "shrink-0 inline-flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
                   active
-                    ? "bg-primary text-primary-foreground border-transparent shadow-md shadow-primary/30"
+                    ? "bg-primary text-primary-foreground border-transparent shadow-glow"
                     : "bg-card/80 backdrop-blur-xl text-foreground border-border/60 hover:bg-secondary"
                 )}
                 aria-pressed={active}
               >
-                {f.value === "hot" && "🔥 "}
-                {f.value === "music" && "🎵 "}
-                {f.value === "vibe-finder" && "✨ "}
-                {f.value === "happy-hour" && "🥂 "}
+                {f.Icon && <f.Icon className="h-4 w-4" />}
                 {f.label}
                 {f.value === "music" && musicVibe ? `: ${musicVibe}` : ""}
               </button>
@@ -358,7 +361,7 @@ const MapPage = () => {
             </div>
           ) : hhFilter ? (
             <div className="text-center glass rounded-2xl p-8 animate-fade-in">
-              <span className="text-2xl">🥂</span>
+              <Wine className="h-7 w-7 mx-auto text-amber-400" />
               <p className="font-medium mt-2">No happy hours running</p>
               <p className="text-sm text-muted-foreground mt-1">Most kick off around 4 PM.</p>
               <Button variant="secondary" size="sm" className="mt-4" onClick={() => navigate("/discover")}>
