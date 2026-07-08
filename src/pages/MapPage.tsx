@@ -63,7 +63,7 @@ const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => 
       <div className="mx-auto max-w-xl">
         <div className="flex items-baseline justify-between gap-3 px-1">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-rose-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-display font-bold tracking-tight bg-gradient-to-r from-primary to-rose-400 bg-clip-text text-transparent">
               ENDZ
             </h1>
             <p className="text-xs text-muted-foreground -mt-0.5">Find your night in the East Village</p>
