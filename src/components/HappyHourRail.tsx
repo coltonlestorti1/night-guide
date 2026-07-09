@@ -15,7 +15,15 @@ import { cn } from "@/lib/utils";
 
 const TAB_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Monday-first
 
-export default function HappyHourRail({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => void }) {
+export default function HappyHourRail({
+  venues,
+  onPick,
+  showHeading = true,
+}: {
+  venues: Venue[];
+  onPick: (v: Venue) => void;
+  showHeading?: boolean;
+}) {
   const now = new Date();
   const [day, setDay] = useState<number>(now.getDay());
   useMinuteTick();
@@ -57,7 +65,9 @@ export default function HappyHourRail({ venues, onPick }: { venues: Venue[]; onP
 
   return (
     <div className="mb-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">Happy hours</h2>
+      {showHeading && (
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">Happy hours</h2>
+      )}
       <div role="tablist" aria-label="Happy hour day" className="flex gap-1 mb-3">
         {TAB_ORDER.map((d) => (
           <button
