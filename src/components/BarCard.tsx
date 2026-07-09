@@ -3,6 +3,8 @@ import { Venue } from "@/data/types";
 import { useSavedStore } from "@/store/saved";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { getEnrichment, computeOpenState } from "@/data/enrichment";
+import { useLocationStore } from "@/store/location";
+import { haversineMiles, formatMiles } from "@/lib/distance";
 import { cn } from "@/lib/utils";
 
 const crowdLabel: Record<string, string> = { low: "Chill", medium: "Lively", high: "Packed" };
@@ -22,6 +24,11 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
   const hereCount = activity?.[venue.id]?.count ?? 0;
   const enrichment = getEnrichment(venue.title);
   const openState = computeOpenState(enrichment?.hours);
+  const coords = useLocationStore((s) => s.coords);
+  const distance =
+    coords && venue.latitude != null && venue.longitude != null
+      ? formatMiles(haversineMiles(coords, { lat: venue.latitude, lng: venue.longitude }))
+      : null;
 
   return (
     <div
@@ -73,6 +80,7 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
               </span>
             )}
             {enrichment?.rating != null && <span>★ {enrichment.rating.toFixed(1)}</span>}
+            {distance && <span className="text-primary/90 font-medium">📍 {distance}</span>}
             {hereCount > 0 && (
               <span className="text-primary font-semibold">{hereCount} here now</span>
             )}

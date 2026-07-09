@@ -11,6 +11,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Venue, BBox, VenueCategory } from "@/data/types";
 import { Navigation, LocateFixed } from "lucide-react";
 import { useMapViewStore } from "@/store/mapState";
+import { useLocationStore } from "@/store/location";
 import { pinGlyph } from "@/lib/venueTraits";
 import { toast } from "sonner";
 
@@ -46,6 +47,8 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const requestLocation = useLocationStore((s) => s.request);
   const { center, zoom, setView } = useMapViewStore();
   const happyHourKey = happyHour ? [...happyHour].sort().join(",") : "";
 
@@ -205,24 +208,39 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  const handleLocateMe = useCallback(() => {
+  // Drops (or moves) a "you are here" dot. Only the inner styles are set — never
+  // an inline position on the wrapper, which would break MapLibre's anchoring.
+  const placeUserDot = useCallback((lng: number, lat: number) => {
     if (!map.current) return;
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          map.current?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 1500 });
-          toast.success("Found your location");
-        },
-        () => {
-          toast.info("Location unavailable — showing East Village center");
-          map.current?.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
-        }
-      );
+    if (!userMarkerRef.current) {
+      const el = document.createElement("div");
+      el.setAttribute("aria-label", "Your location");
+      el.style.width = "18px";
+      el.style.height = "18px";
+      el.style.borderRadius = "9999px";
+      el.style.background = "#3b82f6";
+      el.style.border = "2px solid #ffffff";
+      el.style.boxShadow = "0 0 0 5px rgba(59,130,246,0.25)";
+      userMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
+        .setLngLat([lng, lat])
+        .addTo(map.current);
     } else {
-      toast.info("Geolocation not supported");
-      map.current.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
+      userMarkerRef.current.setLngLat([lng, lat]);
     }
   }, []);
+
+  const handleLocateMe = useCallback(async () => {
+    if (!map.current) return;
+    const coords = await requestLocation();
+    if (coords) {
+      placeUserDot(coords.lng, coords.lat);
+      map.current.flyTo({ center: [coords.lng, coords.lat], zoom: 15, duration: 1500 });
+      toast.success("Found your location");
+    } else {
+      toast.info("Location unavailable — showing East Village center");
+      map.current.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
+    }
+  }, [requestLocation, placeUserDot]);
 
   const handleRecenter = useCallback(() => {
     map.current?.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1200 });

@@ -10,7 +10,9 @@ import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles } from "lucide-react";
+import { useLocationStore } from "@/store/location";
+import { toast } from "sonner";
+import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe } from "lucide-react";
 
 type Activity = Record<string, { count: number; vibe?: string }> | undefined;
 
@@ -27,6 +29,10 @@ const DRINKS = [
 const WHENS = [
   { value: "now", label: "Right now", Icon: Zap },
   { value: "later", label: "Later tonight", Icon: Moon },
+] as const;
+const DISTANCES = [
+  { value: true, label: "Around me", Icon: MapPin },
+  { value: false, label: "Doesn't matter", Icon: Globe },
 ] as const;
 
 const Chip = ({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) => (
@@ -58,11 +64,25 @@ export default function VibeFinder({
   const [vibe, setVibe] = useState<VibePrefs["vibe"]>(undefined);
   const [drinks, setDrinks] = useState<VibePrefs["drinks"]>(undefined);
   const [when, setWhen] = useState<VibePrefs["when"]>("now");
+  const [near, setNear] = useState(false);
   const [page, setPage] = useState<number | null>(null); // null = answers screen
 
+  const requestLocation = useLocationStore((s) => s.request);
+  const coords = useLocationStore((s) => s.coords);
+
+  // "Around me" needs location; if the user declines, fall back to no preference.
+  const chooseNear = async (want: boolean) => {
+    if (want && !(await requestLocation())) {
+      toast.info("Turn on location to sort by what's around you");
+      setNear(false);
+      return;
+    }
+    setNear(want);
+  };
+
   const ranked = useMemo(
-    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when }, activity)),
-    [page, venues, vibe, drinks, when, activity],
+    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near }, activity, undefined, coords)),
+    [page, venues, vibe, drinks, when, near, activity, coords],
   );
   const results = page === null ? [] : ranked.slice(page * 3, page * 3 + 3);
 
@@ -107,6 +127,16 @@ export default function VibeFinder({
                   <div className="flex gap-2 flex-wrap">
                     {WHENS.map((o) => (
                       <Chip key={o.value} active={when === o.value} onClick={() => setWhen(o.value)}>
+                        <o.Icon className="h-4 w-4" /> {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">How far?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {DISTANCES.map((o) => (
+                      <Chip key={o.label} active={near === o.value} onClick={() => chooseNear(o.value)}>
                         <o.Icon className="h-4 w-4" /> {o.label}
                       </Chip>
                     ))}

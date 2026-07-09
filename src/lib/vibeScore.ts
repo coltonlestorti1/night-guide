@@ -7,11 +7,14 @@
 import { Venue } from "@/data/types";
 import { getEnrichment, computeOpenState, isWithinPeriods, formatTime } from "@/data/enrichment";
 import { isCocktailSpot } from "@/lib/venueTraits";
+import { Coords } from "@/store/location";
+import { haversineMiles, formatMiles } from "@/lib/distance";
 
 export type VibePrefs = {
   vibe?: "chill" | "lively" | "packed";
   drinks?: "beer" | "cocktails";
   when: "now" | "later";
+  near?: boolean;
 };
 
 export type ScoredVenue = { venue: Venue; score: number; reasons: string[] };
@@ -26,6 +29,7 @@ export function scoreVenues(
   prefs: VibePrefs,
   activity: Activity,
   now: Date = new Date(),
+  userCoords?: Coords | null,
 ): ScoredVenue[] {
   const scored: ScoredVenue[] = [];
 
@@ -84,6 +88,13 @@ export function scoreVenues(
       score += 1.5;
       const ends = e.happyHour.find((p) => isWithinPeriods([p], now));
       reasons.push(ends ? `🥂 Happy hour til ${formatTime(ends.closeHour, ends.closeMinute)}` : "Happy hour now");
+    }
+
+    // "Around me" — boost closer venues (soft ranking, never a hard filter).
+    if (prefs.near && userCoords && venue.latitude != null && venue.longitude != null) {
+      const dist = haversineMiles(userCoords, { lat: venue.latitude, lng: venue.longitude });
+      score += Math.max(0, 1.5 - dist * 2); // ~0 mi: +1.5, fades to 0 by 0.75 mi
+      reasons.unshift(`${formatMiles(dist)} away`);
     }
 
     scored.push({ venue, score, reasons: reasons.slice(0, 3) });
