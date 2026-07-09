@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
+import DirectionsButton from "@/components/DirectionsButton";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
 import VibeFinder from "@/components/VibeFinder";
 import { venueMatches } from "@/lib/searchMatch";
@@ -276,10 +277,6 @@ const MapPage = () => {
     [activityData]
   );
 
-  const openDirections = (v: Venue) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${v.latitude},${v.longitude}`, "_blank");
-  };
-
   return (
     <section aria-labelledby="map-heading" className="relative">
       <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — East Village</h1>
@@ -460,9 +457,11 @@ const MapPage = () => {
 
               {/* Actions */}
               <div className="grid grid-cols-2 gap-2 mt-4">
-                <Button variant="secondary" className="h-11 rounded-xl" onClick={() => openDirections(selected)}>
-                  <NavigationIcon className="h-4 w-4 mr-2" /> Directions
-                </Button>
+                <DirectionsButton
+                  latitude={selected.latitude}
+                  longitude={selected.longitude}
+                  className="h-11 rounded-xl w-full"
+                />
                 <Button className="h-11 rounded-xl" onClick={() => navigate(`/venue/${selected.id}`)}>
                   View Details
                 </Button>

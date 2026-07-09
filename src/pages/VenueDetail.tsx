@@ -3,7 +3,8 @@ import { useVenue } from "@/hooks/useVenue";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useSavedStore } from "@/store/saved";
-import { ArrowLeft, Bookmark, Navigation as NavIcon, Flame, Star, MapPin } from "lucide-react";
+import { ArrowLeft, Bookmark, Flame, Star, MapPin } from "lucide-react";
+import DirectionsButton from "@/components/DirectionsButton";
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
@@ -144,12 +145,12 @@ const VenueDetail = () => {
               <Bookmark className={cn("h-4 w-4 mr-2", saved && "fill-primary text-primary")} />
               {saved ? "Saved" : "Save"}
             </Button>
-            <Button
-              className="h-11 rounded-xl"
-              onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${data.latitude},${data.longitude}`, "_blank")}
-            >
-              <NavIcon className="h-4 w-4 mr-2" /> Directions
-            </Button>
+            <DirectionsButton
+              latitude={data.latitude}
+              longitude={data.longitude}
+              variant="default"
+              className="h-11 rounded-xl w-full"
+            />
           </div>
         </div>
       )}
