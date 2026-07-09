@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, MapPin } from "lucide-react";
+import { Check, Loader2, MapPin, Users, Wine, Tag } from "lucide-react";
 import { joinWaitlist, isEmail, isPhone } from "@/lib/waitlist";
 import { track } from "@/lib/analytics";
 
@@ -86,6 +86,22 @@ export default function Join() {
             <p className="mt-2 text-sm text-muted-foreground">
               Launching soon — get in before everyone else.
             </p>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                { icon: Users, label: "Live crowds" },
+                { icon: Wine, label: "Happy hours" },
+                { icon: Tag, label: "Drink specials" },
+              ].map(({ icon: Icon, label }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-xs font-medium text-foreground/90"
+                >
+                  <Icon className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                  {label}
+                </span>
+              ))}
+            </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-3" noValidate>
               <div>
