@@ -127,6 +127,7 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
           {state.open ? "Open" : "Closed"}
         </span>
       )}
+      {state && !state.open && state.opensAt && <> · Opens {state.opensAt}</>}
       {state && e.rating != null && " · "}
       {e.rating != null && `★ ${e.rating.toFixed(1)}`}
     </span>
