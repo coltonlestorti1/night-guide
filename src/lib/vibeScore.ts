@@ -5,7 +5,7 @@
  * A future Claude-backed scorer can replace this module without UI changes.
  */
 import { Venue } from "@/data/types";
-import { getEnrichment, computeOpenState, isWithinPeriods, formatTime } from "@/data/enrichment";
+import { getEnrichment, computeOpenState, isWithinPeriods, formatTime, getHappyHourState } from "@/data/enrichment";
 import { isCocktailSpot } from "@/lib/venueTraits";
 import { Coords } from "@/store/location";
 import { haversineMiles, formatMiles } from "@/lib/distance";
@@ -15,6 +15,7 @@ export type VibePrefs = {
   drinks?: "beer" | "cocktails";
   when: "now" | "later";
   near?: boolean;
+  happyHour?: boolean;
 };
 
 export type ScoredVenue = { venue: Venue; score: number; reasons: string[] };
@@ -88,6 +89,16 @@ export function scoreVenues(
       score += 1.5;
       const ends = e.happyHour.find((p) => isWithinPeriods([p], now));
       reasons.push(ends ? `🥂 Happy hour til ${formatTime(ends.closeHour, ends.closeMinute)}` : "Happy hour now");
+    }
+
+    // "Happy hour" preference — surface spots with a deal now/soon, sink the rest.
+    if (prefs.happyHour) {
+      const hh = getHappyHourState(e?.happyHour, now);
+      if (hh.status === "active") score += 2; // reason already added above
+      else if (hh.status === "upcoming-today") {
+        score += 1;
+        reasons.push(`🥂 Happy hour at ${hh.startsAt}`);
+      } else score -= 2;
     }
 
     // "Around me" — boost closer venues (soft ranking, never a hard filter).

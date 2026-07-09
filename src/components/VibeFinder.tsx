@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocationStore } from "@/store/location";
 import { toast } from "sonner";
-import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe } from "lucide-react";
+import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine } from "lucide-react";
 
 type Activity = Record<string, { count: number; vibe?: string }> | undefined;
 
@@ -33,6 +33,10 @@ const WHENS = [
 const DISTANCES = [
   { value: true, label: "Around me", Icon: MapPin },
   { value: false, label: "Doesn't matter", Icon: Globe },
+] as const;
+const HAPPY_HOURS = [
+  { value: true, label: "Happy hour", Icon: Wine },
+  { value: false, label: "Doesn't matter", Icon: Shuffle },
 ] as const;
 
 const Chip = ({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) => (
@@ -65,6 +69,7 @@ export default function VibeFinder({
   const [drinks, setDrinks] = useState<VibePrefs["drinks"]>(undefined);
   const [when, setWhen] = useState<VibePrefs["when"]>("now");
   const [near, setNear] = useState(false);
+  const [happyHour, setHappyHour] = useState(false);
   const [page, setPage] = useState<number | null>(null); // null = answers screen
 
   const requestLocation = useLocationStore((s) => s.request);
@@ -81,8 +86,8 @@ export default function VibeFinder({
   };
 
   const ranked = useMemo(
-    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near }, activity, undefined, coords)),
-    [page, venues, vibe, drinks, when, near, activity, coords],
+    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near, happyHour }, activity, undefined, coords)),
+    [page, venues, vibe, drinks, when, near, happyHour, activity, coords],
   );
   const results = page === null ? [] : ranked.slice(page * 3, page * 3 + 3);
 
@@ -92,7 +97,7 @@ export default function VibeFinder({
     <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DrawerContent className="bg-card border-border">
         <DrawerTitle className="sr-only">Find the move</DrawerTitle>
-        <DrawerDescription className="sr-only">Answer three quick questions to get venue picks that fit.</DrawerDescription>
+        <DrawerDescription className="sr-only">Answer a few quick questions to get venue picks that fit.</DrawerDescription>
         <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full">
           <h2 className="text-lg font-display font-bold mb-1 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" /> Find the move
@@ -100,7 +105,7 @@ export default function VibeFinder({
 
           {page === null ? (
             <>
-              <p className="text-sm text-muted-foreground mb-4">Three taps. We'll pull the spots that actually fit.</p>
+              <p className="text-sm text-muted-foreground mb-4">A few taps. We'll pull the spots that actually fit.</p>
               <div className="space-y-4">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">What's the vibe?</p>
@@ -137,6 +142,16 @@ export default function VibeFinder({
                   <div className="flex gap-2 flex-wrap">
                     {DISTANCES.map((o) => (
                       <Chip key={o.label} active={near === o.value} onClick={() => chooseNear(o.value)}>
+                        <o.Icon className="h-4 w-4" /> {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Happy hour?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {HAPPY_HOURS.map((o) => (
+                      <Chip key={o.label} active={happyHour === o.value} onClick={() => setHappyHour(o.value)}>
                         <o.Icon className="h-4 w-4" /> {o.label}
                       </Chip>
                     ))}
