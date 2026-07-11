@@ -38,6 +38,7 @@ const HAPPY_HOURS = [
   { value: true, label: "Happy hour", Icon: Wine },
   { value: false, label: "Doesn't matter", Icon: Shuffle },
 ] as const;
+const AGES = ["21-25", "25-30", "30+"] as const;
 
 const Chip = ({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) => (
   <button
@@ -70,6 +71,7 @@ export default function VibeFinder({
   const [when, setWhen] = useState<VibePrefs["when"]>("now");
   const [near, setNear] = useState(false);
   const [happyHour, setHappyHour] = useState(false);
+  const [age, setAge] = useState<VibePrefs["age"]>(undefined);
   const [page, setPage] = useState<number | null>(null); // null = answers screen
 
   const requestLocation = useLocationStore((s) => s.request);
@@ -86,8 +88,8 @@ export default function VibeFinder({
   };
 
   const ranked = useMemo(
-    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near, happyHour }, activity, undefined, coords)),
-    [page, venues, vibe, drinks, when, near, happyHour, activity, coords],
+    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near, happyHour, age }, activity, undefined, coords)),
+    [page, venues, vibe, drinks, when, near, happyHour, age, activity, coords],
   );
   const results = page === null ? [] : ranked.slice(page * 3, page * 3 + 3);
 
@@ -153,6 +155,16 @@ export default function VibeFinder({
                     {HAPPY_HOURS.map((o) => (
                       <Chip key={o.label} active={happyHour === o.value} onClick={() => setHappyHour(o.value)}>
                         <o.Icon className="h-4 w-4" /> {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Your age?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {AGES.map((a) => (
+                      <Chip key={a} active={age === a} onClick={() => setAge(age === a ? undefined : a)}>
+                        {a}
                       </Chip>
                     ))}
                   </div>

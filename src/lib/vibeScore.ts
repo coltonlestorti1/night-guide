@@ -16,6 +16,7 @@ export type VibePrefs = {
   when: "now" | "later";
   near?: boolean;
   happyHour?: boolean;
+  age?: "21-25" | "25-30" | "30+";
 };
 
 export type ScoredVenue = { venue: Venue; score: number; reasons: string[] };
@@ -89,6 +90,17 @@ export function scoreVenues(
       score += 1.5;
       const ends = e.happyHour.find((p) => isWithinPeriods([p], now));
       reasons.push(ends ? `🥂 Happy hour til ${formatTime(ends.closeHour, ends.closeMinute)}` : "Happy hour now");
+    }
+
+    // Age lean — there is NO real crowd-age data, so this only nudges toward
+    // venue TRAITS we actually have (type / price / cocktail-ness). It never
+    // asserts a crowd's age and adds no age-claim reasons.
+    if (prefs.age === "21-25") {
+      if (venue.category === "club") score += 1;
+      if ((venue.avg_price_level ?? 3) <= 2) score += 0.5;
+    } else if (prefs.age === "30+") {
+      if (isCocktailSpot(venue) || venue.category === "lounge") score += 1;
+      if ((venue.avg_price_level ?? 0) >= 3) score += 0.5;
     }
 
     // "Happy hour" preference — surface spots with a deal now/soon, sink the rest.
