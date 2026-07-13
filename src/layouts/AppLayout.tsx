@@ -16,10 +16,13 @@ const AppLayout = () => {
   }, [status, navigate]);
 
   // Live venue activity: any client's check-in/out pokes this channel and
-  // every open map refetches counts within ~2s.
+  // every open map refetches counts within ~2s. Friends presence rides the
+  // same content-free poke — identities only ever come back through the
+  // RLS-guarded refetch, never over the channel.
   useEffect(() => {
     return subscribeActivity(() => {
       queryClient.invalidateQueries({ queryKey: ["venue-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["friends-out-tonight"] });
     });
   }, [queryClient]);
 
