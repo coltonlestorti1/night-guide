@@ -16,7 +16,7 @@ export default function VenueQuickInfo({ venue }: { venue: Venue }) {
   const segments: React.ReactNode[] = [];
   if (state) {
     segments.push(
-      <span key="open" className={cn("font-medium", state.open ? "text-[hsl(var(--friends))]" : "text-rose-600")}>
+      <span key="open" className={cn("font-medium", state.open ? "text-emerald-700" : "text-rose-600")}>
         ● {state.open ? `Open${state.closesAt ? ` til ${state.closesAt}` : ""}` : `Closed${state.opensAt ? ` · opens ${state.opensAt}` : ""}`}
       </span>,
     );

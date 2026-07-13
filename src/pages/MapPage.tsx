@@ -120,7 +120,7 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
   return (
     <span className="text-[11px] text-muted-foreground">
       {state && (
-        <span className={state.open ? "text-[hsl(var(--friends))]" : "text-rose-600"}>
+        <span className={state.open ? "text-emerald-700" : "text-rose-600"}>
           {state.open ? "Open" : "Closed"}
         </span>
       )}
@@ -352,7 +352,7 @@ const MapPage = () => {
             </div>
           ) : hhFilter ? (
             <div className="text-center glass rounded-2xl p-8 animate-fade-in">
-              <Wine className="h-7 w-7 mx-auto text-amber-400" />
+              <Wine className="h-7 w-7 mx-auto text-amber-500" />
               <p className="font-medium mt-2">No happy hours running</p>
               <p className="text-sm text-muted-foreground mt-1">Most kick off around 4 PM.</p>
               <Button variant="secondary" size="sm" className="mt-4" onClick={() => navigate("/discover")}>

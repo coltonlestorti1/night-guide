@@ -46,10 +46,10 @@ export default function VenueInfoCard({ venue }: { venue: Venue }) {
         const hh = getHappyHourState(e.happyHour);
         return (
           <div className="flex items-start gap-2 text-sm">
-            <Martini className={cn("h-4 w-4 mt-0.5", hh.status === "active" ? "text-amber-400" : "text-primary")} />
+            <Martini className={cn("h-4 w-4 mt-0.5", hh.status === "active" ? "text-amber-600" : "text-primary")} />
             <span>
               {hh.status === "active" ? (
-                <span className="font-medium text-amber-400">Happy hour now · til {hh.endsAt}</span>
+                <span className="font-medium text-amber-700">Happy hour now · til {hh.endsAt}</span>
               ) : (
                 <span className="font-medium text-primary">Happy hour</span>
               )}{" "}
@@ -71,7 +71,7 @@ export default function VenueInfoCard({ venue }: { venue: Venue }) {
 
       {e.rating != null && (
         <div className="flex items-center gap-2 text-sm">
-          <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+          <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
           <span>{e.rating.toFixed(1)}{e.userRatingCount != null && <span className="text-muted-foreground"> · {e.userRatingCount.toLocaleString()} reviews</span>}</span>
         </div>
       )}

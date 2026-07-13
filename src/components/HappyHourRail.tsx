@@ -89,7 +89,7 @@ export default function HappyHourRail({
           {rows.map(({ venue, line, active }) => (
             <div key={venue.id}>
               <BarCard venue={venue} onClick={() => onPick(venue)} />
-              <p className={cn("text-[11px] mt-1 px-1", active ? "text-amber-400 font-medium" : "text-muted-foreground")}>
+              <p className={cn("text-[11px] mt-1 px-1", active ? "text-amber-700 font-medium" : "text-muted-foreground")}>
                 {line}
               </p>
             </div>
