@@ -11,6 +11,26 @@ import { getSupabase } from "@/lib/supabase";
 
 export type Vibe = "chill" | "building" | "packed";
 
+export const VIBE_LABELS: Record<Vibe, string> = {
+  chill: "😌 Chill",
+  building: "📈 Building",
+  packed: "🔥 Packed",
+};
+
+export type CheckinVisibility = "everyone" | "friends" | "nobody";
+
+/** Last visibility choice, remembered on-device as the new default. */
+const VISIBILITY_KEY = "endz:checkin-visibility";
+
+export function getStoredVisibility(): CheckinVisibility {
+  const v = localStorage.getItem(VISIBILITY_KEY);
+  return v === "everyone" || v === "nobody" ? v : "friends";
+}
+
+export function storeVisibility(v: CheckinVisibility): void {
+  localStorage.setItem(VISIBILITY_KEY, v);
+}
+
 export type MyCheckIn = {
   id: string;
   venue_id: string;
@@ -19,7 +39,11 @@ export type MyCheckIn = {
 };
 
 /** One place at a time: end any active check-in, then create the new one. */
-export async function checkIn(userId: string, venueId: string): Promise<void> {
+export async function checkIn(
+  userId: string,
+  venueId: string,
+  visibility: CheckinVisibility = "friends"
+): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
   const { error: endError } = await supabase
@@ -28,7 +52,9 @@ export async function checkIn(userId: string, venueId: string): Promise<void> {
     .eq("user_id", userId)
     .gt("expires_at", new Date().toISOString());
   if (endError) throw endError;
-  const { error } = await supabase.from("check_ins").insert({ user_id: userId, venue_id: venueId });
+  const { error } = await supabase
+    .from("check_ins")
+    .insert({ user_id: userId, venue_id: venueId, visibility });
   if (error) throw error;
 }
 

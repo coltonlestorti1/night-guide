@@ -7,15 +7,17 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
 import { useMyCheckIn, useVenueActivity } from "@/hooks/useCheckIns";
-import { checkIn, checkOut, setVibe, pokeActivity, Vibe } from "@/lib/checkins";
+import {
+  checkIn, checkOut, setVibe, pokeActivity, Vibe, VIBE_LABELS,
+  CheckinVisibility as Visibility, getStoredVisibility, storeVisibility,
+} from "@/lib/checkins";
+import CheckInVisibility from "@/components/CheckInVisibility";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const VIBES: { value: Vibe; label: string }[] = [
-  { value: "chill", label: "😌 Chill" },
-  { value: "building", label: "📈 Building" },
-  { value: "packed", label: "🔥 Packed" },
-];
+const VIBES: { value: Vibe; label: string }[] = (
+  Object.keys(VIBE_LABELS) as Vibe[]
+).map((value) => ({ value, label: VIBE_LABELS[value] }));
 
 export default function CheckInCard({ venueId }: { venueId: string }) {
   const navigate = useNavigate();
@@ -26,6 +28,12 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
   const { data: activity } = useVenueActivity();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [visibility, setVisibility] = useState<Visibility>(getStoredVisibility);
+
+  const changeVisibility = (v: Visibility) => {
+    setVisibility(v);
+    storeVisibility(v); // last choice becomes the new default
+  };
 
   const hereCount = activity?.[venueId]?.count ?? 0;
   const hereVibe = activity?.[venueId]?.vibe ?? null;
@@ -50,7 +58,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
       expires_at: new Date(Date.now() + 3 * 3600_000).toISOString(),
     });
     try {
-      await checkIn(userId, venueId);
+      await checkIn(userId, venueId, visibility);
       pokeActivity();
     } catch {
       queryClient.setQueryData(["my-check-in", userId], prev);
@@ -139,9 +147,12 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
           </div>
         </div>
       ) : (
-        <Button className="w-full h-12 rounded-xl" disabled={busy} onClick={doCheckIn}>
-          {checkedInElsewhere ? "Check in here instead" : "Check in"}
-        </Button>
+        <div>
+          <Button className="w-full h-12 rounded-xl" disabled={busy} onClick={doCheckIn}>
+            {checkedInElsewhere ? "Check in here instead" : "Check in"}
+          </Button>
+          <CheckInVisibility value={visibility} onChange={changeVisibility} />
+        </div>
       )}
 
       {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
