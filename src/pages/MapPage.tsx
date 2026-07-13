@@ -3,8 +3,8 @@
  * Map tiles are free and keyless (MapLibre + OpenFreeMap), so the map
  * renders unconditionally — no token setup screen exists.
  */
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useFilterStore } from "@/store/filters";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
@@ -248,6 +248,20 @@ const MapPage = () => {
   const { data: allVenues } = useVenues({});
 
   const venues = data ?? [];
+
+  const location = useLocation();
+
+  // Social's "out tonight" rows land here with a venue to spotlight.
+  // Selecting it reuses the search-pick path (Map flies to selectedId).
+  // allVenues, not the bbox-filtered set: the target may be off-viewport.
+  useEffect(() => {
+    const venueId = (location.state as { venueId?: string } | null)?.venueId;
+    if (!venueId || !allVenues) return;
+    const v = allVenues.find((x) => x.id === venueId);
+    if (v) setSelected(v);
+    navigate(".", { replace: true, state: null }); // consume the state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, allVenues]);
 
   const tick = useMinuteTick();
   // Venue ids whose happy hour is running right now; refreshed each minute.
