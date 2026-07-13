@@ -14,6 +14,7 @@ import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
 import DirectionsButton from "@/components/DirectionsButton";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
+import FriendsHereRow from "@/components/FriendsHereRow";
 
 export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose: () => void }) {
   const navigate = useNavigate();
@@ -83,6 +84,8 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
       </div>
 
       <VenueQuickInfo venue={venue} />
+
+      <FriendsHereRow venueId={venue.id} />
 
       {/* Stats */}
       <div className="mt-3">
