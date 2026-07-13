@@ -28,7 +28,7 @@ const AppLayout = () => {
       className="min-h-screen bg-background text-foreground"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <main className="pb-[110px]" style={{ paddingBottom: "calc(110px + env(safe-area-inset-bottom))" }}>
+      <main className="pb-[calc(110px+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-20">
         <Outlet />
       </main>
       <BottomTabs />

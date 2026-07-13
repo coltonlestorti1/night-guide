@@ -26,14 +26,21 @@ export type MapProps = {
   happyHour?: Set<string>;
 };
 
+// Muted category rings for a normal venue — white pins carry a thin ring in
+// the venue's category color. Activity (trending/hot) and selection override it.
 const CATEGORY_COLORS: Record<VenueCategory, string> = {
-  bar: "#3b82f6",
-  club: "#ef4444",
-  lounge: "#a855f7",
+  bar: "#5B8DEF",
+  club: "#E5544B",
+  lounge: "#9B6BE8",
 };
 
+const SELECTED_RING = "#6C45FF"; // ENDZ purple
+const TRENDING_RING = "#FF8A3D"; // 3–5 checked in
+const HOT_RING = "#FF4D67";      // 6+ checked in
+
 // Glyphs come from pinGlyph(): 🍺 bars, 🍸 lounges/cocktail spots, 🪩 clubs.
-const HH_RING = "0 0 0 2.5px #f59e0b, 0 0 14px rgba(245,158,11,0.67)";
+// Happy hour is a clean amber outer ring — no neon glow.
+const HH_RING = "0 0 0 2px #F59E0B";
 
 const debounce = (fn: (...args: any[]) => void, ms: number) => {
   let t: any;
@@ -61,52 +68,59 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     if (!map.current) return;
     clearMarkers();
     venues.forEach((v) => {
-      const color = CATEGORY_COLORS[v.category] || "#3b82f6";
       const isSelected = v.id === selectedId;
       const count = activity?.[v.id] ?? 0;
       const hh = happyHour?.has(v.id) ?? false;
-      // Activity tiers: 0 = as-is, 1-2 = badge, 3-5 = badge + bigger, 6+ = badge + bigger + glow
-      const scale = count >= 3 ? 1.15 : 1;
+      // Activity tiers: 0-2 = category ring, 3-5 = trending (orange), 6+ = hot (pink).
+      const trending = count >= 3 && count < 6;
       const hot = count >= 6;
+      const scale = count >= 3 ? 1.1 : 1;
+      // Ring priority: selection > hot > trending > category identity.
+      const ring = isSelected
+        ? SELECTED_RING
+        : hot
+        ? HOT_RING
+        : trending
+        ? TRENDING_RING
+        : CATEGORY_COLORS[v.category] || CATEGORY_COLORS.bar;
 
       const wrapper = document.createElement("div");
       wrapper.className = "endz-marker";
       // No inline position here — it would override .maplibregl-marker's
       // position:absolute and break geo-anchoring (pins stack in page flow).
-      wrapper.style.width = "36px";
-      wrapper.style.height = "36px";
+      wrapper.style.width = "34px";
+      wrapper.style.height = "34px";
       wrapper.style.cursor = "pointer";
       if (isSelected) wrapper.style.zIndex = "10";
 
       if (isSelected) {
         const pulse = document.createElement("div");
         pulse.style.position = "absolute";
-        pulse.style.inset = "-6px";
+        pulse.style.inset = "-5px";
         pulse.style.borderRadius = "50%";
-        pulse.style.background = color;
-        pulse.style.opacity = "0.35";
-        pulse.style.animation = "endz-pulse 1.6s ease-out infinite";
+        pulse.style.background = SELECTED_RING;
+        pulse.style.opacity = "0.28";
+        pulse.style.animation = "endz-pulse 1.8s ease-out infinite";
         wrapper.appendChild(pulse);
       }
 
+      // White pin, colored ring, soft neutral shadow — no neon.
       const pin = document.createElement("div");
       pin.style.position = "relative";
       pin.style.width = "100%";
       pin.style.height = "100%";
       pin.style.borderRadius = "50%";
-      pin.style.background = `radial-gradient(circle at 30% 30%, ${color}, ${color}cc)`;
-      pin.style.border = isSelected ? "2.5px solid #fff" : "2px solid rgba(255,255,255,0.85)";
-      const baseShadow = isSelected
-        ? `0 0 18px ${color}, 0 4px 10px rgba(0,0,0,0.5)`
-        : hot
-        ? `0 0 14px ${color}, 0 3px 8px rgba(0,0,0,0.45)`
-        : "0 3px 8px rgba(0,0,0,0.45)";
-      // Amber ring marks an active happy hour; coexists with activity/selection glow.
-      pin.style.boxShadow = hh ? `${HH_RING}, ${baseShadow}` : baseShadow;
+      pin.style.background = "#ffffff";
+      pin.style.border = `${isSelected ? 3 : 2.5}px solid ${ring}`;
+      const softShadow = isSelected
+        ? "0 4px 12px rgba(17,17,17,0.20), 0 0 0 4px rgba(108,69,255,0.14)"
+        : "0 2px 6px rgba(17,17,17,0.16)";
+      // Amber outer ring marks an active happy hour; sits under the base shadow.
+      pin.style.boxShadow = hh ? `${HH_RING}, ${softShadow}` : softShadow;
       pin.style.display = "flex";
       pin.style.alignItems = "center";
       pin.style.justifyContent = "center";
-      pin.style.fontSize = "16px";
+      pin.style.fontSize = "15px";
       pin.style.transition = "transform 0.2s";
       pin.textContent = pinGlyph(v);
       wrapper.appendChild(pin);
@@ -117,20 +131,21 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
         const badge = document.createElement("div");
         badge.textContent = String(count);
         badge.style.position = "absolute";
-        badge.style.top = "-4px";
-        badge.style.right = "-4px";
-        badge.style.minWidth = "16px";
-        badge.style.height = "16px";
+        badge.style.top = "-5px";
+        badge.style.right = "-5px";
+        badge.style.minWidth = "17px";
+        badge.style.height = "17px";
         badge.style.padding = "0 4px";
-        badge.style.borderRadius = "8px";
-        badge.style.background = "hsl(var(--primary))";
-        badge.style.color = "hsl(var(--primary-foreground))";
+        badge.style.borderRadius = "9px";
+        // Badge echoes the activity tier so hot/trending read at a glance.
+        badge.style.background = hot ? HOT_RING : trending ? TRENDING_RING : SELECTED_RING;
+        badge.style.color = "#ffffff";
         badge.style.fontSize = "10px";
         badge.style.fontWeight = "700";
         badge.style.display = "flex";
         badge.style.alignItems = "center";
         badge.style.justifyContent = "center";
-        badge.style.border = "1.5px solid rgba(255,255,255,0.85)";
+        badge.style.border = "2px solid #ffffff";
         badge.style.zIndex = "2";
         wrapper.appendChild(badge);
       }
@@ -159,7 +174,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: "https://tiles.openfreemap.org/styles/dark",
+      style: "https://tiles.openfreemap.org/styles/positron",
       center,
       zoom,
       pitch: 0,
@@ -250,12 +265,12 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full" aria-label="Nightlife map" />
 
-      {/* Legend */}
-      <div className="absolute top-32 left-3 z-30 glass rounded-xl px-3 py-2 text-[11px] space-y-1 animate-fade-in shadow-lg">
-        <div className="font-semibold text-foreground/80 uppercase tracking-wide text-[10px] mb-1">Legend</div>
-        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--venue-bar))]" /> Bar</div>
-        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--venue-club))]" /> Club</div>
-        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--venue-lounge))]" /> Lounge</div>
+      {/* Legend — ring colors carry live activity; the glyph carries category. */}
+      <div className="absolute top-32 left-3 z-30 glass rounded-xl px-3 py-2 text-[11px] text-foreground space-y-1.5 animate-fade-in">
+        <div className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">Activity</div>
+        <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-[hsl(var(--trending))]" /> Trending</div>
+        <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-[hsl(var(--hot))]" /> Hot</div>
+        <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-primary" /> Selected</div>
       </div>
 
       {/* Floating action buttons */}

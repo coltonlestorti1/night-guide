@@ -6,26 +6,23 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFilterStore } from "@/store/filters";
-import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { BBox, Venue, VenueCategory } from "@/data/types";
 import Map from "@/components/Map";
 import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  MapPin, List, X, MapIcon, Search, Bookmark,
-  Navigation as NavigationIcon, Flame, Star, Sparkles, Music, Wine
+  List, X, MapIcon, Search, Flame, Sparkles, Music, Wine
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import VenueStatTiles from "@/components/VenueStatTiles";
-import CheckInCard from "@/components/CheckInCard";
-import DirectionsButton from "@/components/DirectionsButton";
-import VenueQuickInfo from "@/components/VenueQuickInfo";
 import VibeFinder from "@/components/VibeFinder";
+import VenuePreview from "@/components/VenuePreview";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { venueMatches } from "@/lib/searchMatch";
 import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
@@ -60,11 +57,11 @@ const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => 
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 px-3 pt-3 pb-2 bg-gradient-to-b from-background via-background/95 to-background/0">
-      <div className="mx-auto max-w-xl">
+    <div className="fixed top-0 left-0 right-0 z-40 px-3 pt-3 pb-2 lg:pl-24 bg-gradient-to-b from-background via-background/90 to-background/0">
+      <div className="mx-auto max-w-xl lg:mx-0 lg:max-w-sm">
         <div className="flex items-baseline justify-between gap-3 px-1">
           <div>
-            <h1 className="text-2xl font-display font-bold tracking-tight bg-gradient-to-r from-primary to-rose-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-display font-bold tracking-tight text-primary">
               ENDZ
             </h1>
             <p className="text-xs text-muted-foreground -mt-0.5">Find your night in the East Village</p>
@@ -123,7 +120,7 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
   return (
     <span className="text-[11px] text-muted-foreground">
       {state && (
-        <span className={state.open ? "text-emerald-400" : "text-rose-400"}>
+        <span className={state.open ? "text-[hsl(var(--friends))]" : "text-rose-600"}>
           {state.open ? "Open" : "Closed"}
         </span>
       )}
@@ -159,8 +156,8 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour }:
   };
 
   return (
-    <div className="fixed top-[6.25rem] left-0 right-0 z-30 px-3">
-      <div className="mx-auto max-w-xl">
+    <div className="fixed top-[6.25rem] left-0 right-0 z-30 px-3 lg:pl-24">
+      <div className="mx-auto max-w-xl lg:mx-0 lg:max-w-sm">
         <div
           className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1"
           style={{
@@ -226,7 +223,7 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour }:
 const MapPage = () => {
   const navigate = useNavigate();
   const filters = useFilterStore();
-  const { ids: savedIds, toggle: toggleSaved } = useSavedStore();
+  const isMobile = useIsMobile();
   const [bbox, setBbox] = useState<BBox | undefined>(undefined);
   const [selected, setSelected] = useState<Venue | null>(null);
   const [view, setView] = useState<"map" | "list">("map");
@@ -251,7 +248,6 @@ const MapPage = () => {
   const { data: allVenues } = useVenues({});
 
   const venues = data ?? [];
-  const selectedSaved = selected ? savedIds.includes(selected.id) : false;
 
   const tick = useMinuteTick();
   // Venue ids whose happy hour is running right now; refreshed each minute.
@@ -298,11 +294,8 @@ const MapPage = () => {
         onPick={(v) => setSelected(v)}
       />
 
-      {/* Map / List toggle — sits clearly above the bottom navigation */}
-      <div
-        className="fixed left-1/2 -translate-x-1/2 z-40"
-        style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
-      >
+      {/* Map / List toggle — above the mobile bottom nav; lower on desktop where the nav is a side rail */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-40 bottom-[calc(96px_+_env(safe-area-inset-bottom))] lg:bottom-6">
         <div className="relative flex rounded-full glass shadow-float overflow-hidden p-1">
           <span
             className="absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-full bg-primary transition-transform duration-200 ease-out"
@@ -381,96 +374,35 @@ const MapPage = () => {
         </div>
       )}
 
-      {/* Bottom sheet — venue preview */}
-      <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DrawerContent className="bg-card border-border">
-          <DrawerTitle className="sr-only">{selected?.title ?? "Venue details"}</DrawerTitle>
-          <DrawerDescription className="sr-only">Venue activity, hours, and actions.</DrawerDescription>
-          {selected && (
-            <div className="px-4 pt-2 pb-6 max-w-lg mx-auto w-full animate-slide-up">
-              {/* Hero image */}
-              <div className="relative w-full h-44 rounded-2xl overflow-hidden mb-4 bg-secondary">
-                <img
-                  src={selected.image_url || ""}
-                  alt={selected.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const t = e.target as HTMLImageElement;
-                    t.style.display = "none";
-                    (t.parentElement as HTMLElement).style.background =
-                      "linear-gradient(135deg, hsl(var(--primary)/0.4), hsl(var(--accent)/0.2))";
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                <button
-                  onClick={() => setSelected(null)}
-                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/60 backdrop-blur flex items-center justify-center hover:bg-black/80 transition-colors"
-                  aria-label="Close"
-                >
-                  <X className="h-4 w-4 text-white" />
-                </button>
-                <div className="absolute top-2 left-2 flex gap-1.5">
-                  {selected.hot_tonight && (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500 text-white">
-                      <Flame className="h-3 w-3" /> Hot Tonight
-                    </span>
-                  )}
-                  {selected.editors_pick && (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-400 text-black">
-                      <Star className="h-3 w-3" /> Editor's Pick
-                    </span>
-                  )}
-                </div>
+      {/* Venue preview — bottom sheet on mobile, right-side panel on tablet/desktop */}
+      {isMobile ? (
+        <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+          <DrawerContent className="bg-card border-border">
+            <DrawerTitle className="sr-only">{selected?.title ?? "Venue details"}</DrawerTitle>
+            <DrawerDescription className="sr-only">Venue activity, hours, and actions.</DrawerDescription>
+            {selected && (
+              <div className="max-w-lg mx-auto w-full">
+                <VenuePreview venue={selected} onClose={() => setSelected(null)} />
               </div>
-
-              {/* Header */}
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="min-w-0">
-                  <h2 className="text-xl font-display font-bold leading-tight truncate">{selected.title}</h2>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide text-white",
-                      selected.category === "bar" ? "bg-[hsl(var(--venue-bar))]"
-                      : selected.category === "club" ? "bg-[hsl(var(--venue-club))]"
-                      : "bg-[hsl(var(--venue-lounge))]"
-                    )}>{selected.category}</span>
-                    {selected.neighborhood && (
-                      <span className="text-xs text-muted-foreground inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {selected.neighborhood}</span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => toggleSaved(selected.id)}
-                  className="shrink-0 h-10 w-10 rounded-full bg-secondary hover:bg-secondary/70 flex items-center justify-center transition-colors"
-                  aria-label={selectedSaved ? "Unsave" : "Save"}
-                >
-                  <Bookmark className={cn("h-5 w-5", selectedSaved ? "fill-primary text-primary" : "text-foreground")} />
-                </button>
+            )}
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+          <SheetContent
+            side="right"
+            className="w-full sm:max-w-md p-0 overflow-y-auto bg-card [&>button]:hidden"
+          >
+            <SheetTitle className="sr-only">{selected?.title ?? "Venue details"}</SheetTitle>
+            <SheetDescription className="sr-only">Venue activity, hours, and actions.</SheetDescription>
+            {selected && (
+              <div className="pt-4">
+                <VenuePreview venue={selected} onClose={() => setSelected(null)} />
               </div>
-
-              <VenueQuickInfo venue={selected} />
-
-              {/* Stats */}
-              <div className="mt-3">
-                <VenueStatTiles venue={selected} compact />
-              </div>
-              <CheckInCard venueId={selected.id} />
-
-              {/* Actions */}
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <DirectionsButton
-                  latitude={selected.latitude}
-                  longitude={selected.longitude}
-                  className="h-11 rounded-xl w-full"
-                />
-                <Button className="h-11 rounded-xl" onClick={() => navigate(`/venue/${selected.id}`)}>
-                  View Details
-                </Button>
-              </div>
-            </div>
-          )}
-        </DrawerContent>
-      </Drawer>
+            )}
+          </SheetContent>
+        </Sheet>
+      )}
     </section>
   );
 };

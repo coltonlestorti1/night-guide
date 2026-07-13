@@ -52,6 +52,10 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				'primary-soft': 'hsl(var(--primary-soft))',
+				hot: 'hsl(var(--hot))',
+				trending: 'hsl(var(--trending))',
+				friends: 'hsl(var(--friends))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -73,9 +77,9 @@ export default {
 				display: ['"Space Grotesk Variable"', '"Inter Variable"', 'ui-sans-serif', 'sans-serif'],
 			},
 			boxShadow: {
-				float: '0 8px 30px -12px hsl(240 30% 2% / 0.7)',
-				sheet: '0 -8px 40px -12px hsl(240 30% 2% / 0.8)',
-				glow: '0 0 20px -2px hsl(262 83% 58% / 0.45)',
+				float: '0 8px 30px -14px hsl(240 20% 55% / 0.35)',
+				sheet: '0 -10px 40px -16px hsl(240 20% 55% / 0.28)',
+				glow: '0 2px 14px -2px hsl(253 100% 64% / 0.35)',
 			},
 			keyframes: {
 				'accordion-down': {

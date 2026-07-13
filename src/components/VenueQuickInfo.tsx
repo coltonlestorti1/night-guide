@@ -16,7 +16,7 @@ export default function VenueQuickInfo({ venue }: { venue: Venue }) {
   const segments: React.ReactNode[] = [];
   if (state) {
     segments.push(
-      <span key="open" className={cn("font-medium", state.open ? "text-emerald-400" : "text-rose-400")}>
+      <span key="open" className={cn("font-medium", state.open ? "text-[hsl(var(--friends))]" : "text-rose-600")}>
         ● {state.open ? `Open${state.closesAt ? ` til ${state.closesAt}` : ""}` : `Closed${state.opensAt ? ` · opens ${state.opensAt}` : ""}`}
       </span>,
     );
@@ -40,7 +40,7 @@ export default function VenueQuickInfo({ venue }: { venue: Venue }) {
       {e.happyHour && (() => {
         const hh = getHappyHourState(e.happyHour);
         if (hh.status === "active")
-          return <p className="text-xs text-amber-400 font-medium"><Wine className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />Happy hour now · til {hh.endsAt}</p>;
+          return <p className="text-xs text-amber-600 font-medium"><Wine className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />Happy hour now · til {hh.endsAt}</p>;
         if (hh.status === "upcoming-today")
           return <p className="text-xs text-primary"><Wine className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />Happy hour starts {hh.startsAt}</p>;
         return <p className="text-xs text-primary"><Wine className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />Happy hour {describeWeeklyPeriods(e.happyHour).join(" · ")}</p>;

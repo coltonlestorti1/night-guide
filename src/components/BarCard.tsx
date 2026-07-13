@@ -75,7 +75,7 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
           )}
           <div className="mt-1.5 text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-0.5">
             {openState && (
-              <span className={openState.open ? "text-emerald-400" : undefined}>
+              <span className={openState.open ? "text-[hsl(var(--friends))] font-medium" : undefined}>
                 ● {openState.open
                   ? `Open${openState.closesAt ? ` til ${openState.closesAt}` : ""}`
                   : `Closed${openState.opensAt ? ` · Opens ${openState.opensAt}` : ""}`}
