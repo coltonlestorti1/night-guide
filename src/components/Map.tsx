@@ -8,7 +8,7 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Venue, BBox, VenueCategory } from "@/data/types";
+import { Venue, BBox } from "@/data/types";
 import { Navigation, LocateFixed } from "lucide-react";
 import { useMapViewStore } from "@/store/mapState";
 import { useLocationStore } from "@/store/location";
@@ -26,17 +26,14 @@ export type MapProps = {
   happyHour?: Set<string>;
 };
 
-// Muted category rings for a normal venue — white pins carry a thin ring in
-// the venue's category color. Activity (trending/hot) and selection override it.
-const CATEGORY_COLORS: Record<VenueCategory, string> = {
-  bar: "#5B8DEF",
-  club: "#E5544B",
-  lounge: "#9B6BE8",
-};
-
-const SELECTED_RING = "#6C45FF"; // ENDZ purple
-const TRENDING_RING = "#FF8A3D"; // 3–5 checked in
-const HOT_RING = "#FF4D67";      // 6+ checked in
+// Ring COLOR is reserved for live state so a colored ring always means
+// "something's happening here." Category is carried by the glyph (🍺/🍸/🪩),
+// never the ring — otherwise a red club reads as "Hot", a purple lounge as
+// "Selected". Normal venues get a quiet neutral-gray ring.
+const NORMAL_RING = "#9CA3AF";   // quiet — no live check-ins
+const SELECTED_RING = "#6C45FF"; // ENDZ purple — the pin you tapped
+const TRENDING_RING = "#FF8A3D"; // 3–5 people checked in
+const HOT_RING = "#FF4D67";      // 6+ people checked in
 
 // Glyphs come from pinGlyph(): 🍺 bars, 🍸 lounges/cocktail spots, 🪩 clubs.
 // Happy hour is a clean amber outer ring — no neon glow.
@@ -75,14 +72,16 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       const trending = count >= 3 && count < 6;
       const hot = count >= 6;
       const scale = count >= 3 ? 1.1 : 1;
-      // Ring priority: selection > hot > trending > category identity.
+      // Ring priority: selection > hot > trending > quiet. Active states get a
+      // color; quiet venues stay neutral gray.
+      const active = isSelected || hot || trending;
       const ring = isSelected
         ? SELECTED_RING
         : hot
         ? HOT_RING
         : trending
         ? TRENDING_RING
-        : CATEGORY_COLORS[v.category] || CATEGORY_COLORS.bar;
+        : NORMAL_RING;
 
       const wrapper = document.createElement("div");
       wrapper.className = "endz-marker";
@@ -111,7 +110,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       pin.style.height = "100%";
       pin.style.borderRadius = "50%";
       pin.style.background = "#ffffff";
-      pin.style.border = `${isSelected ? 3 : 2.5}px solid ${ring}`;
+      pin.style.border = `${active ? 3 : 2}px solid ${ring}`;
       const softShadow = isSelected
         ? "0 4px 12px rgba(17,17,17,0.20), 0 0 0 4px rgba(108,69,255,0.14)"
         : "0 2px 6px rgba(17,17,17,0.16)";
@@ -268,6 +267,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       {/* Legend — ring colors carry live activity; the glyph carries category. */}
       <div className="absolute top-32 left-3 z-30 glass rounded-xl px-3 py-2 text-[11px] text-foreground space-y-1.5 animate-fade-in">
         <div className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">Activity</div>
+        <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-[#9CA3AF]" /> Quiet</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-[hsl(var(--trending))]" /> Trending</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-[hsl(var(--hot))]" /> Hot</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-primary" /> Selected</div>
