@@ -322,6 +322,10 @@ After a discussion is approved, Claude should:
 - **Assisted / auto check-in** — PWA reality: foreground nearby-prompt only; true background needs Capacitor (Colton ask, 2026-07-13).
 - **Night Recap** — morning-after bars-visited + ranking. Blocked: `checkIn()`/`checkOut()` currently DELETE history (needs delete→expire change — touches the protected core loop) + needs a ratings table. Recap trail private-to-self, never visible to others.
 - **Going-out crew** — MySpace-Top-8-style crew of 5–8 (IG Close Friends analog). Tabled 2026-07-13; needs `close_groups`/`close_group_members`. Resume only on Colton's prompt.
+- **Google OAuth out of testing mode** — random users currently CANNOT sign into the map (only added test users). A launch blocker bigger than anything above; needs Google OAuth verification or a decision on auth approach.
+- **Declared intent ("going out tonight")** — Phase 1 roadmap item (2026-07-08); needs new `intents` table. Pairs with the friends layer that just shipped.
+- **Analytics** — Phase 1 roadmap item; `src/lib/analytics.ts` is a no-op today. Needs an `events` table + wiring. Without it there's no way to measure the north-star metric (unprompted check-ins per active user per night).
+- **Real PWA icons** — `icon-192/512.png` are placeholders generated from the favicon; swap for real art before pushing installs.
 
 ---
 
