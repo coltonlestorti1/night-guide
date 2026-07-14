@@ -314,6 +314,17 @@ After a discussion is approved, Claude should:
 
 ---
 
+## Backlog (known, not yet specced — smaller than the numbered features)
+
+- **Unblock UI** — v1 friends shipped with Remove/Block only. RLS already permits the blocker (`user_id`) to delete the block row; the UI just doesn't exist. Until then, unblocking = deleting the row in Supabase Table Editor.
+- **Map-pin friend avatars** — the locked v1 fast-follow (Map.tsx marker code is fragile; that's why it was cut from v1).
+- **Location permission in onboarding** — make it one of the first accepts (Colton ask, 2026-07-13).
+- **Assisted / auto check-in** — PWA reality: foreground nearby-prompt only; true background needs Capacitor (Colton ask, 2026-07-13).
+- **Night Recap** — morning-after bars-visited + ranking. Blocked: `checkIn()`/`checkOut()` currently DELETE history (needs delete→expire change — touches the protected core loop) + needs a ratings table. Recap trail private-to-self, never visible to others.
+- **Going-out crew** — MySpace-Top-8-style crew of 5–8 (IG Close Friends analog). Tabled 2026-07-13; needs `close_groups`/`close_group_members`. Resume only on Colton's prompt.
+
+---
+
 ## Decision Log
 
 _Append decisions here as features clear the discussion gate: date, feature, decision, approved scope, what was postponed._
