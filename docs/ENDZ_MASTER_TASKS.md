@@ -349,3 +349,4 @@ After a discussion is approved, Claude should:
 _Append decisions here as features clear the discussion gate: date, feature, decision, approved scope, what was postponed._
 
 - 2026-07-14 — Tracker created. All features `NOT DISCUSSED`; audits recorded above.
+- 2026-07-15 — **Dead venues removed** (Colton): Paul's Cocktail Lounge, Manitoba's, The Bourgeois Pig, Angel's Share — validated closed/moved/never-EV via Google Places. 47 → 43. **Standing decision: no new venues for now — focus on the venues we have** (Ladybird et al. via the discover pipeline can wait).
