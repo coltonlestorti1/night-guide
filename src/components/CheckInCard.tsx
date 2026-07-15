@@ -13,6 +13,7 @@ import {
 } from "@/lib/checkins";
 import CheckInVisibility from "@/components/CheckInVisibility";
 import { Button } from "@/components/ui/button";
+import { logEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const VIBES: { value: Vibe; label: string }[] = (
@@ -59,6 +60,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     });
     try {
       await checkIn(userId, venueId, visibility);
+      logEvent("check_in", { venue_id: venueId, visibility });
       pokeActivity();
     } catch {
       queryClient.setQueryData(["my-check-in", userId], prev);
@@ -78,6 +80,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     queryClient.setQueryData(["my-check-in", userId], null);
     try {
       await checkOut(userId);
+      logEvent("check_out", { venue_id: venueId });
       pokeActivity();
     } catch {
       queryClient.setQueryData(["my-check-in", userId], prev);
@@ -93,6 +96,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     setError("");
     try {
       await setVibe(mine.id, vibe);
+      logEvent("vibe_set", { venue_id: venueId, vibe });
       pokeActivity();
     } catch {
       setError("Vibe didn't save — try again.");

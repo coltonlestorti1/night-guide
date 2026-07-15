@@ -11,19 +11,27 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { openDirections } from "@/lib/directions";
+import { openDirections, MapsProvider } from "@/lib/directions";
+import { logEvent } from "@/lib/analytics";
 
 export default function DirectionsButton({
+  venueId,
   latitude,
   longitude,
   className,
   variant = "secondary",
 }: {
+  venueId?: string;
   latitude: number;
   longitude: number;
   className?: string;
   variant?: "default" | "secondary";
 }) {
+  const go = (provider: MapsProvider) => {
+    logEvent("directions_tap", { venue_id: venueId, provider });
+    openDirections(provider, latitude, longitude);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -32,10 +40,10 @@ export default function DirectionsButton({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="min-w-[11rem]">
-        <DropdownMenuItem onClick={() => openDirections("apple", latitude, longitude)}>
+        <DropdownMenuItem onClick={() => go("apple")}>
           <Apple className="h-4 w-4 mr-2" /> Apple Maps
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => openDirections("google", latitude, longitude)}>
+        <DropdownMenuItem onClick={() => go("google")}>
           <Navigation className="h-4 w-4 mr-2" /> Google Maps
         </DropdownMenuItem>
       </DropdownMenuContent>

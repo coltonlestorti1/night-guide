@@ -4,9 +4,11 @@
  * music, and the primary actions. Self-contained: owns its saved state so the
  * host only supplies the venue and a close handler.
  */
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, X, Bookmark, Flame, Star } from "lucide-react";
 import { Venue } from "@/data/types";
+import { logEvent } from "@/lib/analytics";
 import { useSavedStore } from "@/store/saved";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,12 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
   const navigate = useNavigate();
   const { ids: savedIds, toggle: toggleSaved } = useSavedStore();
   const saved = savedIds.includes(venue.id);
+
+  // One venue_open per venue surfaced — the single choke point for every open
+  // path (map pin, search, list, Find-the-move pick, Social spotlight).
+  useEffect(() => {
+    logEvent("venue_open", { venue_id: venue.id, category: venue.category });
+  }, [venue.id, venue.category]);
 
   return (
     <div className="px-4 pt-2 pb-6 w-full animate-slide-up">
@@ -96,6 +104,7 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
       {/* Actions */}
       <div className="grid grid-cols-2 gap-2 mt-4">
         <DirectionsButton
+          venueId={venue.id}
           latitude={venue.latitude}
           longitude={venue.longitude}
           className="h-11 rounded-xl w-full"
