@@ -82,6 +82,13 @@ export function deriveOutgoing(rows: FriendshipRow[], myId: string) {
     .map((r) => ({ rowId: r.id, profile: r.recipient }));
 }
 
+/** Users I've blocked (I'm user_id — the only side RLS lets unblock). */
+export function deriveBlocked(rows: FriendshipRow[], myId: string) {
+  return rows
+    .filter((r) => r.status === "blocked" && r.user_id === myId)
+    .map((r) => ({ rowId: r.id, profile: r.recipient }));
+}
+
 export function deriveRelationship(rows: FriendshipRow[], myId: string, otherId: string): Relationship {
   const row = rows.find(
     (r) =>
@@ -171,6 +178,11 @@ export async function cancelRequest(rowId: string): Promise<void> {
 }
 
 export async function removeFriend(rowId: string): Promise<void> {
+  return deleteFriendshipRow(rowId);
+}
+
+/** Unblock = the blocker deletes the block row (allowed by the RLS patch). */
+export async function unblockUser(rowId: string): Promise<void> {
   return deleteFriendshipRow(rowId);
 }
 

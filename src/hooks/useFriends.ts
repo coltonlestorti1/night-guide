@@ -23,6 +23,7 @@ import {
   searchProfiles,
   sendRequest,
   suggestedProfiles,
+  unblockUser,
 } from "@/lib/friends";
 
 export function useMyFriendships() {
@@ -151,6 +152,13 @@ export function useCancelRequest() {
 export function useRemoveFriend() {
   return useFriendshipMutation<string>(
     (rowId) => removeFriend(rowId),
+    (rows, rowId) => rows.filter((r) => r.id !== rowId)
+  );
+}
+
+export function useUnblockUser() {
+  return useFriendshipMutation<string>(
+    (rowId) => unblockUser(rowId),
     (rows, rowId) => rows.filter((r) => r.id !== rowId)
   );
 }
