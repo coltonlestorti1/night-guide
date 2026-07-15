@@ -1,0 +1,378 @@
+{
+  "The Grafton": {
+    "matchedName": "The Grafton",
+    "address": "126 1st Ave, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJd3-uGZ1ZwokR2fCvxWdgWqY",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Standings": {
+    "matchedName": "Standings",
+    "address": "43 E 7th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJLXPphJxZwokRNVmngCybEpQ",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "International Bar": {
+    "matchedName": "The International Bar",
+    "address": "102 1st Ave, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJlUueGJ1ZwokRlBb3NEfYFF8",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Coyote Ugly Saloon": {
+    "matchedName": "Coyote Ugly New York",
+    "address": "233 E 14th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJ7buqpp1ZwokRk-t076OO99E",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Niagara Bar": {
+    "matchedName": "Niagara",
+    "address": "112 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJq-A7UZ1ZwokRC9nHZurb4iQ",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Paul's Cocktail Lounge": {
+    "matchedName": null,
+    "address": null,
+    "googlePlaceId": null,
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Lucy's Bar": {
+    "matchedName": "Lucy's",
+    "address": "135 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJ3WRZYp1ZwokRI0GzAf4kCIQ",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Doc Holliday's": {
+    "matchedName": "Doc Holliday's",
+    "address": "141 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJwRcz2HdZwokR_I0BuB3PkFc",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Cienfuegos": {
+    "matchedName": "Cienfuegos",
+    "address": "95 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJObMZS51ZwokRWouOc3qwUmc",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "The Library": {
+    "matchedName": "The Library",
+    "address": "7 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJQwDts4NZwokR1G-QaglL6H0",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Manitoba's": {
+    "matchedName": null,
+    "address": null,
+    "googlePlaceId": null,
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Death & Co": {
+    "matchedName": "Death & Co East Village",
+    "address": "433 E 6th St, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJKU1MNJ1ZwokRQ7eiWK511vI",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "The Summit Bar": {
+    "matchedName": "The Summit Bar & Cafe",
+    "address": "133 Loisaida Ave, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJG4L6XndZwokR7CIyJVdM4CI",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Alphabet City Beer Co": {
+    "matchedName": "Alphabet City Beer Co.",
+    "address": "96 Loisaida Ave, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJWaWbwHlZwokRj1wHkvB84zE",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "The Bourgeois Pig": {
+    "matchedName": null,
+    "address": null,
+    "googlePlaceId": null,
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "KGB Bar": {
+    "matchedName": "KGB Bar",
+    "address": "85 E 4th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJMbtTs4RZwokRB3Bd_3yH7AA",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "McSorley's Old Ale House": {
+    "matchedName": "McSorley’s Old Ale House",
+    "address": "15 E 7th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJGdCSd5tZwokRfYvMyzO7qtE",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Angel's Share": {
+    "matchedName": null,
+    "address": null,
+    "googlePlaceId": null,
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Beauty Bar": {
+    "matchedName": "Beauty Bar",
+    "address": "231 E 14th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJbU-JV55ZwokRRgid16uv0jA",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Please Don't Tell": {
+    "matchedName": "Please Don't Tell",
+    "address": "113 St Marks Pl, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJb67-ZZ1ZwokRRxBYr3GlFp0",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "The Wayland": {
+    "matchedName": "The Wayland",
+    "address": "700 E 9th St, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJZeSUWndZwokRwwxbW4B4nHM",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "d.b.a.": {
+    "matchedName": "d.b.a.",
+    "address": "41 1st Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJFTsuboNZwokRNAuw9taAIx4",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Juke Bar": {
+    "matchedName": "Juke Bar",
+    "address": "196 2nd Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJD28DfJ5ZwokRpyv9AXrO6no",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Holiday Cocktail Lounge": {
+    "matchedName": "Holiday Cocktail Lounge",
+    "address": "75 St Marks Pl, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJB2KyA51ZwokRyWZr8ZgaeRA",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Ten Degrees": {
+    "matchedName": "Ten Degrees",
+    "address": "121 St Marks Pl, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJI1FMYZ1ZwokRhOThOdTMOgA",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "The Headless Widow": {
+    "matchedName": "The Headless Widow",
+    "address": "99 1st Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJA9irJVtZwokRxk_y6uNanoI",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Wonderland Bar": {
+    "matchedName": "Wonderland Bar",
+    "address": "96 2nd Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJsctiAgBZwokRRPidYZS6VzQ",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Bua": {
+    "matchedName": "Bua",
+    "address": "122 St Marks Pl, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJ3XASaJ1ZwokR4zn6EyjizVM",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Superbueno": {
+    "matchedName": "Superbueno",
+    "address": "13 1st Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJbXN71WhZwokRNTk55-ScVWY",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Sweet Linda": {
+    "matchedName": "Sweet Linda",
+    "address": "29 2nd Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJTSEOrsNZwokR8vHwFFdZla8",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Motel No Tell": {
+    "matchedName": "Motel No Tell",
+    "address": "210 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJqTZuJztZwokREqOEPG7VOSM",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Solas": {
+    "matchedName": "Solas",
+    "address": "232 E 9th St #1, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJYTk0bpxZwokRHBO9UXg4SVA",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Paradise Lost": {
+    "matchedName": "Paradise Lost",
+    "address": "100 2nd Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJr_CugNxZwokRYRqcXtzJ8sQ",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Goodnight Sonny": {
+    "matchedName": "Goodnight Sonny",
+    "address": "134 1st Ave, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJm8vZD51ZwokR-5pyz5U7Omg",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Deluxx Fluxx": {
+    "matchedName": "Deluxx Fluxx",
+    "address": "125 E 11th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJe-lFm_VZwokRpZ2tEFhS6f4",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Lucky": {
+    "matchedName": "Lucky",
+    "address": "168 Avenue B, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJe74ZAXdZwokR3qXA9irhjio",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Mona's": {
+    "matchedName": "Mona's",
+    "address": "224 Avenue B Unit 14, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJjZDVonZZwokRoZPvylQfyFY",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "The York": {
+    "matchedName": "The York",
+    "address": "186 Avenue B, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJx1AoOXVZwokRe1q0RHf5t6U",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "The Spotted Owl Tavern": {
+    "matchedName": "The Spotted Owl Tavern",
+    "address": "211 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJfdFXdnZZwokRw8KBMsqlO5U",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Accidental Bar": {
+    "matchedName": "Accidental Bar",
+    "address": "98 Loisaida Ave, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJUeg8neFZwokRjTD4oCwTPGk",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Berlin": {
+    "matchedName": "Berlin",
+    "address": "25 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJiaPprINZwokR2C1kGvUYBfQ",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Little Rebel": {
+    "matchedName": "Little Rebel",
+    "address": "219 2nd Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJ4erQS9dZwokRRAK6XSV74sg",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Romeos": {
+    "matchedName": "Romeos",
+    "address": "118 St Marks Pl, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJ5dKgkl1ZwokRVaLe0VlqPXg",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Club Cumming": {
+    "matchedName": "Club Cumming",
+    "address": "505 E 6th St, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJr1acrIJZwokRLpu9uKM6lIo",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Big Bar": {
+    "matchedName": "Big Bar",
+    "address": "75 E 7th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJo3_m5pxZwokRyDo458xlexg",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Two Perrys": {
+    "matchedName": "Two Perrys",
+    "address": "127 Loisaida Ave, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJA5VYvHZZwokR3PrQCTgoJ8g",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Wiggle Room": {
+    "matchedName": "Wiggle Room",
+    "address": "9 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJd5X6lqdZwokRmTT4LVSpAl4",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  }
+}

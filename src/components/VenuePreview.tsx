@@ -96,6 +96,7 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
       {/* Actions */}
       <div className="grid grid-cols-2 gap-2 mt-4">
         <DirectionsButton
+          title={venue.title}
           latitude={venue.latitude}
           longitude={venue.longitude}
           className="h-11 rounded-xl w-full"
