@@ -331,16 +331,17 @@ After a discussion is approved, Claude should:
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
 - **Unblock UI** — **BUILT 2026-07-14, on `feat/unblock-ui` awaiting Colton's review + merge.** Collapsed "Blocked (n)" section at the bottom of the Social page (below Your Friends); Unblock deletes the block row via the existing friends data layer (`unblockUser` → `deleteFriendshipRow`, optimistic with rollback). Only rows where you're the blocker are shown. tsc + build pass. Remaining: two-account sanity check (block → appears in section → unblock → can re-request), then merge.
-- **Map-pin friend avatars** — the locked v1 fast-follow (Map.tsx marker code is fragile; that's why it was cut from v1).
-- **Location permission in onboarding** — make it one of the first accepts (Colton ask, 2026-07-13).
+- **Map-pin friend avatars** — **BUILT 2026-07-15** on `feat/map-pin-avatars` + combined into `integration/2026-07-15`; awaiting Colton review. Faces (max 2 + "+N") under pins, same RLS-filtered friends-out feed as the venue sheet.
+- **Location permission in onboarding** — **BUILT 2026-07-15** on `feat/onboarding-location` + integration branch; skippable /welcome/location step after username. Copy needs Colton's confirm.
 - **Assisted / auto check-in** — PWA reality: foreground nearby-prompt only; true background needs Capacitor (Colton ask, 2026-07-13).
 - **Night Recap** — morning-after bars-visited + ranking. Blocked: `checkIn()`/`checkOut()` currently DELETE history (needs delete→expire change — touches the protected core loop) + needs a ratings table. Recap trail private-to-self, never visible to others. Feasibility prep (2026-07-14): `docs/plans/2026-07-14-night-recap-prep.md` — delete→expire is view-compatible (all reads go through `active_check_ins`), own-history reads need no RLS change, but an UPDATE policy on `check_ins` is required.
 - ~~🐛 setVibe() silently broken~~ **FIXED 2026-07-14** — `check_ins` had RLS enabled but no UPDATE policy, so the `setVibe()` UPDATE (`src/lib/checkins.ts:72`) matched 0 rows without erroring and vibes never saved. Patched live via SQL editor: "users update own checkins" policy (owner-only; identity columns immutable via pre-update snapshot; `expires_at` may only move earlier — which pre-satisfies the delete→expire DDL the Night Recap needs). Verified: 4 policies on `check_ins`. DDL recorded in `endz-schema.sql` check_ins section.
 - **Going-out crew** — MySpace-Top-8-style crew of 5–8 (IG Close Friends analog). Tabled 2026-07-13; needs `close_groups`/`close_group_members`. Resume only on Colton's prompt.
 - **Google OAuth out of testing mode** — random users currently CANNOT sign into the map (only added test users). A launch blocker bigger than anything above; needs Google OAuth verification or a decision on auth approach.
 - **Declared intent ("going out tonight")** — Phase 1 roadmap item (2026-07-08); needs new `intents` table. Pairs with the friends layer that just shipped.
-- **Analytics** — Phase 1 roadmap item; `src/lib/analytics.ts` is a no-op today. Needs an `events` table + wiring. Without it there's no way to measure the north-star metric (unprompted check-ins per active user per night).
-- **Real PWA icons** — `icon-192/512.png` are placeholders generated from the favicon; swap for real art before pushing installs.
+- **Analytics** — **CLIENT WIRING BUILT 2026-07-15** on `feat/analytics-wiring` + integration branch (fail-safe logEvent, 6 core-loop events). **Blocked on Colton running the events-table DDL** (in `docs/plans/2026-07-15-analytics-prep.md`); silently no-ops until then. Open Qs: ghost-mode counting, night boundary, deferred events.
+- **Real PWA icons** — manifest/meta **FIXED 2026-07-15** on `chore/pwa-icons` + integration branch (theme-color was light-on-dark bug, maskable declared). **Art still placeholder** — spec for Colton in `docs/plans/2026-07-15-pwa-icons-prep.md`.
+- **Named directions (item 1 partial build)** — **BUILT 2026-07-15** on `feat/named-directions` + integration branch within the prep doc's recommended approach: Google fully named (43/47 verified place IDs), Apple name+address with runbook for Colton's Place ID verification; 4 venues need addresses. Full Apple named nav still needs the runbook done.
 
 ---
 
