@@ -8,6 +8,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useFilterStore } from "@/store/filters";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
+import { useFriendsOutTonight } from "@/hooks/useFriends";
+import type { PinFriend } from "@/components/Map";
 import { BBox, Venue, VenueCategory } from "@/data/types";
 import Map from "@/components/Map";
 import BarCard from "@/components/BarCard";
@@ -288,6 +290,23 @@ const MapPage = () => {
     [activityData]
   );
 
+  // Friends checked in, grouped by venue — feeds avatar faces onto pins.
+  // useFriendsOutTonight is already RLS-filtered (ghost mode, visibility,
+  // non-friends excluded), so this exposes nothing the venue sheet doesn't.
+  const { data: friendsOut } = useFriendsOutTonight();
+  const friendsByVenue = useMemo(() => {
+    if (!friendsOut || friendsOut.length === 0) return undefined;
+    const map: Record<string, PinFriend[]> = {};
+    for (const f of friendsOut) {
+      (map[f.venueId] ??= []).push({
+        id: f.profile.id,
+        name: f.profile.display_name || f.profile.username,
+        avatarUrl: f.profile.avatar_url,
+      });
+    }
+    return map;
+  }, [friendsOut]);
+
   return (
     <section aria-labelledby="map-heading" className="relative">
       <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — East Village</h1>
@@ -338,6 +357,7 @@ const MapPage = () => {
             venues={displayVenues}
             activity={activityCounts}
             happyHour={hhActiveIds}
+            friendsByVenue={friendsByVenue}
             selectedId={selected?.id}
             onSelect={(id) => {
               const v = venues.find((x) => x.id === id) || null;
