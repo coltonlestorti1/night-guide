@@ -14,11 +14,13 @@
 
     <!-- PWA / installability -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#F7F7F4" />
+    <!-- theme-color must match manifest theme_color and the dark brand (#09090b) -->
+    <meta name="theme-color" content="#09090b" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- dark app: solid black iOS status bar (not "default"/white) -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="ENDZ" />
 
     <meta property="og:title" content="ENDZ — East Village Nightlife" />
