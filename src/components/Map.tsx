@@ -15,6 +15,8 @@ import { useLocationStore } from "@/store/location";
 import { pinGlyph } from "@/lib/venueTraits";
 import { toast } from "sonner";
 
+export type PinFriend = { id: string; name: string; avatarUrl: string | null };
+
 export type MapProps = {
   venues: Venue[];
   selectedId?: string;
@@ -24,6 +26,8 @@ export type MapProps = {
   activity?: Record<string, number>;
   /** venueIds with an ACTIVE happy hour; pins get the amber ring */
   happyHour?: Set<string>;
+  /** venueId -> visible friends checked in there; renders avatar faces on the pin */
+  friendsByVenue?: Record<string, PinFriend[]>;
 };
 
 // Ring COLOR is reserved for live state so a colored ring always means
@@ -47,7 +51,82 @@ const debounce = (fn: (...args: any[]) => void, ms: number) => {
   };
 };
 
-const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged, activity, happyHour }) => {
+// A friend's face for a pin: photo when we have one, initial as the fallback
+// (and if the photo 404s). 18px, white-ringed — Snap-Map style.
+function friendFace(f: { name: string; avatarUrl: string | null }, overlap: boolean): HTMLElement {
+  const initial = () => {
+    const d = document.createElement("div");
+    d.textContent = (f.name.slice(0, 1) || "?").toUpperCase();
+    d.style.fontSize = "9px";
+    d.style.fontWeight = "700";
+    d.style.color = "#6C45FF";
+    d.style.background = "#ECE7FF";
+    d.style.display = "flex";
+    d.style.alignItems = "center";
+    d.style.justifyContent = "center";
+    return d;
+  };
+  let el: HTMLElement;
+  if (f.avatarUrl) {
+    const img = document.createElement("img");
+    img.src = f.avatarUrl;
+    img.alt = "";
+    img.referrerPolicy = "no-referrer"; // googleusercontent 403s without this
+    img.style.objectFit = "cover";
+    img.addEventListener("error", () => img.replaceWith(decorate(initial())));
+    el = img;
+  } else {
+    el = initial();
+  }
+  return decorate(el, overlap);
+  function decorate(node: HTMLElement, ov = overlap): HTMLElement {
+    node.style.width = "18px";
+    node.style.height = "18px";
+    node.style.borderRadius = "50%";
+    node.style.border = "2px solid #ffffff";
+    node.style.boxShadow = "0 1px 3px rgba(17,17,17,0.28)";
+    node.style.boxSizing = "border-box";
+    if (ov) node.style.marginLeft = "-7px";
+    return node;
+  }
+}
+
+// Cluster of up to 2 friend faces + "+N" chip, hanging under the pin.
+function friendCluster(friends: { name: string; avatarUrl: string | null }[]): HTMLElement {
+  const cluster = document.createElement("div");
+  cluster.style.position = "absolute";
+  cluster.style.bottom = "-7px";
+  cluster.style.left = "50%";
+  cluster.style.transform = "translateX(-50%)";
+  cluster.style.display = "flex";
+  cluster.style.alignItems = "center";
+  cluster.style.zIndex = "3";
+  const shown = friends.slice(0, 2);
+  shown.forEach((f, i) => cluster.appendChild(friendFace(f, i > 0)));
+  const extra = friends.length - shown.length;
+  if (extra > 0) {
+    const chip = document.createElement("div");
+    chip.textContent = `+${extra}`;
+    chip.style.height = "18px";
+    chip.style.minWidth = "18px";
+    chip.style.padding = "0 3px";
+    chip.style.marginLeft = "-7px";
+    chip.style.borderRadius = "9px";
+    chip.style.border = "2px solid #ffffff";
+    chip.style.background = "#6C45FF";
+    chip.style.color = "#ffffff";
+    chip.style.fontSize = "9px";
+    chip.style.fontWeight = "700";
+    chip.style.display = "flex";
+    chip.style.alignItems = "center";
+    chip.style.justifyContent = "center";
+    chip.style.boxSizing = "border-box";
+    cluster.appendChild(chip);
+  }
+  return cluster;
+}
+
+const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged, activity, happyHour, friendsByVenue }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -55,6 +134,14 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
   const requestLocation = useLocationStore((s) => s.request);
   const { center, zoom, setView } = useMapViewStore();
   const happyHourKey = happyHour ? [...happyHour].sort().join(",") : "";
+  // Stable string of "which friends are at which venue" so markers rebuild only
+  // when that membership changes — same trick as happyHourKey, not on every render.
+  const friendsKey = friendsByVenue
+    ? Object.entries(friendsByVenue)
+        .map(([vid, list]) => `${vid}:${list.map((f) => f.id).sort().join("-")}`)
+        .sort()
+        .join(",")
+    : "";
 
   const clearMarkers = useCallback(() => {
     markersRef.current.forEach((m) => m.remove());
@@ -149,6 +236,15 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
         wrapper.appendChild(badge);
       }
 
+      // Friend faces: a photo on the pin is the strongest "go here" signal, so
+      // these venues float above the rest. The count badge (total check-ins,
+      // top-right) and the avatars (your friends, bottom) coexist.
+      const friends = friendsByVenue?.[v.id];
+      if (friends && friends.length > 0) {
+        wrapper.appendChild(friendCluster(friends));
+        if (!isSelected) wrapper.style.zIndex = "5";
+      }
+
       wrapper.addEventListener("mouseenter", () => { pin.style.transform = `scale(${scale * 1.12})`; });
       wrapper.addEventListener("mouseleave", () => { pin.style.transform = scale !== 1 ? `scale(${scale})` : "scale(1)"; });
 
@@ -163,10 +259,11 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
 
       markersRef.current.push(marker);
     });
-    // happyHourKey (stable string) stands in for the Set so markers rebuild
-    // only when ring membership actually changes — not on every render.
+    // happyHourKey / friendsKey (stable strings) stand in for the Set/Record so
+    // markers rebuild only when ring or friend membership actually changes —
+    // not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venues, selectedId, onSelect, clearMarkers, activity, happyHourKey]);
+  }, [venues, selectedId, onSelect, clearMarkers, activity, happyHourKey, friendsKey]);
 
   useEffect(() => {
     if (!mapContainer.current) return;
