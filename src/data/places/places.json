@@ -342,5 +342,77 @@
     "applePlaceId": null,
     "appleMatchStatus": "unverified",
     "appleVerifiedAt": null
+  },
+  "96 Tears": {
+    "matchedName": "96 Tears",
+    "address": "110 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJpStBHXZZwokRP6qe0Iyqtsk",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Double Down Saloon": {
+    "matchedName": "Double Down Saloon",
+    "address": "14 Avenue A, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJRZhgTIJZwokR5ZRVoHE3tlw",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Lovers of Today": {
+    "matchedName": "Lovers of Today",
+    "address": "132 1/2 E 7th St, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJ7QfWz5VZwokRMwX7VtNhwvw",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Banshee": {
+    "matchedName": "Banshee",
+    "address": "143 1st Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJMRtpqp1ZwokRewsdGXAeOOI",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Sake Bar Decibel": {
+    "matchedName": "Sake Bar Decibel",
+    "address": "240 E 9th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJ-3ZSb5xZwokRDb2PQKNwwbU",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Barcade": {
+    "matchedName": "Barcade",
+    "address": "6 St Marks Pl, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJuYldg5tZwokRsqgWxKnQQTk",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Blue & Gold Tavern": {
+    "matchedName": "Blue & Gold Tavern",
+    "address": "79 E 7th St, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJdY_U5pxZwokR0A9LyTQzOz8",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Downtown Social": {
+    "matchedName": "Downtown Social",
+    "address": "149 2nd Ave, New York, NY 10003, USA",
+    "googlePlaceId": "ChIJf0AsgTxZwokRiE7wZTUENp0",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
+  },
+  "Otto's Shrunken Head": {
+    "matchedName": "Otto's Shrunken Head",
+    "address": "538 E 14th St, New York, NY 10009, USA",
+    "googlePlaceId": "ChIJR4DCmHZZwokRabhwmFJnhnE",
+    "applePlaceId": null,
+    "appleMatchStatus": "unverified",
+    "appleVerifiedAt": null
   }
 }

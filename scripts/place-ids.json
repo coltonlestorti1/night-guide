@@ -213,5 +213,50 @@
     "placeId": "ChIJd5X6lqdZwokRmTT4LVSpAl4",
     "matchedName": "Wiggle Room",
     "address": "9 Avenue A, New York, NY 10009, USA"
+  },
+  "96 Tears": {
+    "placeId": "ChIJpStBHXZZwokRP6qe0Iyqtsk",
+    "matchedName": "96 Tears",
+    "address": "110 Avenue A, New York, NY 10009, USA"
+  },
+  "Double Down Saloon": {
+    "placeId": "ChIJRZhgTIJZwokR5ZRVoHE3tlw",
+    "matchedName": "Double Down Saloon",
+    "address": "14 Avenue A, New York, NY 10009, USA"
+  },
+  "Lovers of Today": {
+    "placeId": "ChIJ7QfWz5VZwokRMwX7VtNhwvw",
+    "matchedName": "Lovers of Today",
+    "address": "132 1/2 E 7th St, New York, NY 10009, USA"
+  },
+  "Banshee": {
+    "placeId": "ChIJMRtpqp1ZwokRewsdGXAeOOI",
+    "matchedName": "Banshee",
+    "address": "143 1st Ave, New York, NY 10003, USA"
+  },
+  "Sake Bar Decibel": {
+    "placeId": "ChIJ-3ZSb5xZwokRDb2PQKNwwbU",
+    "matchedName": "Sake Bar Decibel",
+    "address": "240 E 9th St, New York, NY 10003, USA"
+  },
+  "Barcade": {
+    "placeId": "ChIJuYldg5tZwokRsqgWxKnQQTk",
+    "matchedName": "Barcade",
+    "address": "6 St Marks Pl, New York, NY 10003, USA"
+  },
+  "Blue & Gold Tavern": {
+    "placeId": "ChIJdY_U5pxZwokR0A9LyTQzOz8",
+    "matchedName": "Blue & Gold Tavern",
+    "address": "79 E 7th St, New York, NY 10003, USA"
+  },
+  "Downtown Social": {
+    "placeId": "ChIJf0AsgTxZwokRiE7wZTUENp0",
+    "matchedName": "Downtown Social",
+    "address": "149 2nd Ave, New York, NY 10003, USA"
+  },
+  "Otto's Shrunken Head": {
+    "placeId": "ChIJR4DCmHZZwokRabhwmFJnhnE",
+    "matchedName": "Otto's Shrunken Head",
+    "address": "538 E 14th St, New York, NY 10009, USA"
   }
 }
