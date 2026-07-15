@@ -39,14 +39,6 @@
     "appleMatchStatus": "unverified",
     "appleVerifiedAt": null
   },
-  "Paul's Cocktail Lounge": {
-    "matchedName": null,
-    "address": null,
-    "googlePlaceId": null,
-    "applePlaceId": null,
-    "appleMatchStatus": "unverified",
-    "appleVerifiedAt": null
-  },
   "Lucy's Bar": {
     "matchedName": "Lucy's",
     "address": "135 Avenue A, New York, NY 10009, USA",
@@ -79,14 +71,6 @@
     "appleMatchStatus": "unverified",
     "appleVerifiedAt": null
   },
-  "Manitoba's": {
-    "matchedName": null,
-    "address": null,
-    "googlePlaceId": null,
-    "applePlaceId": null,
-    "appleMatchStatus": "unverified",
-    "appleVerifiedAt": null
-  },
   "Death & Co": {
     "matchedName": "Death & Co East Village",
     "address": "433 E 6th St, New York, NY 10009, USA",
@@ -111,14 +95,6 @@
     "appleMatchStatus": "unverified",
     "appleVerifiedAt": null
   },
-  "The Bourgeois Pig": {
-    "matchedName": null,
-    "address": null,
-    "googlePlaceId": null,
-    "applePlaceId": null,
-    "appleMatchStatus": "unverified",
-    "appleVerifiedAt": null
-  },
   "KGB Bar": {
     "matchedName": "KGB Bar",
     "address": "85 E 4th St, New York, NY 10003, USA",
@@ -131,14 +107,6 @@
     "matchedName": "McSorley’s Old Ale House",
     "address": "15 E 7th St, New York, NY 10003, USA",
     "googlePlaceId": "ChIJGdCSd5tZwokRfYvMyzO7qtE",
-    "applePlaceId": null,
-    "appleMatchStatus": "unverified",
-    "appleVerifiedAt": null
-  },
-  "Angel's Share": {
-    "matchedName": null,
-    "address": null,
-    "googlePlaceId": null,
     "applePlaceId": null,
     "appleMatchStatus": "unverified",
     "appleVerifiedAt": null

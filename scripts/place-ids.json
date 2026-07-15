@@ -24,7 +24,6 @@
     "matchedName": "Niagara",
     "address": "112 Avenue A, New York, NY 10009, USA"
   },
-  "Paul's Cocktail Lounge": null,
   "Lucy's Bar": {
     "placeId": "ChIJ3WRZYp1ZwokRI0GzAf4kCIQ",
     "matchedName": "Lucy's",
@@ -45,7 +44,6 @@
     "matchedName": "The Library",
     "address": "7 Avenue A, New York, NY 10009, USA"
   },
-  "Manitoba's": null,
   "Death & Co": {
     "placeId": "ChIJKU1MNJ1ZwokRQ7eiWK511vI",
     "matchedName": "Death & Co East Village",
@@ -61,7 +59,6 @@
     "matchedName": "Alphabet City Beer Co.",
     "address": "96 Loisaida Ave, New York, NY 10009, USA"
   },
-  "The Bourgeois Pig": null,
   "KGB Bar": {
     "placeId": "ChIJMbtTs4RZwokRB3Bd_3yH7AA",
     "matchedName": "KGB Bar",
@@ -72,7 +69,6 @@
     "matchedName": "McSorley’s Old Ale House",
     "address": "15 E 7th St, New York, NY 10003, USA"
   },
-  "Angel's Share": null,
   "Beauty Bar": {
     "placeId": "ChIJbU-JV55ZwokRRgid16uv0jA",
     "matchedName": "Beauty Bar",
