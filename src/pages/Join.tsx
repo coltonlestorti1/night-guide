@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, Loader2, MapPin, Users, Wine, Tag } from "lucide-react";
 import { joinWaitlist, isEmail, isPhone } from "@/lib/waitlist";
-import { track } from "@/lib/analytics";
+import { logEvent } from "@/lib/analytics";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Enter your name").max(80),
@@ -36,14 +36,14 @@ export default function Join() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    track("waitlist_view", { source });
+    logEvent("waitlist_view", { source });
   }, [source]);
 
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     try {
       await joinWaitlist({ name: values.name, contact: values.contact, source });
-      track("join_submit", { source });
+      logEvent("join_submit", { source });
       setDone(true);
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Something went wrong. Try again.");

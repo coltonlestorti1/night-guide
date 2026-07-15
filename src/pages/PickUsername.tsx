@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth";
 import { getSupabase } from "@/lib/supabase";
@@ -30,11 +30,16 @@ const PickUsername = () => {
   const [availability, setAvailability] = useState<Availability>("idle");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Set the instant we claim, so the redirect effect below doesn't race the
+  // signedIn flip and yank us to "/" before the location step can show.
+  const claimedRef = useRef(false);
 
-  // Only makes sense mid-onboarding; bounce anyone else
+  // Only makes sense mid-onboarding; bounce anyone else. A fresh claim routes
+  // itself to the location step, so don't treat that signedIn flip as "already
+  // onboarded, send to map."
   useEffect(() => {
     if (status === "signedOut") navigate("/profile");
-    if (status === "signedIn") navigate("/");
+    if (status === "signedIn" && !claimedRef.current) navigate("/");
   }, [status, navigate]);
 
   // Session can arrive after mount (direct load on /welcome while restoring);
@@ -89,7 +94,11 @@ const PickUsername = () => {
       }
       return;
     }
-    await refreshProfile(); // flips status to signedIn -> effect above navigates to "/"
+    claimedRef.current = true;
+    await refreshProfile(); // flips status to signedIn
+    // New users get the location step next, then the map. The redirect effect
+    // is suppressed by claimedRef so it can't beat us to "/".
+    navigate("/welcome/location", { replace: true });
   };
 
   const hint =

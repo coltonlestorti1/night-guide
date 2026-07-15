@@ -11,6 +11,7 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocationStore } from "@/store/location";
+import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine } from "lucide-react";
 
@@ -170,7 +171,13 @@ export default function VibeFinder({
                   </div>
                 </div>
               </div>
-              <Button className="w-full h-11 rounded-xl mt-5" onClick={() => setPage(0)}>
+              <Button
+                className="w-full h-11 rounded-xl mt-5"
+                onClick={() => {
+                  logEvent("find_the_move", { vibe, drinks, when, near, happy_hour: happyHour, age });
+                  setPage(0);
+                }}
+              >
                 Show me the move
               </Button>
             </>
