@@ -465,6 +465,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     longitude: -73.98348510000001,
     serves_alcohol: true,
     category: "bar",
+    age_range_min: 21,
+    age_range_max: 27,
   },
   {
     id: "double-down-saloon",
@@ -477,6 +479,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     serves_alcohol: true,
     category: "bar",
     avg_price_level: 1,
+    age_range_min: 21,
+    age_range_max: 28,
   },
   {
     id: "lovers-of-today",
@@ -487,6 +491,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     longitude: -73.9834216,
     serves_alcohol: true,
     category: "lounge",
+    age_range_min: 22,
+    age_range_max: 28,
   },
   {
     id: "banshee",
@@ -497,6 +503,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     longitude: -73.9853309,
     serves_alcohol: true,
     category: "bar",
+    age_range_min: 21,
+    age_range_max: 27,
   },
   {
     id: "sake-bar-decibel",
@@ -508,6 +516,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     serves_alcohol: true,
     category: "bar",
     avg_price_level: 2,
+    age_range_min: 22,
+    age_range_max: 28,
   },
   {
     id: "barcade",
@@ -519,6 +529,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     serves_alcohol: true,
     category: "bar",
     avg_price_level: 2,
+    age_range_min: 21,
+    age_range_max: 28,
   },
   {
     id: "blue-gold-tavern",
@@ -530,6 +542,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     serves_alcohol: true,
     category: "bar",
     avg_price_level: 1,
+    age_range_min: 21,
+    age_range_max: 25,
   },
   {
     id: "downtown-social",
@@ -540,6 +554,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     longitude: -73.98738759999999,
     serves_alcohol: true,
     category: "bar",
+    age_range_min: 21,
+    age_range_max: 25,
   },
   {
     id: "otto-s-shrunken-head",
@@ -552,5 +568,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     serves_alcohol: true,
     category: "bar",
     avg_price_level: 1,
+    age_range_min: 21,
+    age_range_max: 28,
   },
 ];
