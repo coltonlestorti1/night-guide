@@ -11,6 +11,7 @@ import Social from "@/pages/Social";
 import Profile from "@/pages/Profile";
 import VenueDetail from "@/pages/VenueDetail";
 import PickUsername from "@/pages/PickUsername";
+import LocationPrimer from "@/pages/LocationPrimer";
 import Join from "@/pages/Join";
 import Qr from "@/pages/Qr";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => {
               <Route path="profile" element={<Profile />} />
             </Route>
             <Route path="welcome" element={<PickUsername />} />
+            <Route path="welcome/location" element={<LocationPrimer />} />
             <Route path="join" element={<Join />} />
             <Route path="qr" element={<Qr />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
