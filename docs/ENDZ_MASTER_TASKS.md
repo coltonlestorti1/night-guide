@@ -108,6 +108,14 @@ For every pilot venue, verify:
 only, no name, no address, no place identity. `DirectionsButton.tsx`
 (used from `VenuePreview`) is the only navigation surface.
 
+**Discussion-prep (2026-07-14):** full audit + Apple research in
+`docs/plans/2026-07-14-apple-maps-named-nav-prep.md`. Headline:
+`scripts/place-ids.json` already holds Google-verified name + full address for
+all 47 venues; Apple unified URLs (iOS 18.4+) support
+`directions?destination=<name+addr>&destination-place-id=<ID>`; recommended
+approach = manual Place ID Lookup verification for the 47 ($0) with name+address
+fallback, Server API automation ($99/yr dev account, 25k calls/day) at scale.
+
 ---
 
 ## 2. Dynamic Happy Hours
@@ -241,6 +249,12 @@ Refresh and rotation requirements:
 (review-count tiebreak) filtered to open-that-night, top 12, Thu/Fri/Sat tabs.
 Same order every weekend by construction — the most static surface of the three.
 
+**Discussion-prep (2026-07-14):** `docs/plans/2026-07-14-weekend-favorites-prep.md`.
+Data reality: 43/47 rated, 14/47 have happy-hour windows, 0/47 have
+popularTimes (serpapi source never ran). Recommended MVP = category-slotted
+picks from existing data (no schema, no randomness); impression cooldowns stay
+blocked on parked item 5.
+
 ---
 
 ## 5. Recommendation State and Impression Tracking
@@ -320,7 +334,8 @@ After a discussion is approved, Claude should:
 - **Map-pin friend avatars** — the locked v1 fast-follow (Map.tsx marker code is fragile; that's why it was cut from v1).
 - **Location permission in onboarding** — make it one of the first accepts (Colton ask, 2026-07-13).
 - **Assisted / auto check-in** — PWA reality: foreground nearby-prompt only; true background needs Capacitor (Colton ask, 2026-07-13).
-- **Night Recap** — morning-after bars-visited + ranking. Blocked: `checkIn()`/`checkOut()` currently DELETE history (needs delete→expire change — touches the protected core loop) + needs a ratings table. Recap trail private-to-self, never visible to others.
+- **Night Recap** — morning-after bars-visited + ranking. Blocked: `checkIn()`/`checkOut()` currently DELETE history (needs delete→expire change — touches the protected core loop) + needs a ratings table. Recap trail private-to-self, never visible to others. Feasibility prep (2026-07-14): `docs/plans/2026-07-14-night-recap-prep.md` — delete→expire is view-compatible (all reads go through `active_check_ins`), own-history reads need no RLS change, but an UPDATE policy on `check_ins` is required.
+- ~~🐛 setVibe() silently broken~~ **FIXED 2026-07-14** — `check_ins` had RLS enabled but no UPDATE policy, so the `setVibe()` UPDATE (`src/lib/checkins.ts:72`) matched 0 rows without erroring and vibes never saved. Patched live via SQL editor: "users update own checkins" policy (owner-only; identity columns immutable via pre-update snapshot; `expires_at` may only move earlier — which pre-satisfies the delete→expire DDL the Night Recap needs). Verified: 4 policies on `check_ins`. DDL recorded in `endz-schema.sql` check_ins section.
 - **Going-out crew** — MySpace-Top-8-style crew of 5–8 (IG Close Friends analog). Tabled 2026-07-13; needs `close_groups`/`close_group_members`. Resume only on Colton's prompt.
 - **Google OAuth out of testing mode** — random users currently CANNOT sign into the map (only added test users). A launch blocker bigger than anything above; needs Google OAuth verification or a decision on auth approach.
 - **Declared intent ("going out tonight")** — Phase 1 roadmap item (2026-07-08); needs new `intents` table. Pairs with the friends layer that just shipped.
