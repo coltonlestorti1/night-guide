@@ -103,3 +103,26 @@ vary by day) — that's honest, not a bug.
 - [x] Thu/Fri/Sat tabs and BarCard row look preserved.
 - [x] `npx tsc --noEmit -p tsconfig.app.json` passes; `npm run build` passes.
 - [x] Module output verified against raw enrichment JSON for all three nights.
+
+---
+
+## v2 (2026-07-15 evening, Colton-approved scope)
+
+- **Late-night = top 2 closers** (was 1). Exposed a v1 bug in passing: pick rows
+  were keyed by slot id, which would duplicate keys at 2 picks — now keyed
+  slot+venue.
+- **Grafton anchor**: when The Grafton doesn't earn a slot on data, it appears
+  under an explicit amber "ENDZ pick" label with a reason from its real hours
+  ("Our home bar · open til 3:30 AM"). Never shown when closed; never rigged
+  into a data slot.
+- **Age tailoring**: ask-once on-device age band (21-23 / 24-26 / 27-30 / 31+,
+  localStorage `endz:age-band`, skippable, changeable via "Tuned for 21-23 ·
+  change"). ageAffinity gives venues whose seeded age range is within ±2 years
+  of the user's age a +0.15 rating-scale boost in EVERY quality sort, including
+  Best value scoring and the Overall favorites tail. Missing data or no age set
+  = pure rating sort (never penalizes).
+- **Future (recorded in tracker decision log)**: replace seeded age ranges with
+  real check-in age-mix per venue once analytics events + check-in history
+  exist; birthday collection moves to a proper gated onboarding discussion
+  (profiles schema). Only 15/43 venues have seeded age ranges today — Colton
+  curating the other 28 makes this immediately better.
