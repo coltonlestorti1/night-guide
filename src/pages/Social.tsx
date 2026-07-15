@@ -7,7 +7,7 @@ import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, Users } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
-import { deriveFriends, deriveIncoming, deriveOutgoing } from "@/lib/friends";
+import { deriveBlocked, deriveFriends, deriveIncoming, deriveOutgoing } from "@/lib/friends";
 import { useFriendsOutTonight, useMyFriendships } from "@/hooks/useFriends";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import BlockedRow from "@/components/social/BlockedRow";
 import RequestRow from "@/components/social/RequestRow";
 import FriendRow from "@/components/social/FriendRow";
 import OutTonightRow from "@/components/social/OutTonightRow";
@@ -67,6 +68,7 @@ const Social = () => {
   const incoming = rows && userId ? deriveIncoming(rows, userId) : [];
   const outgoing = rows && userId ? deriveOutgoing(rows, userId) : [];
   const friends = rows && userId ? deriveFriends(rows, userId) : [];
+  const blocked = rows && userId ? deriveBlocked(rows, userId) : [];
 
   return (
     <section className="container pt-6 pb-24 max-w-lg">
@@ -116,6 +118,21 @@ const Social = () => {
             <FriendRow key={f.rowId} rowId={f.rowId} profile={f.profile} />
           ))}
         </SectionCard>
+      )}
+
+      {blocked.length > 0 && (
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center gap-1 px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors [&[data-state=open]>svg]:rotate-180">
+            Blocked ({blocked.length}) <ChevronDown className="h-3 w-3 transition-transform" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="rounded-3xl border border-border bg-card px-4 py-1.5">
+              {blocked.map((b) => (
+                <BlockedRow key={b.rowId} rowId={b.rowId} profile={b.profile} />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </section>
   );
