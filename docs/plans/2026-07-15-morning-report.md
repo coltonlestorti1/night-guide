@@ -57,3 +57,14 @@ Cross-checks that cleared real risks:
 
 Security is hardened and live. Remaining to open doors: your click on
 **Publish app** in Google Cloud (project Endz), then a stranger-account sign-in test.
+
+---
+
+## ⚠️ Late-night correction (session limit hit ~11:55 PM)
+
+The second overnight wave was cut off by the usage limit (reset 3:40 AM):
+- **Weekend Favorites build** — NOT completed (agent terminated early; ignore any partial `feat/weekend-picks` branch)
+- **Happy Hours / Find the Move prep docs** — NOT completed
+- **4-venue place-data fix** — investigation script ready (scratchpad), not yet run; the 4 venues still fall back to coordinates. Note for the fix: Angel's Share and The Bourgeois Pig may have MOVED/CLOSED at their EV addresses — validate matches by distance + business status, don't take Google's first hit.
+
+Everything in the tables above this line WAS completed and verified. First ask of the morning: say "resume overnight leftovers" and Claude will relaunch the three unfinished tasks.
