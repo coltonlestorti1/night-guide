@@ -330,7 +330,7 @@ After a discussion is approved, Claude should:
 
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
-- **Unblock UI** — v1 friends shipped with Remove/Block only. RLS already permits the blocker (`user_id`) to delete the block row; the UI just doesn't exist. Until then, unblocking = deleting the row in Supabase Table Editor.
+- **Unblock UI** — **BUILT 2026-07-14, on `feat/unblock-ui` awaiting Colton's review + merge.** Collapsed "Blocked (n)" section at the bottom of the Social page (below Your Friends); Unblock deletes the block row via the existing friends data layer (`unblockUser` → `deleteFriendshipRow`, optimistic with rollback). Only rows where you're the blocker are shown. tsc + build pass. Remaining: two-account sanity check (block → appears in section → unblock → can re-request), then merge.
 - **Map-pin friend avatars** — the locked v1 fast-follow (Map.tsx marker code is fragile; that's why it was cut from v1).
 - **Location permission in onboarding** — make it one of the first accepts (Colton ask, 2026-07-13).
 - **Assisted / auto check-in** — PWA reality: foreground nearby-prompt only; true background needs Capacitor (Colton ask, 2026-07-13).
