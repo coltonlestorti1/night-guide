@@ -20,7 +20,11 @@ export function getSupabase(): SupabaseClient | null {
 
   const cacheKey = `${url}|${key}`;
   if (!client || clientCacheKey !== cacheKey) {
-    client = createClient(url, key);
+    // PKCE flow: the OAuth redirect carries a one-time code bound to this
+    // browser, not the session tokens themselves. A shared or leaked redirect
+    // URL is useless to anyone else. (Implicit flow, the supabase-js default,
+    // briefly exposes tokens in the URL before scrubbing them.)
+    client = createClient(url, key, { auth: { flowType: "pkce" } });
     clientCacheKey = cacheKey;
   }
   return client;
