@@ -1,7 +1,7 @@
 {
   "The Grafton": {
     "placeId": "ChIJd3-uGZ1ZwokR2fCvxWdgWqY",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 456,
     "priceRange": "$10–40",
@@ -109,11 +109,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Standings": {
     "placeId": "ChIJLXPphJxZwokRNVmngCybEpQ",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.6,
     "userRatingCount": 157,
     "priceRange": "$10–20",
@@ -178,11 +179,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "International Bar": {
     "placeId": "ChIJlUueGJ1ZwokRlBb3NEfYFF8",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.2,
     "userRatingCount": 340,
     "priceRange": "$1–30",
@@ -248,11 +250,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Coyote Ugly Saloon": {
     "placeId": "ChIJ7buqpp1ZwokRk-t076OO99E",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4,
     "userRatingCount": 831,
     "priceRange": "$10–20",
@@ -372,7 +375,7 @@
   },
   "Niagara Bar": {
     "placeId": "ChIJq-A7UZ1ZwokRC9nHZurb4iQ",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 3.4,
     "userRatingCount": 652,
     "priceRange": "$10–20",
@@ -438,11 +441,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Lucy's Bar": {
     "placeId": "ChIJ3WRZYp1ZwokRI0GzAf4kCIQ",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.2,
     "userRatingCount": 286,
     "priceRange": "$20–30",
@@ -507,11 +511,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Doc Holliday's": {
     "placeId": "ChIJwRcz2HdZwokR_I0BuB3PkFc",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.1,
     "userRatingCount": 462,
     "priceRange": "$10–50",
@@ -577,11 +582,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Cienfuegos": {
     "placeId": "ChIJObMZS51ZwokRWouOc3qwUmc",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.5,
     "userRatingCount": 280,
     "editorialSummary": "Fancy rum cocktails are paired with Latin small plates at this second-floor East Village lounge.",
@@ -592,7 +598,7 @@
   },
   "The Library": {
     "placeId": "ChIJQwDts4NZwokR1G-QaglL6H0",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 710,
     "priceRange": "$10–20",
@@ -657,11 +663,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Death & Co": {
     "placeId": "ChIJKU1MNJ1ZwokRQ7eiWK511vI",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.5,
     "userRatingCount": 2108,
     "editorialSummary": "Bartenders in bow ties & suspenders recall the speakeasy era at this dark, moody cocktail lounge.",
@@ -726,11 +733,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "The Summit Bar": {
     "placeId": "ChIJG4L6XndZwokR7CIyJVdM4CI",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.7,
     "userRatingCount": 436,
     "priceRange": "$1–60",
@@ -838,11 +846,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Alphabet City Beer Co": {
     "placeId": "ChIJWaWbwHlZwokRj1wHkvB84zE",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.6,
     "userRatingCount": 598,
     "priceRange": "$20–30",
@@ -908,11 +917,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "KGB Bar": {
     "placeId": "ChIJMbtTs4RZwokRB3Bd_3yH7AA",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 640,
     "priceRange": "$10–40",
@@ -978,11 +988,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "McSorley's Old Ale House": {
     "placeId": "ChIJGdCSd5tZwokRfYvMyzO7qtE",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.7,
     "userRatingCount": 8841,
     "priceRange": "$10–20",
@@ -1051,7 +1062,7 @@
   },
   "Beauty Bar": {
     "placeId": "ChIJbU-JV55ZwokRRgid16uv0jA",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 812,
     "priceRange": "$10–20",
@@ -1109,11 +1120,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Please Don't Tell": {
     "placeId": "ChIJb67-ZZ1ZwokRRxBYr3GlFp0",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 2450,
     "priceRange": "$20–50",
@@ -1178,11 +1190,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "The Wayland": {
     "placeId": "ChIJZeSUWndZwokRwwxbW4B4nHM",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.6,
     "userRatingCount": 890,
     "priceRange": "$20–30",
@@ -1290,11 +1303,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "d.b.a.": {
     "placeId": "ChIJFTsuboNZwokRNAuw9taAIx4",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 750,
     "priceRange": "$10–20",
@@ -1401,11 +1415,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Juke Bar": {
     "placeId": "ChIJD28DfJ5ZwokRpyv9AXrO6no",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.5,
     "userRatingCount": 579,
     "priceRange": "$10–40",
@@ -1471,11 +1486,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Holiday Cocktail Lounge": {
     "placeId": "ChIJB2KyA51ZwokRyWZr8ZgaeRA",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 657,
     "priceRange": "$10–20",
@@ -1603,7 +1619,7 @@
   },
   "Ten Degrees": {
     "placeId": "ChIJI1FMYZ1ZwokRhOThOdTMOgA",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 643,
     "priceRange": "$20–30",
@@ -1727,11 +1743,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "The Headless Widow": {
     "placeId": "ChIJA9irJVtZwokRxk_y6uNanoI",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.6,
     "userRatingCount": 460,
     "priceRange": "$20–30",
@@ -1837,11 +1854,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Wonderland Bar": {
     "placeId": "ChIJsctiAgBZwokRRPidYZS6VzQ",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.7,
     "userRatingCount": 399,
     "priceRange": "$20–50",
@@ -1916,11 +1934,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Bua": {
     "placeId": "ChIJ3XASaJ1ZwokR4zn6EyjizVM",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 681,
     "priceRange": "$20–30",
@@ -2028,11 +2047,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Superbueno": {
     "placeId": "ChIJbXN71WhZwokRNTk55-ScVWY",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.2,
     "userRatingCount": 742,
     "priceRange": "$30–70",
@@ -2097,11 +2117,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Sweet Linda": {
     "placeId": "ChIJTSEOrsNZwokR8vHwFFdZla8",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.8,
     "userRatingCount": 326,
     "priceRange": "$20–50",
@@ -2150,11 +2171,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Motel No Tell": {
     "placeId": "ChIJqTZuJztZwokREqOEPG7VOSM",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.6,
     "userRatingCount": 377,
     "priceRange": "$20–60",
@@ -2269,11 +2291,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Solas": {
     "placeId": "ChIJYTk0bpxZwokRHBO9UXg4SVA",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 3.9,
     "userRatingCount": 1012,
     "priceRange": "$10–20",
@@ -2389,11 +2412,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Paradise Lost": {
     "placeId": "ChIJr_CugNxZwokRYRqcXtzJ8sQ",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 503,
     "priceRange": "$20–70",
@@ -2457,11 +2481,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Goodnight Sonny": {
     "placeId": "ChIJm8vZD51ZwokR-5pyz5U7Omg",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.1,
     "userRatingCount": 659,
     "priceRange": "$20–60",
@@ -2569,11 +2594,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Deluxx Fluxx": {
     "placeId": "ChIJe-lFm_VZwokRpZ2tEFhS6f4",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.6,
     "userRatingCount": 297,
     "priceRange": "$20–30",
@@ -2598,11 +2624,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Lucky": {
     "placeId": "ChIJe74ZAXdZwokR3qXA9irhjio",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 318,
     "priceRange": "$20–30",
@@ -2668,11 +2695,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Mona's": {
     "placeId": "ChIJjZDVonZZwokRoZPvylQfyFY",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.2,
     "userRatingCount": 417,
     "priceRange": "$10–20",
@@ -2737,11 +2765,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "The York": {
     "placeId": "ChIJx1AoOXVZwokRe1q0RHf5t6U",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.9,
     "userRatingCount": 177,
     "priceRange": "$10–20",
@@ -2806,11 +2835,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "The Spotted Owl Tavern": {
     "placeId": "ChIJfdFXdnZZwokRw8KBMsqlO5U",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 285,
     "priceRange": "$10–20",
@@ -2876,11 +2906,12 @@
         "closeMinute": 30,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Accidental Bar": {
     "placeId": "ChIJUeg8neFZwokRjTD4oCwTPGk",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.9,
     "userRatingCount": 158,
     "priceRange": "$20–30",
@@ -2920,11 +2951,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Berlin": {
     "placeId": "ChIJiaPprINZwokR2C1kGvUYBfQ",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4,
     "userRatingCount": 424,
     "priceRange": "$20–40",
@@ -2990,11 +3022,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Little Rebel": {
     "placeId": "ChIJ4erQS9dZwokRRAK6XSV74sg",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 269,
     "priceRange": "$10–20",
@@ -3059,11 +3092,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Romeos": {
     "placeId": "ChIJ5dKgkl1ZwokRVaLe0VlqPXg",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 213,
     "priceRange": "$10–50",
@@ -3127,11 +3161,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Club Cumming": {
     "placeId": "ChIJr1acrIJZwokRLpu9uKM6lIo",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 239,
     "priceRange": "$20–30",
@@ -3197,11 +3232,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Big Bar": {
     "placeId": "ChIJo3_m5pxZwokRyDo458xlexg",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 227,
     "priceRange": "$10–20",
@@ -3265,11 +3301,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Two Perrys": {
     "placeId": "ChIJA5VYvHZZwokR3PrQCTgoJ8g",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.9,
     "userRatingCount": 109,
     "priceRange": "$20–30",
@@ -3338,7 +3375,7 @@
   },
   "Wiggle Room": {
     "placeId": "ChIJd5X6lqdZwokRmTT4LVSpAl4",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 3.4,
     "userRatingCount": 285,
     "priceRange": "$20–30",
@@ -3363,11 +3400,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "96 Tears": {
     "placeId": "ChIJpStBHXZZwokRP6qe0Iyqtsk",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.6,
     "userRatingCount": 49,
     "phone": "(212) 614-9798",
@@ -3431,11 +3469,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Double Down Saloon": {
     "placeId": "ChIJRZhgTIJZwokR5ZRVoHE3tlw",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 626,
     "priceRange": "$10–20",
@@ -3501,11 +3540,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Lovers of Today": {
     "placeId": "ChIJ7QfWz5VZwokRMwX7VtNhwvw",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 3.8,
     "userRatingCount": 247,
     "priceRange": "$20–30",
@@ -3573,7 +3613,7 @@
   },
   "Banshee": {
     "placeId": "ChIJMRtpqp1ZwokRewsdGXAeOOI",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 5,
     "userRatingCount": 56,
     "priceRange": "$10–50",
@@ -3638,11 +3678,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Sake Bar Decibel": {
     "placeId": "ChIJ-3ZSb5xZwokRDb2PQKNwwbU",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.4,
     "userRatingCount": 1234,
     "priceRange": "$20–30",
@@ -3691,11 +3732,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Barcade": {
     "placeId": "ChIJuYldg5tZwokRsqgWxKnQQTk",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 1904,
     "priceRange": "$10–20",
@@ -3803,11 +3845,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Blue & Gold Tavern": {
     "placeId": "ChIJdY_U5pxZwokR0A9LyTQzOz8",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.3,
     "userRatingCount": 384,
     "priceRange": "$10–20",
@@ -3871,11 +3914,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": false
   },
   "Downtown Social": {
     "placeId": "ChIJf0AsgTxZwokRiE7wZTUENp0",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.2,
     "userRatingCount": 160,
     "priceRange": "$20–30",
@@ -3940,11 +3984,12 @@
         "closeMinute": 30,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "outdoorSeating": true
   },
   "Otto's Shrunken Head": {
     "placeId": "ChIJR4DCmHZZwokRabhwmFJnhnE",
-    "fetchedAt": "2026-07-15T22:29:24.142Z",
+    "fetchedAt": "2026-07-15T23:08:05.729Z",
     "rating": 4.5,
     "userRatingCount": 917,
     "priceRange": "$10–50",

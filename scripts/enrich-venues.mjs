@@ -21,6 +21,7 @@ const FIELD_MASK = [
   "id", "displayName", "rating", "userRatingCount", "priceRange",
   "editorialSummary", "nationalPhoneNumber", "websiteUri", "googleMapsUri",
   "businessStatus", "regularOpeningHours", "regularSecondaryOpeningHours",
+  "outdoorSeating",
 ].join(",");
 
 function envLocal(key) {

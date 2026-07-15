@@ -48,6 +48,10 @@ export function transformPlace(place, fetchedAt) {
     businessStatus: place.businessStatus,
     hours: mapPeriods(place.regularOpeningHours?.periods),
     happyHour: mapPeriods(happy?.periods),
+    // Google returns true/false when known, omits when unknown. We keep the
+    // tri-state: undefined keys are dropped below, so "unknown" never becomes
+    // a fake "no". Only true means verified outdoor seating.
+    outdoorSeating: place.outdoorSeating,
   };
   // drop undefined keys so the committed JSON stays clean
   return Object.fromEntries(Object.entries(rec).filter(([, v]) => v !== undefined));
