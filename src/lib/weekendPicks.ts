@@ -19,7 +19,7 @@ import { getEnrichment, getHappyHourPeriodsForDay, formatTime } from "@/data/enr
 import type { WeeklyPeriod } from "@/data/enrichment/types";
 import { ageAffinity } from "@/lib/agePref";
 
-export type SlotId = "first-stop" | "dancing" | "late-night" | "value" | "overall" | "anchor";
+export type SlotId = "first-stop" | "dancing" | "late-night" | "value" | "anchor";
 
 export type SlotPick = { slot: SlotId; label: string; venue: Venue; reason: string };
 
@@ -157,22 +157,6 @@ function rankValue(venues: Venue[], day: number, byQuality: Compare, userAge: nu
   return rows.sort((a, b) => b.score - a.score || byQuality(a.venue, b.venue));
 }
 
-/** Best overall — the old top-of-list rating sort (age-nudged), one slot. */
-function rankOverall(venues: Venue[], day: number, byQuality: Compare): Candidate[] {
-  return venues
-    .filter((v) => ratingOf(v) > 0 && openThatNight(v, day))
-    .sort(byQuality)
-    .map((venue) => {
-      const reviews = reviewsOf(venue);
-      return {
-        venue,
-        reason: reviews
-          ? `★ ${ratingOf(venue).toFixed(1)} · ${reviews.toLocaleString()} reviews`
-          : `★ ${ratingOf(venue).toFixed(1)}`,
-      };
-    });
-}
-
 /** Assignment priority — a venue can win at most one slot, earlier slots claim first. */
 const SLOTS: {
   slot: SlotId;
@@ -184,7 +168,8 @@ const SLOTS: {
   { slot: "dancing", label: "Best for dancing", count: 1, rank: rankDancing },
   { slot: "late-night", label: "Best late-night", count: LATE_NIGHT_PICKS, rank: rankLateNight },
   { slot: "value", label: "Best value", count: 1, rank: rankValue },
-  { slot: "overall", label: "Best overall", count: 1, rank: rankOverall },
+  // "Best overall" slot removed 2026-07-15 (Colton): redundant with the
+  // "Overall favorites" tail until real check-in data can differentiate it.
 ];
 
 const FAVORITES_COUNT = 6;
