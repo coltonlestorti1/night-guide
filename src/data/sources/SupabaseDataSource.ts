@@ -61,7 +61,9 @@ export class SupabaseDataSource implements DataSource {
   async getVenues(q: VenueQuery, _signal?: AbortSignal): Promise<Venue[]> {
     const supabase = getSupabase();
     if (!supabase) return [];
-    let query = supabase.from("venues").select("*");
+    // Only surface the curated active set. Dormant venues stay in the table
+    // (is_active = false) so we can flip them back on without re-seeding.
+    let query = supabase.from("venues").select("*").eq("is_active", true);
     if (q.bbox) {
       const [west, south, east, north] = q.bbox;
       query = query.gte("lng", west).lte("lng", east).gte("lat", south).lte("lat", north);
