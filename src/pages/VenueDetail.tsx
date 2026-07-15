@@ -147,6 +147,7 @@ const VenueDetail = () => {
             </Button>
             <DirectionsButton
               title={data.title}
+              venueId={data.id}
               latitude={data.latitude}
               longitude={data.longitude}
               variant="default"
