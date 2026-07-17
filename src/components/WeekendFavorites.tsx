@@ -41,7 +41,7 @@ export default function WeekendFavorites({ venues, onPick }: { venues: Venue[]; 
   const { picks, favorites } = pickWeekendSlots(venues, day, ageBand ? ageOf(ageBand) : null);
 
   const agePrompt = (askAge || editingAge) && (
-    <div className="mb-3 rounded-xl glass px-3 py-2.5 animate-fade-in">
+    <div className="mb-3 rounded-2xl glass px-3.5 py-3 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-medium">Your age? Sharpens the picks.</p>
         <button
@@ -80,8 +80,10 @@ export default function WeekendFavorites({ venues, onPick }: { venues: Venue[]; 
             aria-selected={day === d}
             onClick={() => setDay(d)}
             className={cn(
-              "flex-1 text-[11px] font-medium py-1 rounded-lg uppercase tracking-wide",
-              day === d ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent/10",
+              "flex-1 text-[11px] font-semibold py-1.5 rounded-full uppercase tracking-wide transition-colors",
+              day === d
+                ? "bg-foreground text-background shadow-sm"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
             )}
           >
             {d === today ? `${label} · Tonight` : label}
@@ -100,7 +102,7 @@ export default function WeekendFavorites({ venues, onPick }: { venues: Venue[]; 
                   <span
                     className={cn(
                       "shrink-0 text-[10px] font-bold uppercase tracking-wider",
-                      slot === "anchor" ? "text-amber-500" : "text-primary/80",
+                      slot === "anchor" ? "text-amber-700" : "text-primary",
                     )}
                   >
                     {label}

@@ -76,8 +76,10 @@ export default function HappyHourRail({
             aria-selected={day === d}
             onClick={() => setDay(d)}
             className={cn(
-              "flex-1 text-[11px] font-medium py-1 rounded-lg uppercase tracking-wide",
-              day === d ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent/10",
+              "flex-1 text-[11px] font-semibold py-1.5 rounded-full uppercase tracking-wide transition-colors",
+              day === d
+                ? "bg-foreground text-background shadow-sm"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
             )}
           >
             {d === now.getDay() ? "Today" : DAY_SHORT[d]}
@@ -89,8 +91,17 @@ export default function HappyHourRail({
           {rows.map(({ venue, line, active }) => (
             <div key={venue.id}>
               <BarCard venue={venue} onClick={() => onPick(venue)} />
-              <p className={cn("text-[11px] mt-1 px-1", active ? "text-amber-700 font-medium" : "text-muted-foreground")}>
-                {line}
+              <p className="mt-1.5 px-1">
+                <span
+                  className={cn(
+                    "text-[11px]",
+                    active
+                      ? "inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 font-semibold text-amber-800"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {line}
+                </span>
               </p>
             </div>
           ))}
