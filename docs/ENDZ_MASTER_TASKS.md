@@ -19,6 +19,8 @@ Decision Log as they're made.
 | 8 | Location permissions & services | NOT DISCUSSED | Today: opt-in "Locate me" + `/welcome/location` primer; `store/location.ts` client-only (coords never sent to server). No pre-permission rationale, timing strategy, approximate-vs-precise, or rich denial fallback → §8 |
 | 9 | User location dot on map | EXISTS — verify/upgrade | `Map.tsx` `placeUserDot` already drops a "you are here" dot, but **on-demand only** (tap Locate-me). Open: auto-show, persistence, prominence → §9 |
 | 10 | Overall app polish (ongoing) | ONGOING BUCKET | Rolling premium-feel backlog (loading/skeletons/empty states/success anim/haptics/map interactions/micro-anim/a11y/perf/nav/typography/transitions) → §10 |
+| 11 | Sign-up demographics (gender, age, …) | NOT DISCUSSED | Today `profiles` = username/avatar/ghost_mode only; no gender/age collected. Needs profiles schema change + privacy disclosure → §11 |
+| 12 | Group check-in & party size | NOT DISCUSSED | Today check-in is solo, counts 1 head; `activity` count drives pin tiers + "N here now". Party size would change the live crowd signal → §12 |
 
 ---
 
@@ -432,6 +434,37 @@ Note: some of this already exists (list skeletons, Map filter empty states incl.
 the new Saved one, glass/glow/motion tokens). Treat this as a standing list —
 specific candidates get appended here over time.
 
+### 11. Sign-up demographics (gender, age, and more)
+**Added 2026-07-17 (Colton) — NOT DISCUSSED, gate applies.** Collect gender, age,
+"and all that" at first sign-up (the onboarding flow, item 7). Purpose to nail
+down in discussion: what fields (gender, age/birthday, interests/genres?), what's
+required vs optional, and — critically — how each field earns its place (every
+added step lowers completion; YAGNI). Ties to: item 7 onboarding, the 18+ Terms
++ age floor, the on-device age-band personalization already in Weekend Favorites,
+and the long-term "age-mix from real check-ins" idea (Decision Log 2026-07-15).
+Privacy: gender/age are personal data — collecting + storing them server-side is
+a change from today (profiles hold username/avatar/ghost_mode), so this needs a
+`profiles` schema change + a Privacy Policy update disclosing what we collect and
+why. Age verification interplay with 18+ still open. **Discuss before building.**
+
+### 12. Group check-in & party size
+**Added 2026-07-17 (Colton) — NOT DISCUSSED, gate applies.** Two linked asks:
+- **Check in *with* friends** — a group/shared check-in, not just solo.
+- **"How many people in your party?"** — a party-size input on check-in.
+- **Party size feeds the live crowd count** — a check-in of party N should count
+  as N people at the venue, so the map's live check-in / activity numbers reflect
+  actual heads present, not just number of app users who tapped check-in.
+
+Big open questions for discussion (do NOT build yet): does party size inflate the
+same `activity` count that drives pin tiers (Trending/Hot) and the "N here now"
+badge, and how do we keep that from being gamed? Are the "friends" in a group
+check-in ENDZ users (needs their consent — RLS/privacy) or just a headcount? How
+does this interact with the protected core check-in loop (`checkIn()`/`checkOut()`
+in `src/lib/checkins.ts`, the `active_check_ins` view, and the analytics events)?
+Likely needs a `party_size` column on `check_ins` and a rethink of how `activity`
+is aggregated. Touches the most sensitive, most-protected part of the app — the
+live crowd signal — so it gets a careful gate. **Discuss before building.**
+
 ---
 
 ## Decision Log
@@ -447,3 +480,4 @@ _Append decisions here as features clear the discussion gate: date, feature, dec
 - 2026-07-17 — **Venues:** activated 3 dormant (Motel No Tell, Lucky, Little Rebel) → **31 active**. 4 new (Drop Off Service, Copper Still, Hidden Tiger, Chloe 81) **ON HOLD** (Google lookups paused); when added, **Chloe 81 stays dormant** (Lower East Side, off the East Village beachhead). Note: supersedes the 2026-07-15 "no new venues" standing decision — Colton is OK going a bit over 30, keep everything already live.
 - 2026-07-17 — **Tracker items 6–10 added** (favorites expansion, onboarding, location permissions, location dot, app polish) — Colton's discussion list; **none approved for build**.
 - 2026-07-17 — **Only remaining launch gate: Google OAuth publish** (Colton's click; project Endz/endz-501306, Auth Platform → Audience → Publish + add privacy/terms URLs to the consent screen). Push + deploy done + verified.
+- 2026-07-17 — **Items 11 & 12 added** (Colton): **#11 sign-up demographics** (gender/age/etc at first sign-up — needs `profiles` schema change + privacy disclosure; ties to onboarding #7 + age personalization) and **#12 group check-in & party size** (check in with friends, "how many in your party?", party size feeds the live crowd count — touches the protected check-in loop + `activity` aggregation). Both **NOT DISCUSSED, gate applies**. Captured while building the live-location-dot feature (items 9+8).
