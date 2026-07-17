@@ -21,3 +21,10 @@ export function formatMiles(mi: number): string {
   if (mi < 10) return `${mi.toFixed(1)} mi`;
   return `${Math.round(mi)} mi`;
 }
+
+const MILES_TO_METERS = 1609.344;
+
+/** Great-circle distance in meters. */
+export function haversineMeters(a: Coords, b: { lat: number; lng: number }): number {
+  return haversineMiles(a, b) * MILES_TO_METERS;
+}
