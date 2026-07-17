@@ -21,6 +21,7 @@ Decision Log as they're made.
 | 10 | Overall app polish (ongoing) | ONGOING BUCKET | Rolling premium-feel backlog (loading/skeletons/empty states/success anim/haptics/map interactions/micro-anim/a11y/perf/nav/typography/transitions) → §10 |
 | 11 | Sign-up demographics (gender, age, …) | NOT DISCUSSED | Today `profiles` = username/avatar/ghost_mode only; no gender/age collected. Needs profiles schema change + privacy disclosure → §11 |
 | 12 | Group check-in & party size | NOT DISCUSSED | Today check-in is solo, counts 1 head; `activity` count drives pin tiers + "N here now". Party size would change the live crowd signal → §12 |
+| 13 | Heat map layer | NOT DISCUSSED | No heat layer today; map uses discrete category pins + activity rings. A density/activity heat map is a new visualization → §13 |
 
 ---
 
@@ -423,6 +424,15 @@ Colton's ask ("a dot for where the user is") → options:
 Trade-off: auto-show must **not** trigger a permission prompt on load (respect
 item 8's timing) — only render when permission is already granted.
 
+**Accuracy note (2026-07-17, Colton):** on a laptop/desktop the dot can land a
+block+ off — browser geolocation there is WiFi/IP-triangulated, not GPS, so it's
+inherently coarse (a phone with real GPS is far tighter; ENDZ is mobile-first).
+Not a rendering bug. This is exactly what the **accuracy halo** (the deferred
+part of the MVP) is for — a translucent radius around the dot communicates
+"approximate," so an off dot reads as uncertainty rather than as wrong. Given the
+real-world feedback, promoting the accuracy halo from "cheap follow-up" to
+**recommended next follow-up** — discuss before building.
+
 ### 10. Overall App Polish (ongoing bucket)
 A rolling bucket of premium-feel improvements; **add candidates as spotted, each
 discussed before implementing.** Categories (Colton): loading states, skeleton
@@ -465,6 +475,21 @@ Likely needs a `party_size` column on `check_ins` and a rethink of how `activity
 is aggregated. Touches the most sensitive, most-protected part of the app — the
 live crowd signal — so it gets a careful gate. **Discuss before building.**
 
+### 13. Heat map layer
+**Added 2026-07-17 (Colton) — NOT DISCUSSED, gate applies.** A heat-map
+visualization on the map. Key questions to settle in discussion before any code:
+**what does "heat" represent?** Options include live check-in density / crowd
+("where's popping right now"), historical popularity by night/time, happy-hour
+concentration, or friends' activity. Each implies a different data source and a
+different freshness/privacy profile — live crowd heat rides the same `activity`
+signal that drives pin tiers (and shares its gaming/thin-data concerns), whereas
+historical heat needs stored patterns we may not have yet. Tech: MapLibre
+supports a native `heatmap` layer over a GeoJSON point source, so rendering is
+cheap; the real work is defining the weight/meaning and how it coexists with the
+existing pins (toggle? zoom-dependent?). Pairs naturally with #12 (party size
+would enrich the crowd weight) and the analytics/check-in data. **Discuss —
+which "heat," MVP scope, and how it reads alongside pins — before building.**
+
 ---
 
 ## Decision Log
@@ -481,3 +506,5 @@ _Append decisions here as features clear the discussion gate: date, feature, dec
 - 2026-07-17 — **Tracker items 6–10 added** (favorites expansion, onboarding, location permissions, location dot, app polish) — Colton's discussion list; **none approved for build**.
 - 2026-07-17 — **Only remaining launch gate: Google OAuth publish** (Colton's click; project Endz/endz-501306, Auth Platform → Audience → Publish + add privacy/terms URLs to the consent screen). Push + deploy done + verified.
 - 2026-07-17 — **Items 11 & 12 added** (Colton): **#11 sign-up demographics** (gender/age/etc at first sign-up — needs `profiles` schema change + privacy disclosure; ties to onboarding #7 + age personalization) and **#12 group check-in & party size** (check in with friends, "how many in your party?", party size feeds the live crowd count — touches the protected check-in loop + `activity` aggregation). Both **NOT DISCUSSED, gate applies**. Captured while building the live-location-dot feature (items 9+8).
+- 2026-07-17 — **Item 13 added** (Colton): **heat map layer** — NOT DISCUSSED, gate applies. Open first question = what "heat" means (live crowd density vs historical vs friends vs happy-hour); MapLibre has a native heatmap layer so rendering is cheap, the meaning/scope is the work. Captured mid-build of the live-location-dot.
+- 2026-07-17 — **Location-dot accuracy note** (Colton flagged dot landing a block off on desktop): browser geolocation on laptop = WiFi/IP, coarse by nature; phone GPS is tight. Not a bug. Promoted the **accuracy halo** (deferred MVP part of item 9) to recommended next follow-up — communicates uncertainty visually. See §9.
