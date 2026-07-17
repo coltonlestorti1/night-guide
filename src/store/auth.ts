@@ -18,6 +18,7 @@ interface AuthState {
   profile: Profile | null;
   init: () => void;
   refreshProfile: () => Promise<void>;
+  setGhostMode: (next: boolean) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -65,6 +66,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     if (data) set({ status: "signedIn", profile: data as Profile });
     else set({ status: "needsUsername", profile: null });
+  },
+
+  setGhostMode: async (next: boolean) => {
+    const supabase = getSupabase();
+    const { session, profile } = get();
+    if (!supabase || !session || !profile) return;
+    const prev = profile.ghost_mode;
+    if (prev === next) return;
+    // Optimistic: flip locally, revert if the write fails.
+    set({ profile: { ...profile, ghost_mode: next } });
+    const { error } = await supabase
+      .from("profiles")
+      .update({ ghost_mode: next })
+      .eq("id", session.user.id);
+    if (error) {
+      set({ profile: { ...get().profile!, ghost_mode: prev } });
+      throw error;
+    }
   },
 
   signInWithGoogle: async () => {

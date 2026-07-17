@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, LogOut } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ChevronDown, Ghost, LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 /** Developer-only config (API base URL, Supabase overrides). */
@@ -52,8 +54,16 @@ const DevSettings = () => {
 };
 
 const Profile = () => {
-  const { status, session, profile, signInWithGoogle, signOut } = useAuthStore();
+  const { status, session, profile, signInWithGoogle, signOut, setGhostMode } = useAuthStore();
   const [signingIn, setSigningIn] = useState(false);
+
+  const handleGhostToggle = async (next: boolean) => {
+    try {
+      await setGhostMode(next);
+    } catch {
+      toast.error("Couldn't update ghost mode. Try again.");
+    }
+  };
 
   const handleSignIn = async () => {
     setSigningIn(true);
@@ -104,6 +114,22 @@ const Profile = () => {
               )}
             </div>
           </div>
+
+          <div className="flex items-start gap-3 mt-5 pt-5 border-t border-border">
+            <Ghost className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-sm">Ghost mode</div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When on, your check-ins won't show to your friends.
+              </p>
+            </div>
+            <Switch
+              checked={!!profile?.ghost_mode}
+              onCheckedChange={handleGhostToggle}
+              aria-label="Ghost mode"
+            />
+          </div>
+
           <Button onClick={signOut} variant="secondary" className="w-full h-11 rounded-xl mt-5">
             <LogOut className="h-4 w-4 mr-2" /> Sign out
           </Button>
