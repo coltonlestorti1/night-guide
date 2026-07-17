@@ -22,6 +22,7 @@ type LocationState = {
 };
 
 let watchId: number | null = null;
+let watcherCount = 0;
 
 export const useLocationStore = create<LocationState>((set, get) => ({
   coords: null,
@@ -55,7 +56,8 @@ export const useLocationStore = create<LocationState>((set, get) => ({
       set({ status: "unsupported" });
       return;
     }
-    if (watchId !== null) return; // already watching
+    watcherCount += 1;
+    if (watchId !== null) return; // already watching for an earlier caller
     set({ status: "prompting" });
     watchId = navigator.geolocation.watchPosition(
       (pos) => set({
@@ -68,9 +70,32 @@ export const useLocationStore = create<LocationState>((set, get) => ({
     );
   },
   stopWatch: () => {
+    if (watcherCount > 0) watcherCount -= 1;
+    if (watcherCount > 0) return; // another caller still needs the stream
     if (watchId !== null && typeof navigator !== "undefined" && "geolocation" in navigator) {
       navigator.geolocation.clearWatch(watchId);
     }
     watchId = null;
   },
 }));
+
+/**
+ * Read geolocation permission WITHOUT prompting. Returns "granted" | "prompt" |
+ * "denied". Browsers lacking the Permissions API (older Safari) report "prompt"
+ * so we simply don't auto-anything — the manual "Locate me" button still works.
+ */
+export async function geolocationPermission(): Promise<"granted" | "prompt" | "denied"> {
+  if (
+    typeof navigator === "undefined" ||
+    !("permissions" in navigator) ||
+    typeof navigator.permissions?.query !== "function"
+  ) {
+    return "prompt";
+  }
+  try {
+    const res = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+    return res.state as "granted" | "prompt" | "denied";
+  } catch {
+    return "prompt";
+  }
+}
