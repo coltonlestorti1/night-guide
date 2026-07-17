@@ -14,6 +14,11 @@ Decision Log as they're made.
 | 3 | Dynamic Find the Move | NOT DISCUSSED | `VibeFinder.tsx` + `vibeScore.ts` already preference-scored (vibe/drinks/when/distance/HH), not hardcoded; no cooldowns, no diversity rules, no freshness signals |
 | 4 | Dynamic Weekend Favorites | NOT DISCUSSED | `WeekendFavorites.tsx` = static rating sort filtered by open-that-night — the most static of the three surfaces; same order every weekend |
 | 5 | Recommendation state & impression tracking | NOT DISCUSSED | Nothing exists. Explicitly gated: **do not create schema until recommendation design is approved** |
+| 6 | Favorites filter & saved venues | PARTIALLY SHIPPED (core) | **Core "Saved" filter chip SHIPPED 2026-07-17** (map+list narrow, stacks/ANDs w/ filters, device-local `store/saved.ts`, empty state, save via cards/detail). Open sub-ideas → §6 |
+| 7 | User onboarding experience | NOT DISCUSSED | Today: `/welcome` (username) + `/welcome/location` (primer), Google-only sign-in. No value/welcome screens, interest/genre/age selection, friend discovery, or progressive onboarding → §7 |
+| 8 | Location permissions & services | NOT DISCUSSED | Today: opt-in "Locate me" + `/welcome/location` primer; `store/location.ts` client-only (coords never sent to server). No pre-permission rationale, timing strategy, approximate-vs-precise, or rich denial fallback → §8 |
+| 9 | User location dot on map | EXISTS — verify/upgrade | `Map.tsx` `placeUserDot` already drops a "you are here" dot, but **on-demand only** (tap Locate-me). Open: auto-show, persistence, prominence → §9 |
+| 10 | Overall app polish (ongoing) | ONGOING BUCKET | Rolling premium-feel backlog (loading/skeletons/empty states/success anim/haptics/map interactions/micro-anim/a11y/perf/nav/typography/transitions) → §10 |
 
 ---
 
@@ -347,6 +352,88 @@ After a discussion is approved, Claude should:
 
 ---
 
+## New feature explorations (added 2026-07-17, Colton) — discuss before building
+
+All five below are **ideas to explore and discuss, not features to implement
+automatically.** Each gets the gate: present multiple UX options with pros/cons
+and a recommendation before any code.
+
+### 6. Favorites Filter and Saved Venues
+**Core already SHIPPED 2026-07-17:** the "Saved" filter chip narrows map + list to
+bookmarked venues, stacks/ANDs with other filters, has a "No saved spots yet"
+empty state; save/unsave works from venue cards + venue detail + the preview
+sheet; saves are device-local (`store/saved.ts`, localStorage). Spec:
+`docs/superpowers/specs/2026-07-17-favorites-filter-design.md`.
+
+Open sub-ideas to evaluate (options + pros/cons before recommending):
+- **Count badge** — e.g. "Favorites (18)" on the chip. Pro: saved volume at a glance. Con: chip width/clutter on the horizontal scroll row; needs a live count source.
+- **Save directly from a map pin** — today saving is via the sheet/cards/detail, not a pin gesture. Pro: faster. Con: pins are tiny tap targets → accidental saves.
+- **Stack with future filters** — Favorites already ANDs with Happy hour + category. When **Rooftops / Open Now / Outdoor Seating** chips exist (none built yet), Favorites should compose with them too. Depends on those filters existing first.
+- **Iconography** — currently a **bookmark** (matches the existing save affordance). Alternatives: heart (emotional "like"), star (rating-ish). Rec: keep bookmark for consistency unless we rebrand the save gesture app-wide.
+- **Account-sync (Phase 2)** — saves are device-local now; syncing to a Supabase per-user table unlocks cross-device + server personalization. Deliberately deferred.
+
+### 7. User Onboarding Experience
+**Current state:** `/welcome` (PickUsername) + `/welcome/location` (LocationPrimer),
+Google-only sign-in. No welcome/value screens, no interest selection, no walkthrough.
+
+Ideas to evaluate: welcome screens that communicate ENDZ's value fast; account
+creation options (Apple / Google / email / phone — today Google-only, Apple
+deferred to native); interest selection (bar types, nightlife prefs, music
+genres, age verification if needed); friend discovery; optional interactive
+walkthrough (only if it adds value); progressive onboarding that avoids
+overwhelm; first-run empty states; minimize friction while collecting useful
+personalization.
+
+Trade-off flags: every added step lowers completion — each field must earn its
+place (YAGNI). Age verification interplays with the 18+ Terms + the on-device
+age-band personalization already used in Weekend Favorites. Interest/genre data
+only pays off if it feeds recommendations (ties to items 3/4/5). Apple / email /
+phone auth is real scope (Apple needs native; email/phone need Supabase auth
+providers + verification flows).
+
+### 8. Location Permissions and Location Services
+**Current state:** opt-in "Locate me" button + skippable `/welcome/location` primer;
+`store/location.ts` is client-only and **coordinates never leave the device**
+(hard privacy rule). Distance + "around me" sorting run on-device.
+
+Ideas to evaluate: explain the value before requesting; pick the ideal moment to
+ask (not on launch — e.g. the first time distance/nearby actually matters);
+handle denial gracefully; approximate vs precise; fallback UX when location is
+unavailable; uses — nearby venues, personalized recs, walking distance, live
+activity nearby, better search.
+
+Trade-off flags: the browser/PWA grants essentially **one** geolocation prompt —
+burning it on launch tanks opt-in. Approximate-vs-precise control is limited on
+web until native. Any server-side "nearby" would break the coords-never-leave-
+device principle unless we send coarse/opt-in data — needs an explicit decision.
+
+### 9. User Location Dot on Map
+**Already partially exists:** `Map.tsx` `placeUserDot()` drops a "you are here" dot,
+triggered by the Locate-me button (`handleLocateMe` → requestLocation → dot +
+flyTo). So it renders **on-demand only** — nothing shows until the user taps
+Locate-me.
+
+Colton's ask ("a dot for where the user is") → options:
+- **Auto-show on load IF permission already granted** (no new prompt) — dot appears for returning opted-in users. **Rec: lowest friction.**
+- **Persist + live-update** via `watchPosition` while on the map — dot follows the user. Con: battery; we already run a watcher for out-tonight.
+- **Prominence/style pass** — clearer dot on the light map (accuracy halo, subtle pulse).
+
+Trade-off: auto-show must **not** trigger a permission prompt on load (respect
+item 8's timing) — only render when permission is already granted.
+
+### 10. Overall App Polish (ongoing bucket)
+A rolling bucket of premium-feel improvements; **add candidates as spotted, each
+discussed before implementing.** Categories (Colton): loading states, skeleton
+screens, empty states, success animations, haptic feedback, map interactions,
+micro-animations, accessibility, performance, navigation refinements, better
+search, cleaner typography/spacing, polished transitions, premium UI details.
+
+Note: some of this already exists (list skeletons, Map filter empty states incl.
+the new Saved one, glass/glow/motion tokens). Treat this as a standing list —
+specific candidates get appended here over time.
+
+---
+
 ## Decision Log
 
 _Append decisions here as features clear the discussion gate: date, feature, decision, approved scope, what was postponed._
@@ -355,3 +442,8 @@ _Append decisions here as features clear the discussion gate: date, feature, dec
 - 2026-07-15 — **Dead venues removed** (Colton): Paul's Cocktail Lounge, Manitoba's, The Bourgeois Pig, Angel's Share — validated closed/moved/never-EV via Google Places. 47 → 43. **Standing decision: no new venues for now — focus on the venues we have** (Ladybird et al. via the discover pipeline can wait).
 - 2026-07-15 — **Integration batch MERGED to main + deployed** (Colton): map-pin avatars, named directions, analytics client wiring, onboarding location step, PWA fixes, weekend slots, venue cleanup.
 - 2026-07-15 — **Weekend Favorites v2 approved** (Colton): (a) late-night shows top-2 closers; (b) The Grafton gets a **labeled** anchor pick when it doesn't crack the top 2 (explicit label, never rigged rankings); (c) age tailoring — on-device ask-once age NOW nudging ALL slots incl. Overall favorites (venues within a few years of the user's age score higher, missing data neutral); (d) full birthday + social-style onboarding = separate discussion (profiles schema change); (e) LONG-TERM: age-correlated picks from our own check-in data (venue age-mix vs user age ±few yrs, "fluent" and continuous) — depends on analytics events + check-in history (delete→expire); (f) web-scraping venue age data = flagged for discussion (reliability/ToS concerns), our own check-ins are the better source.
+- 2026-07-17 — **Consolidation batch SHIPPED + DEPLOYED to production** (Colton pushed `main`): root ErrorBoundary, ghost-mode toggle, Fable design pass (Discover/Social/Profile), **Favorites "Saved" filter**, **`/privacy` + `/terms` legal pages**, **"I'm out tonight" mode**. All verified live on `night-guide.vercel.app`. Ghost-mode persist + out-tonight geolocation→prompt→check-in both E2E-tested with a real signed-in session.
+- 2026-07-17 — **Legal decisions locked** (Colton): entity **ENDZ**, contact **clsneaks01@gmail.com**, jurisdiction **New York**, age floor **18+**, deletion via **email (interim; self-serve button later)**, effective date **July 17 2026**. Explainer: `docs/plans/2026-07-17-effective-date-and-deletion-explainer.md`.
+- 2026-07-17 — **Venues:** activated 3 dormant (Motel No Tell, Lucky, Little Rebel) → **31 active**. 4 new (Drop Off Service, Copper Still, Hidden Tiger, Chloe 81) **ON HOLD** (Google lookups paused); when added, **Chloe 81 stays dormant** (Lower East Side, off the East Village beachhead). Note: supersedes the 2026-07-15 "no new venues" standing decision — Colton is OK going a bit over 30, keep everything already live.
+- 2026-07-17 — **Tracker items 6–10 added** (favorites expansion, onboarding, location permissions, location dot, app polish) — Colton's discussion list; **none approved for build**.
+- 2026-07-17 — **Only remaining launch gate: Google OAuth publish** (Colton's click; project Endz/endz-501306, Auth Platform → Audience → Publish + add privacy/terms URLs to the consent screen). Push + deploy done + verified.
