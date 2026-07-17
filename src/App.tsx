@@ -15,6 +15,7 @@ import LocationPrimer from "@/pages/LocationPrimer";
 import Join from "@/pages/Join";
 import Qr from "@/pages/Qr";
 import NotFound from "./pages/NotFound";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAuthStore } from "@/store/auth";
 
 const queryClient = new QueryClient();
@@ -25,29 +26,31 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route index element={<MapPage />} />
-              <Route path="discover" element={<Discover />} />
-              <Route path="venue/:id" element={<VenueDetail />} />
-              <Route path="social" element={<Social />} />
-              <Route path="profile" element={<Profile />} />
-            </Route>
-            <Route path="welcome" element={<PickUsername />} />
-            <Route path="welcome/location" element={<LocationPrimer />} />
-            <Route path="join" element={<Join />} />
-            <Route path="qr" element={<Qr />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route element={<AppLayout />}>
+                <Route index element={<MapPage />} />
+                <Route path="discover" element={<Discover />} />
+                <Route path="venue/:id" element={<VenueDetail />} />
+                <Route path="social" element={<Social />} />
+                <Route path="profile" element={<Profile />} />
+              </Route>
+              <Route path="welcome" element={<PickUsername />} />
+              <Route path="welcome/location" element={<LocationPrimer />} />
+              <Route path="join" element={<Join />} />
+              <Route path="qr" element={<Qr />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
