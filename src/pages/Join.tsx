@@ -3,7 +3,7 @@
  * no bottom tabs, no auth). This is the page the event QR points at.
  */
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -138,6 +138,12 @@ export default function Join() {
             </p>
           </>
         )}
+
+        <div className="mt-8 text-center text-[11px] text-muted-foreground/70">
+          <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+          <span className="mx-1.5">·</span>
+          <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+        </div>
       </div>
     </main>
   );

@@ -14,6 +14,8 @@ import PickUsername from "@/pages/PickUsername";
 import LocationPrimer from "@/pages/LocationPrimer";
 import Join from "@/pages/Join";
 import Qr from "@/pages/Qr";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAuthStore } from "@/store/auth";
@@ -44,6 +46,8 @@ const App = () => {
               <Route path="welcome/location" element={<LocationPrimer />} />
               <Route path="join" element={<Join />} />
               <Route path="qr" element={<Qr />} />
+              <Route path="privacy" element={<Privacy />} />
+              <Route path="terms" element={<Terms />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

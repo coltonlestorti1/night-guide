@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useConfigStore } from "@/store/config";
 import { useAuthStore } from "@/store/auth";
 import { Input } from "@/components/ui/input";
@@ -180,6 +181,12 @@ const Profile = () => {
       )}
 
       <DevSettings />
+
+      <div className="mt-6 text-center text-xs text-muted-foreground">
+        <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+        <span className="mx-1.5">·</span>
+        <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+      </div>
     </section>
   );
 };
