@@ -393,7 +393,9 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
         stopWatching();
       } else {
         geolocationPermission().then((state) => {
-          if (state === "granted") ensureWatching();
+          // Re-check visibility: a fast hide→show→hide can resolve after the
+          // tab is hidden again — don't start the watcher while hidden.
+          if (state === "granted" && !document.hidden) ensureWatching();
         });
       }
     };
