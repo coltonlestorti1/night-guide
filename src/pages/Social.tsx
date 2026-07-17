@@ -5,11 +5,12 @@
  */
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Users } from "lucide-react";
+import { ChevronDown, MapPin, Search, UserPlus, Users } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { deriveBlocked, deriveFriends, deriveIncoming, deriveOutgoing } from "@/lib/friends";
 import { useFriendsOutTonight, useMyFriendships } from "@/hooks/useFriends";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,9 +24,35 @@ import ProfileSearch from "@/components/social/ProfileSearch";
 import ShareHandleCard from "@/components/social/ShareHandleCard";
 import SuggestedList from "@/components/social/SuggestedList";
 
-const SectionCard = ({ title, children }: { title: string; children: ReactNode }) => (
+type Tone = "primary" | "live" | "neutral";
+
+const CHIP_TONE: Record<Tone, string> = {
+  primary: "bg-primary-soft text-primary",
+  live: "bg-emerald-600/10 text-emerald-700",
+  neutral: "bg-secondary text-muted-foreground",
+};
+
+const SectionCard = ({
+  title,
+  icon: Icon,
+  tone = "neutral",
+  badge,
+  children,
+}: {
+  title: string;
+  icon: typeof Users;
+  tone?: Tone;
+  badge?: ReactNode;
+  children: ReactNode;
+}) => (
   <div className="rounded-3xl border border-border bg-card p-4 mb-4 animate-fade-in">
-    <h2 className="text-sm font-semibold mb-1">{title}</h2>
+    <div className="flex items-center gap-2.5 mb-1.5">
+      <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", CHIP_TONE[tone])}>
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <h2 className="text-sm font-semibold flex-1 min-w-0 truncate">{title}</h2>
+      {badge}
+    </div>
     {children}
   </div>
 );
@@ -38,25 +65,42 @@ const Social = () => {
   const { data: out } = useFriendsOutTonight();
 
   const header = (
-    <header className="mb-5">
-      <h1 className="text-2xl font-bold tracking-tight">Social</h1>
-      <p className="text-sm text-muted-foreground">Find out where your friends are tonight</p>
+    <header className="relative mb-6 animate-fade-in">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+        Your crew
+      </p>
+      <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Social</h1>
+      <p className="mt-1 text-sm text-muted-foreground">See who&apos;s out tonight — and where.</p>
     </header>
   );
 
-  // Signed out / mid-onboarding: existing prompt, unchanged.
+  const glow = (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 -top-12 h-56 opacity-[0.16] blur-3xl"
+      style={{ background: "radial-gradient(ellipse 70% 100% at 18% 0%, hsl(var(--friends)) 0%, transparent 65%)" }}
+    />
+  );
+
+  // Signed out / mid-onboarding: existing prompt, unchanged behavior.
   if (status !== "signedIn") {
     return (
-      <section className="container pt-6 pb-24 max-w-lg">
+      <section className="relative container pt-6 pb-24 max-w-lg">
+        {glow}
         {header}
-        <div className="glass rounded-3xl p-8 text-center animate-fade-in">
-          <Users className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-          <p className="font-medium">No friend check-ins yet.</p>
+        <div className="relative glass rounded-3xl p-8 text-center animate-fade-in">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
+            <Users className="h-6 w-6 text-primary" aria-hidden="true" />
+          </div>
+          <p className="font-display text-lg font-bold">No friend check-ins yet.</p>
           <p className="text-sm text-muted-foreground mt-1">
             Sign in to add friends and see where they're at.
           </p>
           {status === "signedOut" && (
-            <Button className="w-full h-11 rounded-xl mt-5" onClick={() => navigate("/profile")}>
+            <Button
+              className="w-full h-11 rounded-xl mt-5 shadow-glow"
+              onClick={() => navigate("/profile")}
+            >
               Sign in
             </Button>
           )}
@@ -71,11 +115,23 @@ const Social = () => {
   const blocked = rows && userId ? deriveBlocked(rows, userId) : [];
 
   return (
-    <section className="container pt-6 pb-24 max-w-lg">
+    <section className="relative container pt-6 pb-24 max-w-lg">
+      {glow}
       {header}
 
       {(incoming.length > 0 || outgoing.length > 0) && (
-        <SectionCard title="Requests">
+        <SectionCard
+          title="Requests"
+          icon={UserPlus}
+          tone="primary"
+          badge={
+            incoming.length > 0 ? (
+              <span className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
+                {incoming.length} new
+              </span>
+            ) : undefined
+          }
+        >
           {incoming.map((r) => (
             <RequestRow key={r.rowId} rowId={r.rowId} profile={r.profile} direction="incoming" />
           ))}
@@ -95,7 +151,22 @@ const Social = () => {
       )}
 
       {friends.length > 0 && (
-        <SectionCard title="Out tonight">
+        <SectionCard
+          title="Out tonight"
+          icon={MapPin}
+          tone="live"
+          badge={
+            out && out.length > 0 ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                {out.length} out now
+              </span>
+            ) : undefined
+          }
+        >
           {out && out.length > 0 ? (
             out.map((f) => <OutTonightRow key={f.checkInId} friend={f} />)
           ) : (
@@ -106,14 +177,16 @@ const Social = () => {
         </SectionCard>
       )}
 
-      <SectionCard title="Find friends">
-        <ProfileSearch />
+      <SectionCard title="Find friends" icon={Search} tone="primary">
+        <div className="mt-1.5">
+          <ProfileSearch />
+        </div>
         <ShareHandleCard />
         <SuggestedList />
       </SectionCard>
 
       {friends.length > 0 && (
-        <SectionCard title={`Your friends (${friends.length})`}>
+        <SectionCard title={`Your friends (${friends.length})`} icon={Users}>
           {friends.map((f) => (
             <FriendRow key={f.rowId} rowId={f.rowId} profile={f.profile} />
           ))}
