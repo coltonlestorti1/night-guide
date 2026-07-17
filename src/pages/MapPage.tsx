@@ -24,6 +24,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import VibeFinder from "@/components/VibeFinder";
 import VenuePreview from "@/components/VenuePreview";
+import OutTonightToggle from "@/components/OutTonightToggle";
+import OutTonightPrompt from "@/components/OutTonightPrompt";
+import { useOutTonightWatcher } from "@/store/outTonight";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { venueMatches } from "@/lib/searchMatch";
 import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
@@ -249,6 +252,10 @@ const MapPage = () => {
   // Find the move scores the full venue set — never the search/filter subset.
   const { data: allVenues } = useVenues({});
 
+  // Out-tonight mode watches location against the full active venue set (stable ref).
+  const outTonightVenues = useMemo(() => allVenues ?? [], [allVenues]);
+  useOutTonightWatcher(outTonightVenues);
+
   const venues = data ?? [];
 
   const location = useLocation();
@@ -326,6 +333,14 @@ const MapPage = () => {
         activity={activityData}
         onPick={(v) => setSelected(v)}
       />
+
+      {/* "I'm out tonight" control — stacked above the Map/List toggle */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-40 bottom-[calc(148px_+_env(safe-area-inset-bottom))] lg:bottom-[4.75rem]">
+        <OutTonightToggle />
+      </div>
+
+      {/* Out-tonight check-in prompt (renders only when a venue is detected) */}
+      <OutTonightPrompt />
 
       {/* Map / List toggle — above the mobile bottom nav; lower on desktop where the nav is a side rail */}
       <div className="fixed left-1/2 -translate-x-1/2 z-40 bottom-[calc(96px_+_env(safe-area-inset-bottom))] lg:bottom-6">

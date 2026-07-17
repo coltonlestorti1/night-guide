@@ -53,10 +53,12 @@ export default function OutTonightPrompt() {
     }
   };
 
-  const nearby = coords && venues ? rankNearby(coords, venues).slice(0, 3) : [];
+  const nearby = coords && venues
+    ? rankNearby(coords, venues).filter((n) => n.venue.id !== promptVenue.id).slice(0, 3)
+    : [];
 
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-[min(92vw,26rem)]">
+    <div className="fixed left-1/2 -translate-x-1/2 z-50 w-[min(92vw,26rem)] bottom-[calc(210px_+_env(safe-area-inset-bottom))] lg:bottom-28">
       <div className="glass rounded-2xl p-4 shadow-glow animate-fade-in">
         <button
           onClick={() => { dismissPrompt(); setPickOther(false); }}

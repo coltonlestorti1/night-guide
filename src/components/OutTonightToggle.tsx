@@ -4,7 +4,7 @@
  * accept is remembered on-device so we only disclose once.
  */
 import { useState } from "react";
-import { Ghost, Radio } from "lucide-react";
+import { Sparkles, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -45,7 +45,7 @@ export default function OutTonightToggle() {
         className={cn("rounded-full gap-2", active && "shadow-glow")}
         aria-pressed={active}
       >
-        {active ? <Radio className="h-4 w-4" /> : <Ghost className="h-4 w-4" />}
+        {active ? <Radio className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
         {active ? "Out tonight — on" : "I'm out tonight"}
       </Button>
 
