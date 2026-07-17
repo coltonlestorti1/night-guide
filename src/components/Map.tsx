@@ -372,6 +372,11 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     unsubRef.current = useLocationStore.subscribe((s) => {
       if (s.coords) placeUserDot(s.coords.lng, s.coords.lat);
     });
+    // If a fix already exists (out-tonight's watcher is already running, or the
+    // first fix landed before we subscribed), paint it now — subscribe only
+    // fires on *subsequent* changes.
+    const existing = useLocationStore.getState().coords;
+    if (existing) placeUserDot(existing.lng, existing.lat);
   }, [placeUserDot]);
 
   const stopWatching = useCallback(() => {
