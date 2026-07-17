@@ -6,6 +6,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useFilterStore } from "@/store/filters";
+import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { useFriendsOutTonight } from "@/hooks/useFriends";
@@ -17,7 +18,7 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  List, X, MapIcon, Search, Flame, Sparkles, Music, Wine
+  List, X, MapIcon, Search, Flame, Sparkles, Music, Wine, Bookmark
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,9 +30,10 @@ import { venueMatches } from "@/lib/searchMatch";
 import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
 
-const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour"; Icon?: React.ComponentType<{ className?: string }> }[] = [
+const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour" | "saved"; Icon?: React.ComponentType<{ className?: string }> }[] = [
   { label: "Find the move", value: "vibe-finder", Icon: Sparkles },
   { label: "All", value: "all" },
+  { label: "Saved", value: "saved", Icon: Bookmark },
   { label: "Happy hour", value: "happy-hour", Icon: Wine },
   { label: "Bars", value: "bar" },
   { label: "Clubs", value: "club" },
@@ -134,7 +136,7 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
 };
 
 /* ── Filter chips ──────────────────────────── */
-const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour }: { count: number; hasFilters: boolean; onVibeFinder: () => void; hhActive: boolean; onHappyHour: () => void }) => {
+const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, savedActive, onSaved }: { count: number; hasFilters: boolean; onVibeFinder: () => void; hhActive: boolean; onHappyHour: () => void; savedActive: boolean; onSaved: () => void }) => {
   const { categories, crowdLevel, musicVibe, set, reset } = useFilterStore();
   const [musicOpen, setMusicOpen] = useState(false);
 
@@ -144,12 +146,14 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour }:
     if (v === "music") return !!musicVibe;
     if (v === "vibe-finder") return false;
     if (v === "happy-hour") return hhActive;
+    if (v === "saved") return savedActive;
     return categories.includes(v as VenueCategory);
   };
 
   const handle = (v: string) => {
     if (v === "vibe-finder") return onVibeFinder();
     if (v === "happy-hour") return onHappyHour();
+    if (v === "saved") return onSaved();
     if (v === "all") return reset();
     if (v === "hot") return set({ crowdLevel: crowdLevel === "high" ? undefined : "high" });
     if (v === "music") return setMusicOpen((o) => !o);
@@ -231,6 +235,8 @@ const MapPage = () => {
   const [view, setView] = useState<"map" | "list">("map");
   const [vibeOpen, setVibeOpen] = useState(false);
   const [hhFilter, setHhFilter] = useState(false);
+  const [savedFilter, setSavedFilter] = useState(false);
+  const savedIds = useSavedStore((s) => s.ids);
 
   const hasFilters =
     filters.categories.length > 0 || !!filters.crowdLevel || !!filters.musicVibe || !!filters.search;
@@ -276,8 +282,11 @@ const MapPage = () => {
     return ids;
   }, [venues, tick]);
 
-  // 🥂 chip narrows the displayed venues to active happy hours only.
-  const displayVenues = hhFilter ? venues.filter((v) => hhActiveIds.has(v.id)) : venues;
+  // 🥂 chip narrows to active happy hours; 🔖 Saved chip narrows to bookmarked
+  // venues. Both stack (AND) and are client-side (saved ids live on-device).
+  let displayVenues = venues;
+  if (hhFilter) displayVenues = displayVenues.filter((v) => hhActiveIds.has(v.id));
+  if (savedFilter) displayVenues = displayVenues.filter((v) => savedIds.includes(v.id));
 
   const { data: activityData } = useVenueActivity();
   // Memoized: a new object reference here rebuilds every map marker via
@@ -318,6 +327,8 @@ const MapPage = () => {
         onVibeFinder={() => setVibeOpen(true)}
         hhActive={hhFilter}
         onHappyHour={() => setHhFilter((f) => !f)}
+        savedActive={savedFilter}
+        onSaved={() => setSavedFilter((f) => !f)}
       />
       <VibeFinder
         open={vibeOpen}
@@ -383,6 +394,12 @@ const MapPage = () => {
               {displayVenues.map((v) => (
                 <BarCard key={v.id} venue={v} onClick={() => setSelected(v)} />
               ))}
+            </div>
+          ) : savedFilter && savedIds.length === 0 ? (
+            <div className="text-center glass rounded-2xl p-8 animate-fade-in">
+              <Bookmark className="h-7 w-7 mx-auto text-primary" />
+              <p className="font-medium mt-2">No saved spots yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Tap the bookmark on any venue to add it here.</p>
             </div>
           ) : hhFilter ? (
             <div className="text-center glass rounded-2xl p-8 animate-fade-in">
