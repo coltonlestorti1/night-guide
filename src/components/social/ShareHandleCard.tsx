@@ -36,7 +36,7 @@ export default function ShareHandleCard() {
   };
 
   return (
-    <div className="mt-3 rounded-2xl border border-border bg-secondary/40 p-3.5 flex items-center gap-3">
+    <div className="mt-3 rounded-2xl border border-primary/10 bg-primary-soft/50 p-3.5 flex items-center gap-3">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold truncate">You're {handle}</p>
         <p className="text-xs text-muted-foreground">Send it to the crew.</p>
