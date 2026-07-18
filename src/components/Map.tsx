@@ -390,22 +390,27 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
   // Auto-show the dot for users who already granted location (never prompts),
   // and pause tracking while the tab is hidden to save battery.
   useEffect(() => {
-    geolocationPermission().then((state) => {
-      if (state === "granted") ensureWatching();
-    });
+    // The permission promise can resolve after unmount (cancelled) or after
+    // the tab is re-hidden — starting the watcher then would leak the
+    // ref-counted watch() with no way to unwind it, or defeat the battery
+    // pause. Gate on both.
+    let cancelled = false;
+    const tryStart = () => {
+      geolocationPermission().then((state) => {
+        if (!cancelled && state === "granted" && !document.hidden) ensureWatching();
+      });
+    };
+    tryStart();
     const onVisibility = () => {
       if (document.hidden) {
         stopWatching();
       } else {
-        geolocationPermission().then((state) => {
-          // Re-check visibility: a fast hide→show→hide can resolve after the
-          // tab is hidden again — don't start the watcher while hidden.
-          if (state === "granted" && !document.hidden) ensureWatching();
-        });
+        tryStart();
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      cancelled = true;
       document.removeEventListener("visibilitychange", onVisibility);
       stopWatching();
     };
