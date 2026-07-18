@@ -13,6 +13,8 @@ type LocationState = {
   status: Status;
   /** Accuracy radius (m) of the latest fix, or null. */
   accuracy: number | null;
+  /** Why the last geolocation attempt failed, or null. */
+  failure: "denied" | "unavailable" | "timeout" | null;
   /** Ask the browser for location once; resolves to coords or null if unavailable. */
   request: () => Promise<Coords | null>;
   /** Start continuous foreground tracking (watchPosition). Idempotent. */
@@ -24,10 +26,20 @@ type LocationState = {
 let watchId: number | null = null;
 let watcherCount = 0;
 
+const failureFromError = (
+  err: GeolocationPositionError,
+): "denied" | "unavailable" | "timeout" =>
+  err.code === err.PERMISSION_DENIED
+    ? "denied"
+    : err.code === err.TIMEOUT
+      ? "timeout"
+      : "unavailable";
+
 export const useLocationStore = create<LocationState>((set, get) => ({
   coords: null,
   status: "idle",
   accuracy: null,
+  failure: null,
   request: () => {
     const existing = get().coords;
     if (existing) return Promise.resolve(existing);
@@ -40,11 +52,11 @@ export const useLocationStore = create<LocationState>((set, get) => ({
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const c: Coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          set({ coords: c, accuracy: pos.coords.accuracy, status: "granted" });
+          set({ coords: c, accuracy: pos.coords.accuracy, status: "granted", failure: null });
           resolve(c);
         },
-        () => {
-          set({ status: "denied" });
+        (err) => {
+          set({ status: "denied", failure: failureFromError(err) });
           resolve(null);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
@@ -64,8 +76,9 @@ export const useLocationStore = create<LocationState>((set, get) => ({
         coords: { lat: pos.coords.latitude, lng: pos.coords.longitude },
         accuracy: pos.coords.accuracy,
         status: "granted",
+        failure: null,
       }),
-      () => set({ status: "denied" }),
+      (err) => set({ status: "denied", failure: failureFromError(err) }),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
     );
   },
