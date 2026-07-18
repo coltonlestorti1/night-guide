@@ -300,6 +300,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     return () => {
       clearMarkers();
       map.current?.remove();
+      map.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
