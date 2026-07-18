@@ -13,6 +13,7 @@ import { Navigation, LocateFixed } from "lucide-react";
 import { useMapViewStore } from "@/store/mapState";
 import { useLocationStore, geolocationPermission } from "@/store/location";
 import { pinGlyph } from "@/lib/venueTraits";
+import { circlePolygon, EMPTY_FC } from "@/lib/geo";
 import { toast } from "sonner";
 
 export type PinFriend = { id: string; name: string; avatarUrl: string | null };
@@ -131,6 +132,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const pendingHaloRef = useRef<{ lng: number; lat: number; accuracy: number } | null>(null);
   const requestLocation = useLocationStore((s) => s.request);
   const { center, zoom, setView } = useMapViewStore();
   const happyHourKey = happyHour ? [...happyHour].sort().join(",") : "";
@@ -292,6 +294,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     map.current.on("load", () => {
       addMarkers();
       onMoveEnd();
+      flushHalo();
     });
 
     return () => {
@@ -318,6 +321,49 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
+
+  // Accuracy halo: one GeoJSON source + fill layer, sized in real meters so it
+  // scales with zoom (the DOM marker can't). Always-on, no cap — a coarse
+  // WiFi/IP fix honestly draws a big faint disc; a tight GPS fix hides under
+  // the dot. Canvas layers render below DOM markers, so the dot stays on top.
+  const HALO_ID = "user-accuracy";
+
+  const updateHalo = useCallback((lng: number, lat: number, accuracy: number | null) => {
+    const m = map.current;
+    if (!m) return;
+    if (accuracy == null) {
+      pendingHaloRef.current = null;
+      (m.getSource(HALO_ID) as maplibregl.GeoJSONSource | undefined)?.setData(EMPTY_FC);
+      return;
+    }
+    if (!m.isStyleLoaded() && !m.getSource(HALO_ID)) {
+      // Style not ready — remember the fix; the map's load handler flushes it.
+      pendingHaloRef.current = { lng, lat, accuracy };
+      return;
+    }
+    if (!m.getSource(HALO_ID)) {
+      m.addSource(HALO_ID, { type: "geojson", data: EMPTY_FC });
+      m.addLayer({
+        id: HALO_ID,
+        type: "fill",
+        source: HALO_ID,
+        paint: {
+          "fill-color": "#3b82f6",
+          "fill-opacity": 0.1,
+          "fill-outline-color": "rgba(59,130,246,0.25)",
+        },
+      });
+    }
+    (m.getSource(HALO_ID) as maplibregl.GeoJSONSource).setData(circlePolygon(lng, lat, accuracy));
+  }, []);
+
+  const flushHalo = useCallback(() => {
+    const pending = pendingHaloRef.current;
+    if (pending) {
+      pendingHaloRef.current = null;
+      updateHalo(pending.lng, pending.lat, pending.accuracy);
+    }
+  }, [updateHalo]);
 
   // Drops (or moves) a "you are here" dot: a solid blue core with a pulsing
   // halo (reuses the endz-pulse keyframe). Only setLngLat is touched on updates
@@ -370,14 +416,20 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     watchingRef.current = true;
     useLocationStore.getState().watch();
     unsubRef.current = useLocationStore.subscribe((s) => {
-      if (s.coords) placeUserDot(s.coords.lng, s.coords.lat);
+      if (s.coords) {
+        placeUserDot(s.coords.lng, s.coords.lat);
+        updateHalo(s.coords.lng, s.coords.lat, s.accuracy);
+      }
     });
     // If a fix already exists (out-tonight's watcher is already running, or the
     // first fix landed before we subscribed), paint it now — subscribe only
     // fires on *subsequent* changes.
-    const existing = useLocationStore.getState().coords;
-    if (existing) placeUserDot(existing.lng, existing.lat);
-  }, [placeUserDot]);
+    const { coords: existing, accuracy: existingAccuracy } = useLocationStore.getState();
+    if (existing) {
+      placeUserDot(existing.lng, existing.lat);
+      updateHalo(existing.lng, existing.lat, existingAccuracy);
+    }
+  }, [placeUserDot, updateHalo]);
 
   const stopWatching = useCallback(() => {
     if (!watchingRef.current) return;
@@ -385,6 +437,8 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     unsubRef.current?.();
     unsubRef.current = null;
     useLocationStore.getState().stopWatch();
+    pendingHaloRef.current = null;
+    (map.current?.getSource(HALO_ID) as maplibregl.GeoJSONSource | undefined)?.setData(EMPTY_FC);
   }, []);
 
   // Auto-show the dot for users who already granted location (never prompts),
@@ -421,6 +475,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     const coords = await requestLocation();
     if (coords) {
       placeUserDot(coords.lng, coords.lat);
+      updateHalo(coords.lng, coords.lat, useLocationStore.getState().accuracy);
       map.current.flyTo({ center: [coords.lng, coords.lat], zoom: 15, duration: 1500 });
       ensureWatching(); // follow from now on
       toast.success("Found your location");
@@ -428,7 +483,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       toast.info("Location unavailable — showing East Village center");
       map.current.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
     }
-  }, [requestLocation, placeUserDot, ensureWatching]);
+  }, [requestLocation, placeUserDot, ensureWatching, updateHalo]);
 
   const handleRecenter = useCallback(() => {
     map.current?.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1200 });
