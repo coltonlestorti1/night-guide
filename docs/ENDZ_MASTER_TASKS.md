@@ -16,8 +16,8 @@ Decision Log as they're made.
 | 5 | Recommendation state & impression tracking | NOT DISCUSSED | Nothing exists. Explicitly gated: **do not create schema until recommendation design is approved** |
 | 6 | Favorites filter & saved venues | PARTIALLY SHIPPED (core) | **Core "Saved" filter chip SHIPPED 2026-07-17** (map+list narrow, stacks/ANDs w/ filters, device-local `store/saved.ts`, empty state, save via cards/detail). Open sub-ideas → §6 |
 | 7 | User onboarding experience | NOT DISCUSSED | Today: `/welcome` (username) + `/welcome/location` (primer), Google-only sign-in. No value/welcome screens, interest/genre/age selection, friend discovery, or progressive onboarding → §7 |
-| 8 | Location permissions & services | MERGED to main (2026-07-17) | No-prompt Permissions API check shipped (auto-show only when already granted). Merged, not yet pushed/deployed. Open: full item-8 timing/denial-UX work. → §8 |
-| 9 | User location dot on map | MERGED to main (2026-07-17) | Live Google-Maps-style dot (auto-show if granted + follow via watchPosition + pulse) merged, not yet pushed/deployed. Open follow-up: **accuracy halo** (recommended). → §9 |
+| 8 | Location permissions & services | MERGED + DEPLOYED (2026-07-18) | No-prompt Permissions API check shipped (auto-show only when already granted). Open: full item-8 timing/denial-UX work. → §8 |
+| 9 | User location dot on map | MERGED + halo (2026-07-18) | Live Google-Maps-style dot (auto-show if granted + follow + pulse) plus **accuracy halo** (real-meters translucent circle, always-on, no cap). → §9 |
 | 10 | Overall app polish (ongoing) | ONGOING BUCKET | Rolling premium-feel backlog (loading/skeletons/empty states/success anim/haptics/map interactions/micro-anim/a11y/perf/nav/typography/transitions) → §10 |
 | 11 | Sign-up demographics (gender, age, …) | NOT DISCUSSED | Today `profiles` = username/avatar/ghost_mode only; no gender/age collected. Needs profiles schema change + privacy disclosure → §11 |
 | 12 | Group check-in & party size | NOT DISCUSSED | Today check-in is solo, counts 1 head; `activity` count drives pin tiers + "N here now". Party size would change the live crowd signal → §12 |
@@ -433,6 +433,12 @@ part of the MVP) is for — a translucent radius around the dot communicates
 real-world feedback, promoting the accuracy halo from "cheap follow-up" to
 **recommended next follow-up** — discuss before building.
 
+**RESOLVED 2026-07-18:** accuracy halo built and merged (`feat/accuracy-halo` →
+main). GeoJSON circle polygon at the fix's reported accuracy in real meters,
+`#3b82f6` at 10% opacity, always-on/no-cap (Colton's call — faintness is the
+safety valve), clears with the watcher. `request()` now records accuracy so the
+Locate-me first paint has a halo. Spec/plan in `docs/superpowers/`.
+
 ### 10. Overall App Polish (ongoing bucket)
 A rolling bucket of premium-feel improvements; **add candidates as spotted, each
 discussed before implementing.** Categories (Colton): loading states, skeleton
@@ -509,3 +515,5 @@ _Append decisions here as features clear the discussion gate: date, feature, dec
 - 2026-07-17 — **Item 13 added** (Colton): **heat map layer** — NOT DISCUSSED, gate applies. Open first question = what "heat" means (live crowd density vs historical vs friends vs happy-hour); MapLibre has a native heatmap layer so rendering is cheap, the meaning/scope is the work. Captured mid-build of the live-location-dot.
 - 2026-07-17 — **Location-dot accuracy note** (Colton flagged dot landing a block off on desktop): browser geolocation on laptop = WiFi/IP, coarse by nature; phone GPS is tight. Not a bug. Promoted the **accuracy halo** (deferred MVP part of item 9) to recommended next follow-up — communicates uncertainty visually. See §9.
 - 2026-07-17 — **Live location dot (items 9+8) MERGED to main** (Colton OK'd merge; `feat/live-location-dot` → main `--no-ff`). Google-Maps-style own-dot: auto-show for already-granted users (no load-time prompt, Permissions API), follow via reference-counted watchPosition shared with out-tonight, pulse halo. Built subagent-driven, code-reviewed, live-verified (mocked geo); caught+fixed a visibility race + a first-fix paint bug. tsc+build clean on main. **NOT pushed/deployed** (Colton's push). Deferred: **accuracy halo** (promoted to recommended next follow-up after Colton saw a desktop dot land a block off — laptop WiFi geolocation is coarse, phone GPS is tight). Items 8/9 status → MERGED.
+- 2026-07-18 — **Main pushed + deployed** (Colton OK): live location dot + ultrareview watcher-guard fix (auto-show effect now gates on cancelled/hidden — closed a permanent watcher-leak race) went to production via Vercel.
+- 2026-07-18 — **Accuracy halo (item 9 follow-up) MERGED to main** (Colton OK'd; `feat/accuracy-halo` → main `--no-ff`, then pushed). Real-meters GeoJSON circle under the dot at the fix's reported accuracy; always-on, no threshold/cap (Colton's call), `#3b82f6` @ 10% opacity; pre-style-load fixes buffered + flushed on map load; halo clears with the watcher; `request()` records accuracy for Locate-me. Full gate flow (spec + plan in `docs/superpowers/`), subagent-driven build, live-verified with mocked geo at coarse/tight/moving fixes + zoom scaling + no-prompt rule. Live verify caught + fixed **2 real bugs**: unmount crash (map removed before stopWatching's halo clear — fixed by nulling map ref on remove) and a locate-me post-await null-map race (final whole-branch review, deterministic after the null-ref fix). Optional follow-up logged: declare `@types/geojson` as an explicit devDependency (currently transitive via maplibre-gl).
