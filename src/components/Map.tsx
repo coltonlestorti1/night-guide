@@ -40,6 +40,9 @@ const SELECTED_RING = "#6C45FF"; // ENDZ purple — the pin you tapped
 const TRENDING_RING = "#FF8A3D"; // 3–5 people checked in
 const HOT_RING = "#FF4D67";      // 6+ people checked in
 
+// GeoJSON source/layer id for the accuracy halo (see updateHalo below).
+const HALO_ID = "user-accuracy";
+
 // Glyphs come from pinGlyph(): 🍺 bars, 🍸 lounges/cocktail spots, 🪩 clubs.
 // Happy hour is a clean amber outer ring — no neon glow.
 const HH_RING = "0 0 0 2px #F59E0B";
@@ -327,8 +330,6 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
   // scales with zoom (the DOM marker can't). Always-on, no cap — a coarse
   // WiFi/IP fix honestly draws a big faint disc; a tight GPS fix hides under
   // the dot. Canvas layers render below DOM markers, so the dot stays on top.
-  const HALO_ID = "user-accuracy";
-
   const updateHalo = useCallback((lng: number, lat: number, accuracy: number | null) => {
     const m = map.current;
     if (!m) return;
@@ -355,6 +356,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
         },
       });
     }
+    pendingHaloRef.current = null;
     (m.getSource(HALO_ID) as maplibregl.GeoJSONSource).setData(circlePolygon(lng, lat, accuracy));
   }, []);
 
@@ -474,6 +476,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
   const handleLocateMe = useCallback(async () => {
     if (!map.current) return;
     const coords = await requestLocation();
+    if (!map.current) return;
     if (coords) {
       placeUserDot(coords.lng, coords.lat);
       updateHalo(coords.lng, coords.lat, useLocationStore.getState().accuracy);
