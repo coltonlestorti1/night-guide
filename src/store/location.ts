@@ -40,7 +40,7 @@ export const useLocationStore = create<LocationState>((set, get) => ({
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const c: Coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          set({ coords: c, status: "granted" });
+          set({ coords: c, accuracy: pos.coords.accuracy, status: "granted" });
           resolve(c);
         },
         () => {
