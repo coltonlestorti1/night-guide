@@ -11,7 +11,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Venue, BBox } from "@/data/types";
 import { Navigation, LocateFixed } from "lucide-react";
 import { useMapViewStore } from "@/store/mapState";
-import { useLocationStore } from "@/store/location";
+import { useLocationStore, geolocationPermission } from "@/store/location";
 import { pinGlyph } from "@/lib/venueTraits";
 import { toast } from "sonner";
 
@@ -319,19 +319,38 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  // Drops (or moves) a "you are here" dot. Only the inner styles are set — never
-  // an inline position on the wrapper, which would break MapLibre's anchoring.
+  // Drops (or moves) a "you are here" dot: a solid blue core with a pulsing
+  // halo (reuses the endz-pulse keyframe). Only setLngLat is touched on updates
+  // so the follow path stays cheap; never set an inline position on the wrapper
+  // (that would break MapLibre's anchoring).
   const placeUserDot = useCallback((lng: number, lat: number) => {
     if (!map.current) return;
     if (!userMarkerRef.current) {
       const el = document.createElement("div");
       el.setAttribute("aria-label", "Your location");
+      el.style.position = "relative";
       el.style.width = "18px";
       el.style.height = "18px";
-      el.style.borderRadius = "9999px";
-      el.style.background = "#3b82f6";
-      el.style.border = "2px solid #ffffff";
-      el.style.boxShadow = "0 0 0 5px rgba(59,130,246,0.25)";
+
+      const pulse = document.createElement("div");
+      pulse.setAttribute("aria-hidden", "true");
+      pulse.style.position = "absolute";
+      pulse.style.inset = "0";
+      pulse.style.borderRadius = "9999px";
+      pulse.style.background = "#3b82f6";
+      pulse.style.animation = "endz-pulse 2s ease-out infinite";
+
+      const core = document.createElement("div");
+      core.style.position = "absolute";
+      core.style.inset = "0";
+      core.style.borderRadius = "9999px";
+      core.style.background = "#3b82f6";
+      core.style.border = "2px solid #ffffff";
+      core.style.boxShadow = "0 0 0 1px rgba(59,130,246,0.35)";
+      core.style.boxSizing = "border-box";
+
+      el.appendChild(pulse);
+      el.appendChild(core);
       userMarkerRef.current = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([lng, lat])
         .addTo(map.current);
@@ -340,18 +359,71 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     }
   }, []);
 
+  // Live-follow plumbing. Both the auto-show (already-granted users) and the
+  // "Locate me" button funnel through ensureWatching so there's exactly one
+  // subscription and one ref-counted watch() to unwind.
+  const watchingRef = useRef(false);
+  const unsubRef = useRef<(() => void) | null>(null);
+
+  const ensureWatching = useCallback(() => {
+    if (watchingRef.current) return;
+    watchingRef.current = true;
+    useLocationStore.getState().watch();
+    unsubRef.current = useLocationStore.subscribe((s) => {
+      if (s.coords) placeUserDot(s.coords.lng, s.coords.lat);
+    });
+    // If a fix already exists (out-tonight's watcher is already running, or the
+    // first fix landed before we subscribed), paint it now — subscribe only
+    // fires on *subsequent* changes.
+    const existing = useLocationStore.getState().coords;
+    if (existing) placeUserDot(existing.lng, existing.lat);
+  }, [placeUserDot]);
+
+  const stopWatching = useCallback(() => {
+    if (!watchingRef.current) return;
+    watchingRef.current = false;
+    unsubRef.current?.();
+    unsubRef.current = null;
+    useLocationStore.getState().stopWatch();
+  }, []);
+
+  // Auto-show the dot for users who already granted location (never prompts),
+  // and pause tracking while the tab is hidden to save battery.
+  useEffect(() => {
+    geolocationPermission().then((state) => {
+      if (state === "granted") ensureWatching();
+    });
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopWatching();
+      } else {
+        geolocationPermission().then((state) => {
+          // Re-check visibility: a fast hide→show→hide can resolve after the
+          // tab is hidden again — don't start the watcher while hidden.
+          if (state === "granted" && !document.hidden) ensureWatching();
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      stopWatching();
+    };
+  }, [ensureWatching, stopWatching]);
+
   const handleLocateMe = useCallback(async () => {
     if (!map.current) return;
     const coords = await requestLocation();
     if (coords) {
       placeUserDot(coords.lng, coords.lat);
       map.current.flyTo({ center: [coords.lng, coords.lat], zoom: 15, duration: 1500 });
+      ensureWatching(); // follow from now on
       toast.success("Found your location");
     } else {
       toast.info("Location unavailable — showing East Village center");
       map.current.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
     }
-  }, [requestLocation, placeUserDot]);
+  }, [requestLocation, placeUserDot, ensureWatching]);
 
   const handleRecenter = useCallback(() => {
     map.current?.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1200 });
