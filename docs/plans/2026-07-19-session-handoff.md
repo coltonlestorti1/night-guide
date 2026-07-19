@@ -33,9 +33,9 @@ Google OAuth publish remains the only launch gate, deliberately deferred.
 1. ~~Paste the avatars-bucket DDL~~ **DONE 2026-07-19** — bucket + policies
    live, upload verified E2E in the real app (downscale → storage → profiles
    repoint → old-file cleanup). DDL recorded in `endz-schema.sql`.
-2. **Deploy check:** main is pushed; confirm Vercel picked it up, then test
-   Profile on your iPhone against production (username edit, photo upload,
-   saved spots, age chips).
+2. ~~Deploy check~~ **DONE 2026-07-19** — Vercel deploy confirmed (Profile MVP
+   in the production bundle) and Colton verified Profile on his iPhone against
+   production.
 3. **Google OAuth publish** — still the only launch gate, still your click,
    still deliberately deferred (2026-07-18: "I don't want to OAuth yet").
    Nobody nags; raise it when ready.
@@ -51,9 +51,10 @@ Google OAuth publish remains the only launch gate, deliberately deferred.
   mitigated by post-success re-assert).
 
 ## State facts
-- 31 active venues. Supabase untouched this session (avatars bucket DDL is
-  written + recorded but NOT run — Colton's paste). No schema changes.
-- ⏰ Enrichment refresh deadline ~Aug 6 still standing (backlog).
+- 31 active venues. Only Supabase change this session: avatars bucket + policies
+  (Colton pasted the DDL; recorded in `endz-schema.sql`). No `profiles` schema changes.
+- ⏰ Enrichment refresh deadline is **~Aug 14** (data refetched 2026-07-15,
+  verified 2026-07-19 — the earlier ~Aug 6 date was from the 07-07 batch).
 - Known pre-existing map-page console warning ("Expected value to be of type
   number, but found null" ×3) — untriaged, cosmetic, predates the halo.
 
