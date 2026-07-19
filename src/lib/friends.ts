@@ -21,6 +21,9 @@ export type FriendProfile = {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  /** Present only on profile-page fetches (getProfileByUsername); list
+   *  queries keep the lean PROFILE_COLS select. */
+  bio?: string | null;
 };
 
 export type FriendshipStatus = "pending" | "accepted" | "blocked";
@@ -133,6 +136,32 @@ export async function suggestedProfiles(myId: string): Promise<FriendProfile[]> 
     .limit(25);
   if (error) throw error;
   return (data as FriendProfile[]) ?? [];
+}
+
+/**
+ * Full identity card by handle (case-insensitive; leading @ ok). Null when
+ * no such user. Selects bio but falls back to a bio-less select while the
+ * profiles.bio column DDL is pending (Postgres 42703 = undefined column).
+ */
+export async function getProfileByUsername(username: string): Promise<FriendProfile | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const handle = username.replace(/^@/, "").toLowerCase();
+  if (!handle) return null;
+  let { data, error } = await supabase
+    .from("profiles")
+    .select(`${PROFILE_COLS}, bio`)
+    .eq("username", handle)
+    .maybeSingle();
+  if (error && error.code === "42703") {
+    ({ data, error } = await supabase
+      .from("profiles")
+      .select(PROFILE_COLS)
+      .eq("username", handle)
+      .maybeSingle());
+  }
+  if (error) throw error;
+  return (data as FriendProfile | null) ?? null;
 }
 
 export async function sendRequest(myId: string, friendId: string): Promise<void> {
