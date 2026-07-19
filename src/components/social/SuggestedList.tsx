@@ -1,5 +1,7 @@
-/** "Suggested for you" — newest sign-ups, ✕ dismissals persisted on-device. */
+/** "Suggested for you" — newest sign-ups, ✕ dismissals persisted on-device.
+ *  Avatar+name tap opens the profile. */
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import {
@@ -12,6 +14,7 @@ import ProfileAvatar from "@/components/social/ProfileAvatar";
 import AddButton from "@/components/social/AddButton";
 
 export default function SuggestedList() {
+  const navigate = useNavigate();
   const userId = useAuthStore((s) => s.session?.user.id);
   const { data: rows } = useMyFriendships();
   const { data: suggestions } = useSuggestedProfiles();
@@ -36,13 +39,21 @@ export default function SuggestedList() {
       </h3>
       {visible.map((p) => (
         <div key={p.id} className="flex items-center gap-3 py-2.5">
-          <ProfileAvatar profile={p} />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate">@{p.username}</p>
-            {p.display_name && (
-              <p className="text-xs text-muted-foreground truncate">{p.display_name}</p>
-            )}
-          </div>
+          <button
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            onClick={() => navigate(`/u/${p.username}`)}
+            aria-label={`View @${p.username}'s profile`}
+          >
+            <ProfileAvatar profile={p} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">@{p.username}</span>
+              {p.display_name && (
+                <span className="block truncate text-xs text-muted-foreground">
+                  {p.display_name}
+                </span>
+              )}
+            </span>
+          </button>
           <AddButton profile={p} />
           <button
             aria-label={`Dismiss @${p.username}`}
