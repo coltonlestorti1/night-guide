@@ -26,11 +26,20 @@ is the only launch gate and Colton is intentionally not doing it yet.**
 - **`@types/geojson`** declared as explicit devDependency (was transitive).
 - Big-halo-on-desktop is **expected** (WiFi/IP accuracy is genuinely ~200-500m);
   Colton asked, answer confirmed: not a bug, phone GPS tucks it under the dot.
+- **Location-denied dialog** (item 8 denial-UX slice, full gate flow): Colton
+  hit the dead-end "unavailable" toast on his iPhone (iOS had location blocked
+  for Safari — root-caused live, fixed via Settings). Now explicit taps
+  (Locate-me, "around me") route TRUE denials to platform-specific enable
+  steps; dismissed prompts and timeouts keep honest toasts. Deep-link to OS
+  settings from web = impossible (verified); Capacitor-phase upgrade noted in
+  the component. Final review caught dismissed-prompt≠denied + iOS Chrome/FF
+  copy; both fixed + live-verified under emulated UAs.
 
 ## Next steps (in rough priority)
-1. **Colton: check the halo on a phone** against the production deploy — GPS
-   accuracy should hide the halo under the dot. Only revisit halo styling if
-   the mobile experience bothers him.
+1. **Colton: re-test on his iPhone** against the production deploy — location
+   now enabled in iOS Settings, so expect: dot + tight GPS halo on Locate-me.
+   (Optional: temporarily re-block location in Settings to see the new denial
+   dialog's iOS copy in the wild.)
 2. **Google OAuth publish** — still the only launch gate, still Colton's click,
    **explicitly deferred by Colton (2026-07-18: "I don't want to OAuth yet")**.
    Do not nag; wait for him to raise it.
