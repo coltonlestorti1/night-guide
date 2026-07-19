@@ -2,6 +2,26 @@
 
 Supersedes the 2026-07-18 handoff. Tracker: `docs/ENDZ_MASTER_TASKS.md`.
 
+## SESSION 2 UPDATE (2026-07-19, later same day)
+
+- **Social-structure research DONE** → `docs/plans/2026-07-19-social-structure-research.md`
+  (blueprint + hard avoids; confirms ordering profiles → §21 plans → §16 crew → §22 deferred).
+- **Viewable-profiles slice APPROVED + BUILT** on `feat/viewable-profiles`
+  (NOT merged, NOT pushed — Colton's OK required). Plan:
+  `docs/superpowers/plans/2026-07-19-viewable-profiles.md`. All 5 build tasks
+  committed; tsc clean per task. Three-layer visibility model locked (see
+  Decision Log 2026-07-19): identity card always / content behind future
+  private-profile toggle / liveness friends-only.
+- **REMAINING before merge:** Task 6 — `npm run build` + lint + the 8-point
+  live-verification matrix in the plan (dev server, real session, second
+  account). Then Colton decides merge/push.
+- **Colton must paste the `profiles.bio` DDL** (recorded at the end of
+  `~/Documents/endz/endz-schema.sql`; was also on his clipboard). App degrades
+  gracefully without it (42703 fallbacks) but bio can't save until pasted.
+- Earlier this session: tracker/handoff sync commit `a2ba95e` on main
+  (enrichment deadline → ~Aug 14; unblock UI marked merged; deploy + iPhone
+  verified — Colton confirmed Profile works on his phone against production).
+
 ## TL;DR
 **Profile MVP phase 1 is built, reviewed, live-verified, merged to main, and
 pushed** (Colton pre-authorized the full pipeline). The tracker also absorbed
