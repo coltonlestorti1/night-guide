@@ -2,20 +2,13 @@
 
 Supersedes the 2026-07-18 handoff. Tracker: `docs/ENDZ_MASTER_TASKS.md`.
 
-## ▶️ WHEN YOU'RE BACK — clear this to finish viewable-profiles
+## ▶️ MERGE-READY — awaiting Colton's OK
 
 Branch `feat/viewable-profiles` is **built, code-reviewed, review-fixed, and
-verified except the out-tonight surfaces.** To close it out:
-
-1. **One action to unblock the last 3 checks:** from your **@colton_lestorti**
-   account, **check in at any venue.** (You already accepted the friend
-   request — @clsneaks01 and @colton_lestorti are friends now.) Then tell me
-   "colton_lestorti is checked in" and I'll verify the final items in ~2 min:
-   the "Out tonight at X" line on their profile (+ tap-to-map), the
-   out-tonight-row avatar tap, and the venue-sheet "friends here" name chips.
-2. **Then decide merge:** if those pass, say the word and I'll merge
-   `feat/viewable-profiles` → main `--no-ff` and push (I will NOT until you
-   OK it). DDL is already pasted + recorded, so nothing else is pending.
+FULLY verified (12/12).** Colton confirmed the out-tonight surfaces on
+2026-07-19 (checked in via @colton_lestorti; friend-graph paths worked). The
+only remaining step is Colton's explicit merge OK → `feat/viewable-profiles`
+→ main `--no-ff` + push. DDL pasted + recorded; nothing else pending.
 
 Optional follow-up (not blocking merge): extract the duplicated avatar+name
 tap-through button into one shared component (repeated across 5 row files) —
@@ -43,9 +36,9 @@ flagged in code review, deferred to keep the pre-merge diff stable.
   tap-throughs from suggested + search rows, Back button, friend-row body
   tap→profile, kebab→Remove/Block drawer, AddButton states (Requested→Friends
   ✓ both observed; self-guard confirmed not hiding the normal button).
-  **Remaining 3 (all need @colton_lestorti checked in):** out-tonight line on
-  a friend's profile + tap-to-map, out-tonight-row avatar tap, venue-sheet
-  "friends here" chip tap. See the "WHEN YOU'RE BACK" block at the top.
+  **Final 3 CONFIRMED by Colton 2026-07-19** (checked in via @colton_lestorti):
+  out-tonight line on a friend's profile + tap-to-map, out-tonight-row avatar
+  tap, venue-sheet "friends here" chip tap — all worked. **Matrix now 12/12.**
 - **Colton must paste the `profiles.bio` DDL** (recorded at the end of
   `~/Documents/endz/endz-schema.sql`; was also on his clipboard). App degrades
   gracefully without it (42703 fallbacks) but bio can't save until pasted.
