@@ -18,6 +18,7 @@ interface AuthState {
   profile: Profile | null;
   init: () => void;
   refreshProfile: () => Promise<void>;
+  updateProfile: (patch: Partial<Pick<Profile, "display_name" | "username" | "avatar_url">>) => Promise<void>;
   setGhostMode: (next: boolean) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -66,6 +67,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     if (data) set({ status: "signedIn", profile: data as Profile });
     else set({ status: "needsUsername", profile: null });
+  },
+
+  updateProfile: async (patch) => {
+    const supabase = getSupabase();
+    const { session, profile } = get();
+    if (!supabase || !session || !profile) throw new Error("Not signed in");
+    const prev = profile;
+    // Optimistic: apply locally, revert if the write fails.
+    set({ profile: { ...profile, ...patch } });
+    const { error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", session.user.id);
+    if (error) {
+      set({ profile: prev });
+      throw error;
+    }
   },
 
   setGhostMode: async (next: boolean) => {
