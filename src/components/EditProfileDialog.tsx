@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Camera, Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const { session, profile, updateProfile } = useAuthStore();
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -42,6 +44,7 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
       if (p) {
         setDisplayName(p.display_name ?? "");
         setUsername(p.username);
+        setBio(p.bio ?? "");
       }
     }
   }, [open]);
@@ -55,7 +58,8 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
 
   const usernameChanged = username !== profile.username;
   const nameChanged = displayName.trim() !== (profile.display_name ?? "");
-  const dirty = usernameChanged || nameChanged;
+  const bioChanged = bio.trim() !== (profile.bio ?? "");
+  const dirty = usernameChanged || nameChanged || bioChanged;
   const usernameBlocked =
     usernameChanged && availability !== "available";
 
@@ -82,9 +86,10 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const save = async () => {
     if (!dirty || usernameBlocked || saving || uploading) return;
     setSaving(true);
-    const patch: { display_name?: string | null; username?: string } = {};
+    const patch: { display_name?: string | null; username?: string; bio?: string | null } = {};
     if (nameChanged) patch.display_name = displayName.trim() || null;
     if (usernameChanged) patch.username = username;
+    if (bioChanged) patch.bio = bio.trim() || null;
     try {
       await updateProfile(patch);
       toast.success("Profile updated.");
@@ -93,6 +98,8 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
       const code = (err as { code?: string } | null)?.code;
       if (code === "23505") {
         setAvailability("taken");
+      } else if (code === "42703") {
+        toast.error("Bio isn't available yet — everything else saved next try.");
       } else {
         toast.error("Couldn't save that. Give it another shot.");
       }
@@ -193,6 +200,24 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
           >
             {usernameHint}
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-baseline justify-between">
+            <label htmlFor="edit-bio" className="text-sm font-medium">
+              Bio
+            </label>
+            <span className="text-xs text-muted-foreground">{bio.length}/150</span>
+          </div>
+          <Textarea
+            id="edit-bio"
+            value={bio}
+            maxLength={150}
+            rows={2}
+            placeholder="One line about your nights out."
+            onChange={(e) => setBio(e.target.value)}
+            className="resize-none"
+          />
         </div>
 
         <DialogFooter>
