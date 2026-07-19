@@ -5,9 +5,10 @@ Supersedes the 2026-07-18 handoff. Tracker: `docs/ENDZ_MASTER_TASKS.md`.
 ## TL;DR
 **Profile MVP phase 1 is built, reviewed, live-verified, merged to main, and
 pushed** (Colton pre-authorized the full pipeline). The tracker also absorbed
-Colton's 2026-07-18 product-depth list as items §14–§22. One pending Colton
-step: **paste the avatars-bucket DDL** so photo upload goes live. Google OAuth
-publish remains the only launch gate, still deliberately deferred by Colton.
+Colton's 2026-07-18 product-depth list as items §14–§22. **Avatars-bucket DDL
+was pasted by Colton and photo upload is verified live end-to-end** (incl. the
+second-upload cleanup path; his avatar now self-hosted in the bucket at 512px).
+Google OAuth publish remains the only launch gate, deliberately deferred.
 
 ## What shipped this session (on origin/main)
 - **Tracker merge:** Colton's to-do list → items §14–§22 + folds into §1/§3/§11,
@@ -29,15 +30,12 @@ publish remains the only launch gate, still deliberately deferred by Colton.
   second account for the taken-handle path). tsc + build + eslint clean.
 
 ## Colton's next steps (in order)
-1. **Paste the avatars-bucket DDL** into the Supabase SQL editor — it's the
-   `-- storage: avatars bucket` block at the bottom of
-   `~/Documents/endz/endz-schema.sql` (was also on your clipboard). Until
-   then, photo upload shows a friendly "Couldn't upload that photo" toast and
-   changes nothing. After pasting: pick a photo in Edit Profile → it should
-   appear on Profile, Social rows, and map-pin avatars.
+1. ~~Paste the avatars-bucket DDL~~ **DONE 2026-07-19** — bucket + policies
+   live, upload verified E2E in the real app (downscale → storage → profiles
+   repoint → old-file cleanup). DDL recorded in `endz-schema.sql`.
 2. **Deploy check:** main is pushed; confirm Vercel picked it up, then test
-   Profile on your iPhone against production (username edit, saved spots, age
-   chips; photo upload only after step 1).
+   Profile on your iPhone against production (username edit, photo upload,
+   saved spots, age chips).
 3. **Google OAuth publish** — still the only launch gate, still your click,
    still deliberately deferred (2026-07-18: "I don't want to OAuth yet").
    Nobody nags; raise it when ready.
