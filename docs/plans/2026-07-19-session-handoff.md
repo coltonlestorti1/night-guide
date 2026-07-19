@@ -2,6 +2,25 @@
 
 Supersedes the 2026-07-18 handoff. Tracker: `docs/ENDZ_MASTER_TASKS.md`.
 
+## ▶️ WHEN YOU'RE BACK — clear this to finish viewable-profiles
+
+Branch `feat/viewable-profiles` is **built, code-reviewed, review-fixed, and
+verified except the out-tonight surfaces.** To close it out:
+
+1. **One action to unblock the last 3 checks:** from your **@colton_lestorti**
+   account, **check in at any venue.** (You already accepted the friend
+   request — @clsneaks01 and @colton_lestorti are friends now.) Then tell me
+   "colton_lestorti is checked in" and I'll verify the final items in ~2 min:
+   the "Out tonight at X" line on their profile (+ tap-to-map), the
+   out-tonight-row avatar tap, and the venue-sheet "friends here" name chips.
+2. **Then decide merge:** if those pass, say the word and I'll merge
+   `feat/viewable-profiles` → main `--no-ff` and push (I will NOT until you
+   OK it). DDL is already pasted + recorded, so nothing else is pending.
+
+Optional follow-up (not blocking merge): extract the duplicated avatar+name
+tap-through button into one shared component (repeated across 5 row files) —
+flagged in code review, deferred to keep the pre-merge diff stable.
+
 ## SESSION 2 UPDATE (2026-07-19, later same day)
 
 - **Social-structure research DONE** → `docs/plans/2026-07-19-social-structure-research.md`
@@ -12,9 +31,21 @@ Supersedes the 2026-07-18 handoff. Tracker: `docs/ENDZ_MASTER_TASKS.md`.
   committed; tsc clean per task. Three-layer visibility model locked (see
   Decision Log 2026-07-19): identity card always / content behind future
   private-profile toggle / liveness friends-only.
-- **REMAINING before merge:** Task 6 — `npm run build` + lint + the 8-point
-  live-verification matrix in the plan (dev server, real session, second
-  account). Then Colton decides merge/push.
+- **Code review DONE** (high effort, 8-angle) — 4 findings; 2 fixed on branch
+  (`fix(profiles): apply code-review findings`): self-profile AddButton
+  self-request guard (`myId !== profile.id`), and honest 42703 bio-error copy
+  (old text falsely claimed other fields saved on an atomic-failed update). 2
+  deferred notes: duplicated tap-through button (reuse), duplicated 42703
+  fallback (harmless, now moot post-DDL).
+- **Live verification: 9/12 matrix items PASS** (tsc + build + lint clean).
+  Passing: profile identity card, not-found, own-handle→/profile redirect,
+  bio E2E (save→persist→reopen, DB round-trip with the DDL live — no 42703),
+  tap-throughs from suggested + search rows, Back button, friend-row body
+  tap→profile, kebab→Remove/Block drawer, AddButton states (Requested→Friends
+  ✓ both observed; self-guard confirmed not hiding the normal button).
+  **Remaining 3 (all need @colton_lestorti checked in):** out-tonight line on
+  a friend's profile + tap-to-map, out-tonight-row avatar tap, venue-sheet
+  "friends here" chip tap. See the "WHEN YOU'RE BACK" block at the top.
 - **Colton must paste the `profiles.bio` DDL** (recorded at the end of
   `~/Documents/endz/endz-schema.sql`; was also on his clipboard). App degrades
   gracefully without it (42703 fallbacks) but bio can't save until pasted.
