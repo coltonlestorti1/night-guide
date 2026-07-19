@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/auth";
-import { getSupabase } from "@/lib/supabase";
-import { uploadAvatar } from "@/lib/avatarUpload";
-import { USERNAME_RE } from "@/lib/username";
+import { cleanupOldAvatars, uploadAvatar } from "@/lib/avatarUpload";
+import { useUsernameAvailability } from "@/hooks/useUsernameAvailability";
 import {
   Dialog,
   DialogContent,
@@ -18,8 +17,6 @@ import { Camera, Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type Availability = "idle" | "invalid" | "checking" | "available" | "taken";
-
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,49 +26,32 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const { session, profile, updateProfile } = useAuthStore();
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
-  const [availability, setAvailability] = useState<Availability>("idle");
-  const [usernameError, setUsernameError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [availability, setAvailability] = useUsernameAvailability(
+    open ? username : "",
+    profile?.username,
+  );
 
-  // Re-seed the fields from the profile each time the dialog opens.
+  // Seed the fields ONLY on the open transition — a profile update landing
+  // mid-edit (photo upload, token-refresh refetch) must not wipe typed input.
   useEffect(() => {
-    if (open && profile) {
-      setDisplayName(profile.display_name ?? "");
-      setUsername(profile.username);
-      setAvailability("idle");
-      setUsernameError("");
+    if (open) {
+      const p = useAuthStore.getState().profile;
+      if (p) {
+        setDisplayName(p.display_name ?? "");
+        setUsername(p.username);
+      }
     }
-  }, [open, profile]);
-
-  // Debounced availability check — skipped when the handle is unchanged.
-  useEffect(() => {
-    if (!open) return;
-    setUsernameError("");
-    if (!username || username === profile?.username) {
-      setAvailability("idle");
-      return;
-    }
-    if (!USERNAME_RE.test(username)) {
-      setAvailability("invalid");
-      return;
-    }
-    setAvailability("checking");
-    const t = setTimeout(async () => {
-      const supabase = getSupabase();
-      if (!supabase) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", username)
-        .maybeSingle();
-      setAvailability(data ? "taken" : "available");
-    }, 400);
-    return () => clearTimeout(t);
-  }, [open, username, profile?.username]);
+  }, [open]);
 
   if (!profile) return null;
+
+  // Same fallback chain as the Profile card, so the dialog never shows a bare
+  // letter while the page shows the user's Google photo.
+  const meta = session?.user.user_metadata as { avatar_url?: string; picture?: string } | undefined;
+  const avatarSrc = profile.avatar_url || meta?.avatar_url || meta?.picture || undefined;
 
   const usernameChanged = username !== profile.username;
   const nameChanged = displayName.trim() !== (profile.display_name ?? "");
@@ -89,6 +69,8 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
     try {
       const url = await uploadAvatar(file, session.user.id);
       await updateProfile({ avatar_url: url });
+      // Old files only after the DB points at the new one; fire-and-forget.
+      void cleanupOldAvatars(session.user.id, url);
       toast.success("New photo saved.");
     } catch {
       toast.error("Couldn't upload that photo. Try again.");
@@ -98,7 +80,7 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   };
 
   const save = async () => {
-    if (!dirty || usernameBlocked || saving) return;
+    if (!dirty || usernameBlocked || saving || uploading) return;
     setSaving(true);
     const patch: { display_name?: string | null; username?: string } = {};
     if (nameChanged) patch.display_name = displayName.trim() || null;
@@ -111,7 +93,6 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
       const code = (err as { code?: string } | null)?.code;
       if (code === "23505") {
         setAvailability("taken");
-        setUsernameError("Someone just grabbed that one — try another.");
       } else {
         toast.error("Couldn't save that. Give it another shot.");
       }
@@ -124,7 +105,7 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
     availability === "invalid"
       ? "3-20 characters: lowercase letters, numbers, underscores."
       : availability === "taken"
-        ? usernameError || "That one's taken."
+        ? "That one's taken."
         : availability === "available"
           ? "It's yours if you want it."
           : "";
@@ -146,7 +127,7 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
             aria-label="Change profile photo"
           >
             <Avatar className="h-20 w-20 ring-4 ring-card shadow-float">
-              <AvatarImage src={profile.avatar_url ?? undefined} alt="" />
+              <AvatarImage src={avatarSrc} alt="" />
               <AvatarFallback className="text-xl font-semibold bg-primary-soft text-primary">
                 {(profile.display_name || profile.username).slice(0, 1).toUpperCase()}
               </AvatarFallback>

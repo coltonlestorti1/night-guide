@@ -6,15 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { USERNAME_RE, suggestUsername } from "@/lib/username";
-
-type Availability = "idle" | "invalid" | "checking" | "available" | "taken";
+import { suggestUsername } from "@/lib/username";
+import { useUsernameAvailability } from "@/hooks/useUsernameAvailability";
 
 const PickUsername = () => {
   const navigate = useNavigate();
   const { status, session, refreshProfile } = useAuthStore();
   const [username, setUsername] = useState(() => suggestUsername(useAuthStore.getState().session?.user.email));
-  const [availability, setAvailability] = useState<Availability>("idle");
+  const [availability, setAvailability] = useUsernameAvailability(username);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // Set the instant we claim, so the redirect effect below doesn't race the
@@ -38,25 +37,10 @@ const PickUsername = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
-  // Debounced availability check
+  // Availability itself lives in the shared hook; just clear stale claim
+  // errors when the input changes.
   useEffect(() => {
     setError("");
-    if (!username) {
-      setAvailability("idle");
-      return;
-    }
-    if (!USERNAME_RE.test(username)) {
-      setAvailability("invalid");
-      return;
-    }
-    setAvailability("checking");
-    const t = setTimeout(async () => {
-      const supabase = getSupabase();
-      if (!supabase) return;
-      const { data } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
-      setAvailability(data ? "taken" : "available");
-    }, 400);
-    return () => clearTimeout(t);
   }, [username]);
 
   const claim = async () => {

@@ -4,6 +4,7 @@
  * Google-only sign-in). Standalone page; no auth.
  */
 import LegalLayout from "@/components/LegalLayout";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 
 export default function Privacy() {
   return (
@@ -85,7 +86,7 @@ export default function Privacy() {
       <ul>
         <li>
           <strong>See or delete your data.</strong> Email us at{" "}
-          <a href="mailto:clsneaks01@gmail.com">clsneaks01@gmail.com</a> to request a
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> to request a
           copy of your data or to delete your account. Deleting your account removes
           your profile, check-ins, and friendships.
         </li>
@@ -111,7 +112,7 @@ export default function Privacy() {
 
       <h3>Contact</h3>
       <p>
-        Questions? <a href="mailto:clsneaks01@gmail.com">clsneaks01@gmail.com</a>.
+        Questions? <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
     </LegalLayout>
   );

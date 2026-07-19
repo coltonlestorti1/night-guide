@@ -2,6 +2,7 @@
  * /terms — ENDZ Terms of Service. Plain-English. Standalone page; no auth.
  */
 import LegalLayout from "@/components/LegalLayout";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 
 export default function Terms() {
   return (
@@ -67,7 +68,7 @@ export default function Terms() {
 
       <h3>Contact</h3>
       <p>
-        <a href="mailto:clsneaks01@gmail.com">clsneaks01@gmail.com</a>.
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
     </LegalLayout>
   );

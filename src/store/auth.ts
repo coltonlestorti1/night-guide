@@ -73,17 +73,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const supabase = getSupabase();
     const { session, profile } = get();
     if (!supabase || !session || !profile) throw new Error("Not signed in");
-    const prev = profile;
+    // Field-scoped snapshot: only revert the keys this call touched, so a
+    // concurrent update's committed fields survive a failure here.
+    const keys = Object.keys(patch) as (keyof typeof patch)[];
+    const prevFields = Object.fromEntries(keys.map((k) => [k, profile[k]])) as typeof patch;
     // Optimistic: apply locally, revert if the write fails.
     set({ profile: { ...profile, ...patch } });
     const { error } = await supabase
       .from("profiles")
       .update(patch)
       .eq("id", session.user.id);
+    const current = get().profile;
     if (error) {
-      set({ profile: prev });
+      if (current) set({ profile: { ...current, ...prevFields } });
       throw error;
     }
+    // Re-assert over any refreshProfile that raced us with a stale row.
+    if (current) set({ profile: { ...current, ...patch } });
   },
 
   setGhostMode: async (next: boolean) => {

@@ -15,7 +15,7 @@ import { ChevronDown, Flag, Ghost, LogOut, MapPin, Pencil, Trash2 } from "lucide
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const SUPPORT_EMAIL = "clsneaks01@gmail.com";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 
 /** Uppercase-tracking section label, matching the app's header vocabulary. */
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
@@ -239,14 +239,14 @@ const Profile = () => {
           <div className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">
             <a
               href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("ENDZ problem report")}`}
-              className="flex items-center gap-3 p-4 text-sm font-medium transition-colors hover:bg-secondary/40"
+              className="flex items-center gap-3 p-4 text-sm font-medium transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <Flag className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               Report a problem
             </a>
             <a
               href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Delete my ENDZ account")}`}
-              className="flex items-start gap-3 p-4 text-sm font-medium text-destructive transition-colors hover:bg-secondary/40"
+              className="flex items-start gap-3 p-4 text-sm font-medium text-destructive transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <Trash2 className="h-4 w-4 mt-0.5" aria-hidden="true" />
               <span>
@@ -259,7 +259,7 @@ const Profile = () => {
             <button
               type="button"
               onClick={signOut}
-              className="flex w-full items-center gap-3 p-4 text-sm font-medium text-left transition-colors hover:bg-secondary/40"
+              className="flex w-full items-center gap-3 p-4 text-sm font-medium text-left transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <LogOut className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               Sign out
