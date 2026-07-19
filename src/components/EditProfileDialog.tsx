@@ -99,7 +99,7 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
       if (code === "23505") {
         setAvailability("taken");
       } else if (code === "42703") {
-        toast.error("Bio isn't available yet — everything else saved next try.");
+        toast.error("Couldn't save your bio just yet — give it another shot.");
       } else {
         toast.error("Couldn't save that. Give it another shot.");
       }

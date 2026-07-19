@@ -19,6 +19,7 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const status = useAuthStore((s) => s.status);
   const myUsername = useAuthStore((s) => s.profile?.username);
+  const myId = useAuthStore((s) => s.session?.user.id);
   const handle = username.replace(/^@/, "").toLowerCase();
   const { data: profile, isLoading, isError } = useProfileByUsername(
     status === "signedIn" ? handle : undefined
@@ -106,9 +107,14 @@ const UserProfile = () => {
           {profile.bio && (
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-foreground/80">{profile.bio}</p>
           )}
-          <div className="mt-4">
-            <AddButton profile={profile} />
-          </div>
+          {/* Guard on id as well as the username redirect above: if the profile
+              fetch errored (signedIn but profile null → myUsername undefined),
+              the redirect is skipped, so never offer to friend yourself. */}
+          {myId !== profile.id && (
+            <div className="mt-4">
+              <AddButton profile={profile} />
+            </div>
+          )}
         </div>
       </div>
 
