@@ -10,9 +10,10 @@ import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useLocationStore } from "@/store/location";
+import { useLocationStore, geolocationPermission, hasPermissionsApi } from "@/store/location";
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
+import LocationDeniedDialog from "@/components/LocationDeniedDialog";
 import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine } from "lucide-react";
 
 type Activity = Record<string, { count: number; vibe?: string }> | undefined;
@@ -74,16 +75,32 @@ export default function VibeFinder({
   const [happyHour, setHappyHour] = useState(false);
   const [age, setAge] = useState<VibePrefs["age"]>(undefined);
   const [page, setPage] = useState<number | null>(null); // null = answers screen
+  const [showDeniedDialog, setShowDeniedDialog] = useState(false);
 
   const requestLocation = useLocationStore((s) => s.request);
   const coords = useLocationStore((s) => s.coords);
 
-  // "Around me" needs location; if the user declines, fall back to no preference.
+  // "Around me" needs location; denied gets the how-to dialog, anything else
+  // falls back to no preference with the existing nudge.
   const chooseNear = async (want: boolean) => {
-    if (want && !(await requestLocation())) {
-      toast.info("Turn on location to sort by what's around you");
-      setNear(false);
-      return;
+    if (want) {
+      if ((await geolocationPermission()) === "denied") {
+        setShowDeniedDialog(true);
+        setNear(false);
+        return;
+      }
+      if (!(await requestLocation())) {
+        if (
+          useLocationStore.getState().failure === "denied" &&
+          (!hasPermissionsApi() || (await geolocationPermission()) === "denied")
+        ) {
+          setShowDeniedDialog(true);
+        } else {
+          toast.info("Turn on location to sort by what's around you");
+        }
+        setNear(false);
+        return;
+      }
     }
     setNear(want);
   };
@@ -217,6 +234,8 @@ export default function VibeFinder({
           )}
         </div>
       </DrawerContent>
+
+      <LocationDeniedDialog open={showDeniedDialog} onOpenChange={setShowDeniedDialog} />
     </Drawer>
   );
 }

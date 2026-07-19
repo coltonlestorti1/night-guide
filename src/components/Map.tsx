@@ -5,16 +5,17 @@
  * Tiles come from OpenFreeMap (no key, no account). OSM attribution is
  * mandatory — the compact attribution control handles it; never disable it.
  */
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Venue, BBox } from "@/data/types";
 import { Navigation, LocateFixed } from "lucide-react";
 import { useMapViewStore } from "@/store/mapState";
-import { useLocationStore, geolocationPermission } from "@/store/location";
+import { useLocationStore, geolocationPermission, hasPermissionsApi } from "@/store/location";
 import { pinGlyph } from "@/lib/venueTraits";
 import { circlePolygon, EMPTY_FC } from "@/lib/geo";
 import { toast } from "sonner";
+import LocationDeniedDialog from "@/components/LocationDeniedDialog";
 
 export type PinFriend = { id: string; name: string; avatarUrl: string | null };
 
@@ -473,8 +474,15 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     };
   }, [ensureWatching, stopWatching]);
 
+  const [showDeniedDialog, setShowDeniedDialog] = useState(false);
+
   const handleLocateMe = useCallback(async () => {
     if (!map.current) return;
+    // Known-denied: skip the doomed geolocation call, explain the fix instead.
+    if ((await geolocationPermission()) === "denied") {
+      setShowDeniedDialog(true);
+      return;
+    }
     const coords = await requestLocation();
     if (!map.current) return;
     if (coords) {
@@ -483,6 +491,13 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       map.current.flyTo({ center: [coords.lng, coords.lat], zoom: 15, duration: 1500 });
       ensureWatching(); // follow from now on
       toast.success("Found your location");
+    } else if (
+      useLocationStore.getState().failure === "denied" &&
+      // Code 1 also fires on a dismissed prompt; only show settings guidance
+      // when the permission is truly denied (or we can't ask — old iOS Safari).
+      (!hasPermissionsApi() || (await geolocationPermission()) === "denied")
+    ) {
+      setShowDeniedDialog(true);
     } else {
       toast.info("Location unavailable — showing East Village center");
       map.current.flyTo({ center: [-73.9833, 40.7270], zoom: 15, duration: 1500 });
@@ -523,6 +538,8 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
           <Navigation className="h-5 w-5 text-primary" />
         </button>
       </div>
+
+      <LocationDeniedDialog open={showDeniedDialog} onOpenChange={setShowDeniedDialog} />
     </div>
   );
 };
