@@ -18,6 +18,7 @@ interface AuthState {
   profile: Profile | null;
   init: () => void;
   refreshProfile: () => Promise<void>;
+  updateProfile: (patch: Partial<Pick<Profile, "display_name" | "username" | "avatar_url">>) => Promise<void>;
   setGhostMode: (next: boolean) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -66,6 +67,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     if (data) set({ status: "signedIn", profile: data as Profile });
     else set({ status: "needsUsername", profile: null });
+  },
+
+  updateProfile: async (patch) => {
+    const supabase = getSupabase();
+    const { session, profile } = get();
+    if (!supabase || !session || !profile) throw new Error("Not signed in");
+    // Field-scoped snapshot: only revert the keys this call touched, so a
+    // concurrent update's committed fields survive a failure here.
+    const keys = Object.keys(patch) as (keyof typeof patch)[];
+    const prevFields = Object.fromEntries(keys.map((k) => [k, profile[k]])) as typeof patch;
+    // Optimistic: apply locally, revert if the write fails.
+    set({ profile: { ...profile, ...patch } });
+    const { error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", session.user.id);
+    const current = get().profile;
+    if (error) {
+      if (current) set({ profile: { ...current, ...prevFields } });
+      throw error;
+    }
+    // Re-assert over any refreshProfile that raced us with a stale row.
+    if (current) set({ profile: { ...current, ...patch } });
   },
 
   setGhostMode: async (next: boolean) => {

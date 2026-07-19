@@ -35,6 +35,17 @@ is the only launch gate and Colton is intentionally not doing it yet.**
   the component. Final review caught dismissed-prompt≠denied + iOS Chrome/FF
   copy; both fixed + live-verified under emulated UAs.
 
+## Product direction (2026-07-18, after Colton reviewed the current light UI)
+The current app has a solid light UI foundation; the next priorities are
+**product depth**, not more surface polish: Profile buildout, Social buildout,
+going-out crew, group plans, DMs (scope TBD — likely after group plans),
+group-size-aware discovery, age-aware recommendations, rooftop/outdoor inputs
+in Find the Move, Apple Maps named navigation, and adding **Coopers & Swifts**
+to the venue verification queue. All merged into the tracker 2026-07-18 as
+items §14–§22 + folds into §1/§3/§11 — **every one NOT DISCUSSED, gate
+applies.** The tracker now has a visible **Next Up (Top 10)** and **Decisions
+Needing Discussion** section.
+
 ## Next steps (in rough priority)
 1. **Colton: re-test on his iPhone** against the production deploy — location
    now enabled in iOS Settings, so expect: dot + tight GPS halo on Locate-me.

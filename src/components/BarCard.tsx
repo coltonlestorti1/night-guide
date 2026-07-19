@@ -5,19 +5,14 @@ import { useVenueActivity } from "@/hooks/useCheckIns";
 import { getEnrichment, computeOpenState } from "@/data/enrichment";
 import { useLocationStore } from "@/store/location";
 import { haversineMiles, formatMiles } from "@/lib/distance";
+import { PLACEHOLDER, venueImageSrc } from "@/lib/venueImages";
 import { cn } from "@/lib/utils";
 
 const crowdLabel: Record<string, string> = { low: "Chill", medium: "Lively", high: "Packed" };
 const crowdDot: Record<string, string> = { low: "bg-emerald-400", medium: "bg-amber-400", high: "bg-rose-500" };
 
-const PLACEHOLDER: Record<string, string> = {
-  bar: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' fill='%233b82f6'%3E%3Crect width='96' height='96' rx='8' opacity='.15'/%3E%3Ctext x='48' y='54' text-anchor='middle' font-size='14' fill='%233b82f6'%3EBar%3C/text%3E%3C/svg%3E",
-  club: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' fill='%23ef4444'%3E%3Crect width='96' height='96' rx='8' opacity='.15'/%3E%3Ctext x='48' y='54' text-anchor='middle' font-size='14' fill='%23ef4444'%3EClub%3C/text%3E%3C/svg%3E",
-  lounge: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' fill='%23a855f7'%3E%3Crect width='96' height='96' rx='8' opacity='.15'/%3E%3Ctext x='48' y='54' text-anchor='middle' font-size='14' fill='%23a855f7'%3ELounge%3C/text%3E%3C/svg%3E",
-};
-
 export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: () => void }) {
-  const imgSrc = venue.image_url || PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
+  const imgSrc = venueImageSrc(venue);
   const { ids, toggle } = useSavedStore();
   const saved = ids.includes(venue.id);
   const { data: activity } = useVenueActivity();
