@@ -22,6 +22,48 @@ Decision Log as they're made.
 | 11 | Sign-up demographics (gender, age, …) | NOT DISCUSSED | Today `profiles` = username/avatar/ghost_mode only; no gender/age collected. Needs profiles schema change + privacy disclosure → §11 |
 | 12 | Group check-in & party size | NOT DISCUSSED | Today check-in is solo, counts 1 head; `activity` count drives pin tiers + "N here now". Party size would change the live crowd signal → §12 |
 | 13 | Heat map layer | NOT DISCUSSED | No heat layer today; map uses discrete category pins + activity rings. A density/activity heat map is a new visualization → §13 |
+| 14 | Profile buildout (profile + settings hub) | IN PROGRESS (phase 1 approved 2026-07-18) | Phase-1 scope approved: edit profile (name/username/photo upload), saved spots, age pref, privacy + account sections. Destination = full IG-style profile/settings. → §14 + Decision Log |
+| 15 | Social page buildout | NOT DISCUSSED | Foundation exists (`Social.tsx` + `components/social/`): requests, search, suggested friends, friends list, share handle, blocked section, out-tonight rows. No plans/crew/friends-tonight surfaces → §15 |
+| 16 | Going-out crew | NOT DISCUSSED | Promoted from backlog (tabled 2026-07-13). Nothing built; needs `close_groups`/`close_group_members`. Naming + privacy defaults open → §16 |
+| 17 | Group-size-aware discovery | NOT DISCUSSED | No group-size input anywhere in discovery today. Sibling of §12 (party size at check-in = live signal; this = planning input to recs) → §17 |
+| 18 | Discover page buildout | NOT DISCUSSED | `Discover.tsx` = exactly 2 tabs (Happy Hours, Weekend Favorites), nothing else. Proposed: more sections, dynamic over time → §18 |
+| 19 | Map product review | NOT DISCUSSED | Map is functional + recently cleaned up; this is a structured walk-through of pins/icons/rings/legend/filters/CTA/sheet before any changes → §19 |
+| 20 | Rooftop & outdoor seating data | NOT DISCUSSED | Zero rooftop/outdoor attributes in venue data today (item 2 audit). Data-collection + surfacing priority across filters/cards/FTM/Discover → §20 |
+| 21 | Group plans | NOT DISCUSSED | Nothing exists. Likely bridge between Social and DMs — lightweight shared plan w/ votes + RSVP → §21 |
+| 22 | DMs & messaging | NOT DISCUSSED | Nothing exists. Explicitly NOT assumed to be MVP; moderation/safety/App Store questions first → §22 |
+
+---
+
+## Next Up (Top 10) — updated 2026-07-18
+
+Discussion/audit order, not a build queue. Events stay **Coming Soon** (label
+only, never in this list as work).
+
+1. Discuss Profile MVP buildout (§14) — biggest gap between current page and user expectation
+2. Discuss Social scope: crew, groups, group plans, DMs ordering (§15/§16/§21/§22)
+3. Discuss Find the Move inputs: group size, age, rooftop/outdoor (§3 + §17 + §20)
+4. Audit rooftop/outdoor data support + define verification rules (§20)
+5. Add Coopers & Swifts to the venue verification queue (backlog — verify-first, Google lookups still paused)
+6. Finish Apple Maps named navigation (item 1 — Google side shipped; Apple Place-ID runbook pending)
+7. Map product review walk-through (§19)
+8. Audit Happy Hours / Weekend Favorites / Discover for static or repetitive behavior (§2/§4/§18 — note: venue data is real Google enrichment, not mock; the static risk is ordering/rotation, worst in Weekend Favorites)
+9. Discuss age-aware discovery: storage, use, protection (§11)
+10. ⏰ Enrichment refresh cadence before ~Aug 6 (backlog — hours/ratings/HH all go dark otherwise)
+
+---
+
+## Decisions Needing Discussion — updated 2026-07-18
+
+- What should the Profile MVP include? Instagram-like vs utility/settings-focused?
+- What settings are needed before user testing?
+- Should DMs be MVP or later? Should group plans come before DMs?
+- What should "going-out crew" be called?
+- How should group size affect recommendations?
+- How should age affect recommendations (and how is age data stored/protected)?
+- What rooftop and outdoor seating questions should Find the Move ask?
+- Which map changes should happen first?
+- How should Coopers and Swifts be verified before adding?
+- What makes a venue eligible for Discover and Find the Move?
 
 ---
 
@@ -124,6 +166,12 @@ all 47 venues; Apple unified URLs (iOS 18.4+) support
 approach = manual Place ID Lookup verification for the 47 ($0) with name+address
 fallback, Server API automation ($99/yr dev account, 25k calls/day) at scale.
 
+**Reaffirmed 2026-07-18 (Colton):** named navigation stays on the list until Apple
+Maps opens the real venue listing (bar name shown, not an address/dropped pin) for
+**all verified venues, including future additions** (e.g. Coopers & Swifts once
+they clear verification). Partial build shipped 2026-07-15 (Google fully named;
+Apple name+address); the Apple Place-ID verification runbook is the open piece.
+
 ---
 
 ## 2. Dynamic Happy Hours
@@ -213,6 +261,18 @@ Each recommendation should explain:
 score on vibe/drinks/when/distance/happy-hour with live check-in activity —
 not hardcoded. Missing: differentiated "reason" slots, diversity rules,
 cooldowns, freshness/confidence signals, impression logging.
+
+**Input buildout (added 2026-07-18, Colton — folds his FTM list into this item):**
+Current inputs = vibe, drinks, when, near, happy hour, age (21-25/25-30/30+ —
+already in `VibeFinder.tsx`); results already come in sets of 3. To add (each
+must be discussed, no scoring changes before the gate): rooftop preference,
+outdoor-seating preference, patio/backyard, group size + going-out-with-crew
+(→ §17), budget, distance, music, open now vs later tonight, neighborhood
+preference. Each of the ~3 results should explain: why it fits, age/vibe/group
+fit, rooftop/outdoor availability, happy-hour applicability, proximity, open
+status, and whether the data is **verified, estimated, or stale**. Depends on:
+§20 (rooftop/outdoor data must exist before FTM can ask about it), §17 (group
+size), §11 (age handling).
 
 ---
 
@@ -344,14 +404,17 @@ After a discussion is approved, Claude should:
 - **Assisted / auto check-in** — PWA reality: foreground nearby-prompt only; true background needs Capacitor (Colton ask, 2026-07-13).
 - **Night Recap** — morning-after bars-visited + ranking. Blocked: `checkIn()`/`checkOut()` currently DELETE history (needs delete→expire change — touches the protected core loop) + needs a ratings table. Recap trail private-to-self, never visible to others. Feasibility prep (2026-07-14): `docs/plans/2026-07-14-night-recap-prep.md` — delete→expire is view-compatible (all reads go through `active_check_ins`), own-history reads need no RLS change, but an UPDATE policy on `check_ins` is required.
 - ~~🐛 setVibe() silently broken~~ **FIXED 2026-07-14** — `check_ins` had RLS enabled but no UPDATE policy, so the `setVibe()` UPDATE (`src/lib/checkins.ts:72`) matched 0 rows without erroring and vibes never saved. Patched live via SQL editor: "users update own checkins" policy (owner-only; identity columns immutable via pre-update snapshot; `expires_at` may only move earlier — which pre-satisfies the delete→expire DDL the Night Recap needs). Verified: 4 policies on `check_ins`. DDL recorded in `endz-schema.sql` check_ins section.
-- **Going-out crew** — MySpace-Top-8-style crew of 5–8 (IG Close Friends analog). Tabled 2026-07-13; needs `close_groups`/`close_group_members`. Resume only on Colton's prompt.
+- **Going-out crew** — **PROMOTED 2026-07-18 to tracker item §16** (was tabled 2026-07-13). See §16 for naming candidates, behavior, and privacy rules.
+- **Venue verification queue** (added 2026-07-18) — candidates to verify before any addition; Google lookups still **paused**, do NOT run bulk `enrich resolve`:
+  - **Coopers** and **Swifts** (Colton, 2026-07-18) — verify-first: confirm these refer to the intended East Village/NYC bars; check exact names, addresses, operating status, category, coordinates, and Apple Maps/Google Maps identity (item 1 named-nav applies). Add **only after confirmation** — never as verified venues on name alone.
+  - Drop Off Service, Copper Still, Hidden Tiger, Chloe 81 (2026-07-17, ON HOLD; Chloe 81 stays dormant — LES, off the EV beachhead).
 - **Google OAuth out of testing mode** — random users currently CANNOT sign into the map (only added test users). A launch blocker bigger than anything above; needs Google OAuth verification or a decision on auth approach.
 - **Declared intent ("going out tonight")** — Phase 1 roadmap item (2026-07-08); needs new `intents` table. Pairs with the friends layer that just shipped.
 - **Analytics** — **CLIENT WIRING BUILT 2026-07-15** on `feat/analytics-wiring` + integration branch (fail-safe logEvent, 6 core-loop events). **Blocked on Colton running the events-table DDL** (in `docs/plans/2026-07-15-analytics-prep.md`); silently no-ops until then. Open Qs: ghost-mode counting, night boundary, deferred events.
 - **Real PWA icons** — manifest/meta **FIXED 2026-07-15** on `chore/pwa-icons` + integration branch (theme-color was light-on-dark bug, maskable declared). **Art still placeholder** — spec for Colton in `docs/plans/2026-07-15-pwa-icons-prep.md`.
 - **⏰ Enrichment refresh before ~Aug 6 (2026)** — the whole Google enrichment batch was fetched 2026-07-07 and `getEnrichment()` treats records >30 days old as absent (ToS rule), so hours/ratings/happy-hours ALL go dark unless `node scripts/enrich-venues.mjs refresh` reruns before then. Decide a cadence (e.g. 1st of each month; ~43 API calls, free tier). Found during 2026-07-15 HH/FTM prep.
 - **Named directions (item 1 partial build)** — **BUILT 2026-07-15** on `feat/named-directions` + integration branch within the prep doc's recommended approach: Google fully named (43/47 verified place IDs), Apple name+address with runbook for Colton's Place ID verification; 4 venues need addresses. Full Apple named nav still needs the runbook done.
-- **Full-launch readiness checklist** — added 2026-07-15 (Colton): audit everything needed beyond features to open ENDZ to the public, not just Google OAuth publishing. Candidates to walk through together: Privacy Policy + Terms of Service pages (waitlist/events/check-ins all collect user data), account deletion / data-export path, support contact, error monitoring (nothing currently catches prod exceptions), Supabase free-tier limits at real user volume (row/API caps, auto-pause), rate limiting on writable tables (events/check-ins/waitlist have no abuse guard), App Store vs. PWA-only decision for v1, content moderation for anything user-generated (block/report already exists for friends — anything else?), custom domain vs. `night-guide.vercel.app`. Needs its own discussion pass — nothing here is scoped or approved yet. **AUDIT DONE 2026-07-15** → `docs/plans/2026-07-15-full-launch-readiness-prep.md` (9 gaps ranked by severity, options + rec each; key finds: no privacy/terms pages, no account deletion, `ghost_mode` has no UI toggle, no error monitoring, no rate limiting). Quick wins flagged: ghost toggle + root error boundary. Gated DB items: rate-limit trigger, account-deletion Edge Function. Walk-through pending Colton.
+- **Full-launch readiness checklist** — added 2026-07-15 (Colton): audit everything needed beyond features to open ENDZ to the public, not just Google OAuth publishing. Candidates to walk through together: Privacy Policy + Terms of Service pages (waitlist/events/check-ins all collect user data), account deletion / data-export path, support contact, error monitoring (nothing currently catches prod exceptions), Supabase free-tier limits at real user volume (row/API caps, auto-pause), rate limiting on writable tables (events/check-ins/waitlist have no abuse guard), App Store vs. PWA-only decision for v1, content moderation for anything user-generated (block/report already exists for friends — anything else?), custom domain vs. `night-guide.vercel.app`. Needs its own discussion pass — nothing here is scoped or approved yet. **AUDIT DONE 2026-07-15** → `docs/plans/2026-07-15-full-launch-readiness-prep.md` (9 gaps ranked by severity, options + rec each; key finds: no privacy/terms pages, no account deletion, `ghost_mode` has no UI toggle, no error monitoring, no rate limiting). Quick wins flagged: ghost toggle + root error boundary. Gated DB items: rate-limit trigger, account-deletion Edge Function. Walk-through pending Colton. **Potential missing product areas appended 2026-07-18 (Colton)** — additional candidates for the same walk-through, beyond the 9 audited gaps: push-notification strategy (needs Capacitor) · report-incorrect-venue-info flow · recommendation feedback ("was this a good pick?") · admin tools for venue data · analytics events (client wiring built, DDL pending) · empty states for every tab · real photo strategy for venues · production-data vs demo-data distinction · venue detail page depth · TestFlight plan (later) · onboarding flow (§7) · location-permission explanation (§8) · account deletion + blocking/reporting/safety (already in the audit).
 
 ---
 
@@ -463,6 +526,17 @@ a change from today (profiles hold username/avatar/ghost_mode), so this needs a
 `profiles` schema change + a Privacy Policy update disclosing what we collect and
 why. Age verification interplay with 18+ still open. **Discuss before building.**
 
+**Age-aware discovery (added 2026-07-18, Colton — folds his "age-aware discovery"
+item into this one):** beyond collection, actively use age/age-range to tailor
+Discover, Find the Move, Weekend Favorites, and neighborhood recs — e.g. don't
+send someone seeking an older crowd to a college-heavy bar, or someone seeking a
+young lively crowd to a quiet lounge; tune copy and section ordering. Some of
+this already exists: FTM has an age input and Weekend Favorites has on-device
+age-band nudging (Decision Log 2026-07-15). Hard rules: age is
+**preference/context, not identity labeling**; no hard assumptions or
+discriminatory claims; how age data is stored, used, and protected must be
+discussed before any server-side collection or new scoring.
+
 ### 12. Group check-in & party size
 **Added 2026-07-17 (Colton) — NOT DISCUSSED, gate applies.** Two linked asks:
 - **Check in *with* friends** — a group/shared check-in, not just solo.
@@ -498,6 +572,156 @@ which "heat," MVP scope, and how it reads alongside pins — before building.**
 
 ---
 
+## Product-depth batch (added 2026-07-18, Colton) — discuss before building
+
+All of items 14–22 below came from Colton's 2026-07-18 to-do list. Every one is
+**NOT DISCUSSED — gate applies.** These are proposed feature sets, not approved
+scope.
+
+### 14. Profile Buildout (profile + settings hub)
+**Current state (audited 2026-07-18):** `Profile.tsx` = signed-in card (Google
+avatar, display name, @username, ENDZ cover band), ghost-mode toggle, sign out,
+collapsible developer settings, privacy/terms footer links. That's all — no
+edit-profile, bio, photo upload, saved spots, preferences, notifications, help,
+or account management.
+
+Proposed sections (candidates, not commitments): profile header (photo, display
+name, username, bio/status, Edit Profile) · saved spots + favorite venues +
+favorite neighborhoods · going-out / music / budget / age-range /
+rooftop-outdoor preferences · privacy settings (location visibility, who sees
+check-ins / going-out status / exact venue vs neighborhood-only, appear
+offline) · allow friends to invite me to plans · DMs-from-friends-only ·
+notification settings · account settings (connected accounts later, blocked
+users, report a problem, help/support, terms & privacy, sign out) ·
+delete-account (App Store readiness — email-interim already decided, self-serve
+later).
+
+Guardrails: Profile must **not** become cluttered — the MVP cut gets discussed
+first (Instagram-depth vs utility/settings-focused is an open decision). Several
+proposed settings imply features that don't exist yet (plans → §21, DMs → §22,
+per-check-in visibility granularity) — settings ship with their features, not
+before. Overlaps: saved spots (§6, device-local today), demographics/prefs
+(§11), full-launch-readiness gaps (ghost toggle + legal pages already shipped;
+account deletion pending).
+
+### 15. Social Page Buildout
+**Current state (audited 2026-07-18):** solid foundation in `Social.tsx` +
+`components/social/` — friend requests, profile search ("find friends"),
+suggested friends, accepted friends list, share-your-handle card, blocked
+section, out-tonight rows. What's missing is product direction beyond the
+friend graph.
+
+Proposed areas: friends going out tonight / already out / considering
+neighborhoods / at venues (privacy permitting — RLS-filtered friends feed
+partially exists via out-tonight + map-pin avatars) · going-out crew (§16) ·
+group plans (§21) · shared recommendations · invite/share link · DMs + group
+chats later (§22).
+
+Guardrails (Colton): the Social page should **not** become a full Instagram
+feed right away; DMs/group chats are desired but scope + privacy get discussed
+first; MVP likely needs lightweight group planning **before** full messaging.
+
+### 16. Going-Out Crew
+**Promoted 2026-07-18 from the backlog** (tabled 2026-07-13; needs
+`close_groups`/`close_group_members`). A close nightlife group of ~5–8 people —
+IG Close Friends analog.
+
+Name is temporary and gets discussed/tested. Candidates: Crew · Going-Out Crew ·
+Night Circle · Close Crew · The Group · Inner Circle · Plans · Night Friends.
+
+Proposed behavior: user manually selects 5–8 people; can reorder, remove,
+replace; crew tailors recommendations; crew sees going-out statuses if privacy
+allows; crew shares plans; venue/neighborhood voting later. **Private by
+default** unless discussed otherwise. Hard rule: **no auto-ranking of friends
+and no public MySpace-style ranking without explicit user approval.**
+
+### 17. Group-Size-Aware Discovery
+**Current state:** no group-size input exists anywhere in discovery. Sibling of
+§12 — party size at check-in is the *live crowd signal*; this is the *planning
+input* to recommendations. Keep them linked but distinct in discussion.
+
+User states: solo · with 1–2 · with 3–5 · with 6+ · with my crew (§16).
+Find the Move and Discover eventually adjust: bigger groups → larger venues,
+no-cover/easy-entry, patios/rooftops/casual bars; smaller groups → cocktail
+bars/lounges; large groups → space + reliable entry.
+
+Candidate fields (schema NOT approved): `current_group_size`,
+`going_out_with_crew`, `group_budget_preference`, `group_vibe_preference`,
+`group_rooftop_preference`, `group_outdoor_preference`,
+`group_neighborhood_preference`.
+
+### 18. Discover Page Buildout
+**Current state (audited 2026-07-18):** `Discover.tsx` = exactly two tabs —
+Happy Hours (`HappyHourRail`) and Weekend Favorites — nothing else. Useful but
+thin.
+
+Proposed sections: Tonight's Move · Happy Hours · Weekend Favorites · Rooftops ·
+Outdoor Seating · Neighborhoods · Saved Spots · Friends Going Out · Coming
+Soon: Events / Bar Happenings (label only — Events stays Coming Soon).
+
+Guardrails: sections should become dynamic over time rather than static
+(dynamics work tracked in §2/§4/§5); **do not overbuild Discover before venue
+data is more reliable** — Rooftops/Outdoor sections depend on §20 data
+existing.
+
+### 19. Map Product Review
+**Current state:** map is much cleaner than before (Colton, 2026-07-18), but
+major changes need a structured product walk-through first. Overlaps §10
+(polish bucket) and §13 (heat map) — this is the discussion umbrella.
+
+Walk-through agenda: pin crowding · icon clarity (are beer/martini/globe the
+right venue icons?) · are activity rings meaningful · should the activity
+legend stay visible · filters collapse vs scroll · Find the Move as a prominent
+map CTA · rooftop/outdoor filters on the map (§20) · neighborhood boundaries or
+zones · pin tap → bottom sheet (a preview sheet exists today — evaluate it) ·
+is selected-venue state obvious enough · does list view need better images and
+venue details.
+
+**No map changes until Colton and Claude talk through the options.**
+
+### 20. Rooftop & Outdoor Seating Data
+**Current state (audited 2026-07-18):** venue data has **zero**
+rooftop/outdoor attributes (item 2 audit) — this is the blocking dependency for
+every rooftop/outdoor mention in §2/§3/§4/§6/§14/§17/§18/§19. Current
+venue-data priority.
+
+Surfaces to add to (once data exists): venue filters · venue cards · venue
+detail pages · Find the Move · Tonight's Move · Weekend Favorites · Discover
+sections.
+
+Hard rules (Colton): rooftops are **separate** from general outdoor seating —
+each gets its own icon. Never present a rooftop as public/open unless verified.
+Never present outdoor seating as available if it's seasonal, closed,
+weather-dependent, or unverified. (Verification/freshness display ties into the
+item-1-style verified/estimated/stale vocabulary.)
+
+### 21. Group Plans
+**Current state:** nothing exists. Likely the bridge between Social and full
+DMs (§22) — lightweight coordination without building messaging first.
+
+Candidate fields (schema NOT approved): `plan_id`, `creator_id`, `group_size`,
+`invited_friends`, `neighborhood_options`, `venue_options`, `selected_venue`,
+`selected_neighborhood`, `planned_time`, `status`, `votes`, `notes`.
+
+Candidate actions: suggest venue · suggest neighborhood · vote · RSVP
+yes/maybe/no · share plan · open directions · start Find the Move for this
+group (§17 hook).
+
+### 22. DMs & Messaging
+**Current state:** nothing exists, and DMs are **not assumed to be MVP**.
+
+Discussion questions: are DMs needed for MVP at all? One-to-one only at first?
+Does group messaging wait? Should ENDZ start with shared plans + recommendation
+sharing instead? What moderation, blocking (friend-level block exists),
+reporting, and privacy controls are required? How does messaging affect App
+Store review and safety requirements?
+
+Likely MVP alternative (Colton's lean): share a venue · share a Find the Move
+result · lightweight group plan (§21) · comments later · DMs only after privacy
++ moderation are ready.
+
+---
+
 ## Decision Log
 
 _Append decisions here as features clear the discussion gate: date, feature, decision, approved scope, what was postponed._
@@ -519,3 +743,5 @@ _Append decisions here as features clear the discussion gate: date, feature, dec
 - 2026-07-18 — **Accuracy halo (item 9 follow-up) MERGED to main** (Colton OK'd; `feat/accuracy-halo` → main `--no-ff`, then pushed). Real-meters GeoJSON circle under the dot at the fix's reported accuracy; always-on, no threshold/cap (Colton's call), `#3b82f6` @ 10% opacity; pre-style-load fixes buffered + flushed on map load; halo clears with the watcher; `request()` records accuracy for Locate-me. Full gate flow (spec + plan in `docs/superpowers/`), subagent-driven build, live-verified with mocked geo at coarse/tight/moving fixes + zoom scaling + no-prompt rule. Live verify caught + fixed **2 real bugs**: unmount crash (map removed before stopWatching's halo clear — fixed by nulling map ref on remove) and a locate-me post-await null-map race (final whole-branch review, deterministic after the null-ref fix). Optional follow-up logged: declare `@types/geojson` as an explicit devDependency (currently transitive via maplibre-gl).
 - 2026-07-18 — **@types/geojson declared** as explicit devDependency (follow-up closed).
 - 2026-07-18 — **Location-denied dialog (item 8 denial-UX slice) MERGED to main** (Colton OK'd; `feat/location-denied-dialog` → main `--no-ff`). Trigger: Colton hit the dead-end "Location unavailable" toast on his iPhone with location blocked for Safari. Store now records failure reason (denied/unavailable/timeout — error code was previously discarded); explicit taps (Locate-me, Find-the-move "around me") route TRUE denials to a dialog with platform-specific enable steps (iOS Safari / iOS Chrome+Firefox / Android / iPad / generic); timeouts keep honest toasts. **Explicit taps only** (Colton's call — no banners/nagging). Deep-linking to OS settings from web: impossible (verified); dialog comments note the Capacitor-phase "Open Settings" upgrade. Final review caught: dismissed-prompt ≠ denied (same error code — now re-confirmed via Permissions API with old-iOS-Safari escape hatch) + iOS Chrome/FF needed non-Safari copy. Live-verified all branches incl. UA-emulated platform copy. Spec/plan in `docs/superpowers/`.
+- 2026-07-18 — **Product-depth batch added** (Colton's to-do list merged into the tracker; docs-only, no code/DB/deploy changes). New items **§14–§22**: Profile buildout, Social buildout, going-out crew (promoted from backlog), group-size-aware discovery, Discover buildout, map product review, rooftop/outdoor seating data, group plans, DMs & messaging — **all NOT DISCUSSED, gate applies.** Folded into existing items: FTM input buildout → §3; age-aware discovery → §11; Apple Maps named-nav reaffirmed (incl. future venues) → §1; missing-product-areas → full-launch-readiness backlog entry. **Coopers & Swifts** added to a new venue-verification-queue backlog entry (verify-first; lookups still paused). Added visible **Next Up (Top 10)** + **Decisions Needing Discussion** sections. Events stays Coming Soon (label only).
+- 2026-07-18 — **§14 Profile MVP (phase 1) APPROVED** (Colton, full gate discussion). Direction: **phased hybrid** — utility/settings hub now, laid out so the **full Instagram-style profile + settings (Colton's explicit end state)** grows into it with §15/§16/§21. Scope: (1) Edit Profile — display name + **username changeable freely** (reuse /welcome uniqueness, no cooldown unless abuse) + **real photo upload** (new Supabase Storage `avatars` bucket, public-read/owner-write — the only Supabase change; no `profiles` schema change); (2) Saved spots section (device-local store, tap→detail); (3) age-band preference exposed; (4) Privacy section (ghost mode moves in); (5) Account & support (sign out, email-interim delete, report a problem). Blocked users stay on Social. **Postponed:** bio (next phase, with viewable profile), going-out/music/budget prefs, notification settings, appear-offline/granular visibility, connected accounts, username cooldowns, self-serve deletion. RLS pre-check: `profiles` "users update own profile" policy exists. Colton authorized: build → review → **push to main when done**.
