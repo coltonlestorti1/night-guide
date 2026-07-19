@@ -19,7 +19,18 @@ type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 
 const platformSteps = (): string[] => {
   const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
-  if (/iPhone|iPad|iPod/.test(ua)) {
+  // Modern iPadOS Safari sends a Macintosh UA; touch points give it away.
+  const isIPad =
+    /iPad/.test(ua) ||
+    (/Macintosh/.test(ua) && typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
+  if (/iPhone|iPod/.test(ua) || isIPad) {
+    // Chrome/Firefox on iOS have their own Settings entry — Safari steps would misdirect.
+    if (/CriOS|FxiOS/.test(ua)) {
+      return [
+        'Open Settings → scroll to your browser (Chrome or Firefox) → Location → "While Using the App" or Ask.',
+        "Then come back and tap the locate button again.",
+      ];
+    }
     return [
       'Open Settings → Privacy & Security → Location Services, and set Safari Websites to "Ask Next Time Or When I Share".',
       "Still blocked? In Safari, tap aA in the address bar → Website Settings → Location → Ask.",
@@ -27,7 +38,7 @@ const platformSteps = (): string[] => {
   }
   if (/Android/.test(ua)) {
     return [
-      "Tap the lock icon next to the address bar → Permissions → Location → Allow.",
+      "Tap the icon left of the address bar (lock or sliders) → Permissions → Location → Allow.",
       "No Location entry? Open your browser's Settings → Site settings → Location.",
     ];
   }
@@ -40,7 +51,7 @@ const LocationDeniedDialog = ({ open, onOpenChange }: Props) => (
       <DialogHeader>
         <DialogTitle>Location is off for ENDZ</DialogTitle>
         <DialogDescription>
-          Your phone is blocking location for this site, so the map can't find
+          Your device is blocking location for this site, so the map can't find
           you. Here's the fix:
         </DialogDescription>
       </DialogHeader>

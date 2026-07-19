@@ -11,7 +11,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Venue, BBox } from "@/data/types";
 import { Navigation, LocateFixed } from "lucide-react";
 import { useMapViewStore } from "@/store/mapState";
-import { useLocationStore, geolocationPermission } from "@/store/location";
+import { useLocationStore, geolocationPermission, hasPermissionsApi } from "@/store/location";
 import { pinGlyph } from "@/lib/venueTraits";
 import { circlePolygon, EMPTY_FC } from "@/lib/geo";
 import { toast } from "sonner";
@@ -491,7 +491,12 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       map.current.flyTo({ center: [coords.lng, coords.lat], zoom: 15, duration: 1500 });
       ensureWatching(); // follow from now on
       toast.success("Found your location");
-    } else if (useLocationStore.getState().failure === "denied") {
+    } else if (
+      useLocationStore.getState().failure === "denied" &&
+      // Code 1 also fires on a dismissed prompt; only show settings guidance
+      // when the permission is truly denied (or we can't ask — old iOS Safari).
+      (!hasPermissionsApi() || (await geolocationPermission()) === "denied")
+    ) {
       setShowDeniedDialog(true);
     } else {
       toast.info("Location unavailable — showing East Village center");

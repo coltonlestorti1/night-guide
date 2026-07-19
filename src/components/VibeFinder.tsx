@@ -10,7 +10,7 @@ import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useLocationStore, geolocationPermission } from "@/store/location";
+import { useLocationStore, geolocationPermission, hasPermissionsApi } from "@/store/location";
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import LocationDeniedDialog from "@/components/LocationDeniedDialog";
@@ -90,7 +90,10 @@ export default function VibeFinder({
         return;
       }
       if (!(await requestLocation())) {
-        if (useLocationStore.getState().failure === "denied") {
+        if (
+          useLocationStore.getState().failure === "denied" &&
+          (!hasPermissionsApi() || (await geolocationPermission()) === "denied")
+        ) {
           setShowDeniedDialog(true);
         } else {
           toast.info("Turn on location to sort by what's around you");

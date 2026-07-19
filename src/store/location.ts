@@ -7,6 +7,7 @@ import { create } from "zustand";
 
 export type Coords = { lat: number; lng: number };
 type Status = "idle" | "prompting" | "granted" | "denied" | "unsupported";
+type LocationFailure = "denied" | "unavailable" | "timeout";
 
 type LocationState = {
   coords: Coords | null;
@@ -14,7 +15,7 @@ type LocationState = {
   /** Accuracy radius (m) of the latest fix, or null. */
   accuracy: number | null;
   /** Why the last geolocation attempt failed, or null. */
-  failure: "denied" | "unavailable" | "timeout" | null;
+  failure: LocationFailure | null;
   /** Ask the browser for location once; resolves to coords or null if unavailable. */
   request: () => Promise<Coords | null>;
   /** Start continuous foreground tracking (watchPosition). Idempotent. */
@@ -26,9 +27,7 @@ type LocationState = {
 let watchId: number | null = null;
 let watcherCount = 0;
 
-const failureFromError = (
-  err: GeolocationPositionError,
-): "denied" | "unavailable" | "timeout" =>
+const failureFromError = (err: GeolocationPositionError): LocationFailure =>
   err.code === err.PERMISSION_DENIED
     ? "denied"
     : err.code === err.TIMEOUT
@@ -42,7 +41,10 @@ export const useLocationStore = create<LocationState>((set, get) => ({
   failure: null,
   request: () => {
     const existing = get().coords;
-    if (existing) return Promise.resolve(existing);
+    if (existing) {
+      set({ failure: null }); // cached coords = success; don't leave a stale reason
+      return Promise.resolve(existing);
+    }
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
       set({ status: "unsupported" });
       return Promise.resolve(null);
@@ -92,17 +94,19 @@ export const useLocationStore = create<LocationState>((set, get) => ({
   },
 }));
 
+/** Whether the Permissions API is available (old iOS Safari lacks it). */
+export const hasPermissionsApi = (): boolean =>
+  typeof navigator !== "undefined" &&
+  "permissions" in navigator &&
+  typeof navigator.permissions?.query === "function";
+
 /**
  * Read geolocation permission WITHOUT prompting. Returns "granted" | "prompt" |
  * "denied". Browsers lacking the Permissions API (older Safari) report "prompt"
  * so we simply don't auto-anything — the manual "Locate me" button still works.
  */
 export async function geolocationPermission(): Promise<"granted" | "prompt" | "denied"> {
-  if (
-    typeof navigator === "undefined" ||
-    !("permissions" in navigator) ||
-    typeof navigator.permissions?.query !== "function"
-  ) {
+  if (!hasPermissionsApi()) {
     return "prompt";
   }
   try {
