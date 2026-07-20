@@ -113,6 +113,14 @@ export default function CreatePlanSheet({
   const canSubmit =
     !!venueId && !!plannedAt && !Number.isNaN(new Date(plannedAt).getTime());
 
+  // plannedAt is "yyyy-MM-ddTHH:mm"; split so date + time render as separate
+  // native controls (mobile shows the OS date picker + iOS's wheel time picker).
+  const datePart = plannedAt.slice(0, 10);
+  const timePart = plannedAt.slice(11, 16);
+  const setDatePart = (d: string) => d && setPlannedAt(`${d}T${timePart || "21:00"}`);
+  const setTimePart = (t: string) =>
+    t && setPlannedAt(`${datePart || format(new Date(), "yyyy-MM-dd")}T${t}`);
+
   const submit = async () => {
     if (!canSubmit || !venueId) return;
     if (editItem) {
@@ -278,27 +286,39 @@ export default function CreatePlanSheet({
               )}
             </div>
 
-            {/* Time */}
+            {/* When — separate date + time so mobile shows the native OS
+                pickers (iOS renders type="time" as the alarm-clock wheel).
+                The vaul drawer captures pointer events on its content for
+                drag-to-dismiss, which otherwise eats the tap before the
+                picker opens; data-vaul-no-drag excludes the inputs from
+                vaul's drag check, and stopping propagation in the capture
+                phase guarantees vaul's ancestor handlers never see the
+                pointerdown (the input is still the event target, so focus +
+                the native picker work normally). */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 When
               </p>
-              {/* The vaul drawer captures pointer events on its content for
-                  drag-to-dismiss, which eats the click before the native
-                  date/time picker can open ("can't change the time").
-                  data-vaul-no-drag excludes the input from vaul's own drag
-                  check; stopping propagation in the capture phase guarantees
-                  vaul's ancestor handlers never see the pointerdown at all
-                  (the input itself is still the event target, so focus + the
-                  native picker work normally). */}
-              <Input
-                type="datetime-local"
-                value={plannedAt}
-                onChange={(e) => setPlannedAt(e.target.value)}
-                className="rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
-                data-vaul-no-drag
-                onPointerDownCapture={(e) => e.stopPropagation()}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  aria-label="Date"
+                  value={datePart}
+                  onChange={(e) => setDatePart(e.target.value)}
+                  className="flex-1 rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
+                  data-vaul-no-drag
+                  onPointerDownCapture={(e) => e.stopPropagation()}
+                />
+                <Input
+                  type="time"
+                  aria-label="Time"
+                  value={timePart}
+                  onChange={(e) => setTimePart(e.target.value)}
+                  className="flex-1 rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
+                  data-vaul-no-drag
+                  onPointerDownCapture={(e) => e.stopPropagation()}
+                />
+              </div>
             </div>
 
             {/* Note */}
