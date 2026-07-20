@@ -6,7 +6,7 @@
  * same fields, saves via updatePlan, and skips invites + share step
  * (invite changes are out of MVP scope; the link never changes).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Check, Share2 } from "lucide-react";
@@ -67,9 +67,18 @@ export default function CreatePlanSheet({
   const [created, setCreated] = useState<PlanRow | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // (Re)seed fields each open — from the plan being edited, or fresh.
+  // Seed fields on the closed→open transition only. Keying this on
+  // editItem's identity would re-seed mid-edit: usePlanFeed refetches on
+  // window focus, producing a new editItem object for the same plan, and a
+  // dep-array reseed would silently wipe whatever the host was mid-typing.
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      wasOpen.current = false;
+      return;
+    }
+    if (wasOpen.current) return;
+    wasOpen.current = true;
     setCreated(null);
     setCopied(false);
     setVenueSearch("");
@@ -85,7 +94,8 @@ export default function CreatePlanSheet({
       setNote("");
       setHideGuestList(false);
     }
-  }, [open, editItem, initialVenueId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const friends = useMemo(
     () => (friendRows && userId ? deriveFriends(friendRows, userId) : []),
@@ -135,9 +145,12 @@ export default function CreatePlanSheet({
         inviteFriendIds: [...invited],
       },
       {
-        onSuccess: (plan) => {
+        onSuccess: ({ plan, invitesFailed }) => {
           logEvent("plan_created", { venue_id: venueId, surface });
           setCreated(plan);
+          if (invitesFailed) {
+            toast.warning("Plan made, but some invites didn't go through — share the link instead.");
+          }
         },
         onError: () => toast.error("Couldn't create the plan — try again"),
       }

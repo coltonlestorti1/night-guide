@@ -28,7 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import { PlanFeedItem, PlanRsvpValue, planShareUrl } from "@/lib/plans";
 import { useCancelPlan, useSetRsvp } from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
@@ -136,7 +135,13 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
                     Edit plan
                   </DropdownMenuItem>
                   <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive">
+                    {/* preventDefault: stop the menu's auto-close from
+                        unmounting this trigger before the dialog opens
+                        (Radix DropdownMenu + AlertDialog handoff). */}
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onSelect={(e) => e.preventDefault()}
+                    >
                       Cancel plan
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
@@ -190,10 +195,14 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
         {showNames ? (
           going.length + maybe.length > 0 ? (
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground/80">
-                {going.map(rsvpName).join(", ")}
-              </span>
-              {going.length > 0 && " going"}
+              {going.length > 0 && (
+                <>
+                  <span className="font-medium text-foreground/80">
+                    {going.map(rsvpName).join(", ")}
+                  </span>
+                  {" going"}
+                </>
+              )}
               {maybe.length > 0 && (
                 <>
                   {going.length > 0 && " · "}

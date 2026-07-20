@@ -38,7 +38,8 @@ export function useCreatePlan() {
       note: string;
       hideGuestList: boolean;
       inviteFriendIds: string[];
-    }): Promise<PlanRow> => createPlan({ creatorId: userId!, ...input }),
+    }): Promise<{ plan: PlanRow; invitesFailed: boolean }> =>
+      createPlan({ creatorId: userId!, ...input }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["plans", userId] }),
   });
 }

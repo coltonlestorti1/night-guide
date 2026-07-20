@@ -42,6 +42,19 @@ function json(status: number, body: unknown): Response {
 
 const notFound = () => json(404, { error: "Not found" });
 
+/** Parse a JSON request body, guaranteeing a plain object. A literal `null`
+ *  or a scalar/array body would otherwise slip past req.json() and throw on
+ *  the first property access — return null so callers answer 400, not 500. */
+async function parseObjectBody(req: Request): Promise<Record<string, unknown> | null> {
+  try {
+    const body = await req.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+    return body as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 type PlanRecord = {
   id: string;
   creator_id: string;
@@ -136,12 +149,8 @@ async function userIdFromAuth(req: Request): Promise<string | null> {
 }
 
 async function handlePost(req: Request): Promise<Response> {
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return json(400, { error: "Bad request" });
-  }
+  const body = await parseObjectBody(req);
+  if (!body) return json(400, { error: "Bad request" });
   const plan = await planByToken(body.token);
   if (!plan) return notFound();
   if (plan.status !== "active" || isPast(plan)) {
@@ -194,18 +203,14 @@ async function handlePost(req: Request): Promise<Response> {
 }
 
 async function handlePatch(req: Request): Promise<Response> {
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return json(400, { error: "Bad request" });
-  }
+  const body = await parseObjectBody(req);
+  if (!body) return json(400, { error: "Bad request" });
   const plan = await planByToken(body.token);
   if (!plan) return notFound();
   if (plan.status !== "active" || isPast(plan)) {
     return json(410, { error: "This plan is over" });
   }
-  const { rsvp_id, guest_secret, rsvp } = body as Record<string, unknown>;
+  const { rsvp_id, guest_secret, rsvp } = body;
   if (
     typeof rsvp !== "string" || !RSVP_VALUES.has(rsvp) ||
     typeof rsvp_id !== "string" || !UUID_RE.test(rsvp_id) ||

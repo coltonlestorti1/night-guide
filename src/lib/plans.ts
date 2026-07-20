@@ -164,8 +164,10 @@ export async function listMyPlanFeed(myId: string): Promise<PlanFeedItem[]> {
 
 /**
  * Create the plan, the host's own 'going' row, and the invite rows.
- * Invite failures don't roll back the plan (host still gets the link and
- * can share it) — surface via the thrown error after the plan exists.
+ * The plan itself is the durable outcome: once it's inserted, rsvp-row
+ * failures (unfriend race, network blip) are reported via `invitesFailed`
+ * rather than thrown, so the caller still gets the plan + share link
+ * instead of a false "try again" that would create a duplicate plan.
  */
 export async function createPlan(input: {
   creatorId: string;
@@ -174,7 +176,7 @@ export async function createPlan(input: {
   note: string;
   hideGuestList: boolean;
   inviteFriendIds: string[];
-}): Promise<PlanRow> {
+}): Promise<{ plan: PlanRow; invitesFailed: boolean }> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
   const note = input.note.trim().slice(0, PLAN_NOTE_MAX);
@@ -192,18 +194,22 @@ export async function createPlan(input: {
   if (error) throw error;
   const plan = data as PlanRow;
 
+  // The plan exists from here on — rsvp-row failures (unfriend race, network
+  // blip) must NOT throw, or the host never sees the share link and a retry
+  // creates a duplicate plan. Report partial failure instead.
+  let invitesFailed = false;
   const hostRow = await supabase
     .from("plan_rsvps")
     .insert({ plan_id: plan.id, user_id: input.creatorId, rsvp: "going" });
-  if (hostRow.error) throw hostRow.error;
+  if (hostRow.error) invitesFailed = true;
 
   if (input.inviteFriendIds.length > 0) {
     const { error: invErr } = await supabase.from("plan_rsvps").insert(
       input.inviteFriendIds.map((friendId) => ({ plan_id: plan.id, user_id: friendId }))
     );
-    if (invErr) throw invErr;
+    if (invErr) invitesFailed = true;
   }
-  return plan;
+  return { plan, invitesFailed };
 }
 
 /** Host edits time/venue/note/visibility. Count-check like friends.ts —
