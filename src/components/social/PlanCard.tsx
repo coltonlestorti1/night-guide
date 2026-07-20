@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarClock, MapPin, MoreHorizontal, Share2 } from "lucide-react";
+import { CalendarClock, MapPin, MoreHorizontal, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -116,7 +116,7 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
               onClick={share}
               aria-label="Share plan link"
             >
-              <Share2 className="h-4 w-4" />
+              <Share className="h-4 w-4" />
             </Button>
             <AlertDialog>
               <DropdownMenu>
