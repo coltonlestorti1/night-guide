@@ -14,6 +14,7 @@
  * empty, same stance as the profiles.bio 42703 fallback — the app renders,
  * the feature is dark until Colton pastes the DDL.
  */
+import { format } from "date-fns";
 import { getSupabase } from "@/lib/supabase";
 import { FriendProfile } from "@/lib/friends";
 
@@ -68,6 +69,14 @@ const PROFILE_COLS = "id, username, display_name, avatar_url";
 
 export function planShareUrl(plan: PlanRow): string {
   return `${window.location.origin}/p/${plan.share_token}`;
+}
+
+/** Warm invite line for the native share sheet / SMS. The share URL is sent
+ *  as navigator.share's separate `url` field, so this text ends on a natural
+ *  lead-in to the link. */
+export function planShareMessage(venueName: string, plannedAt: string | Date): string {
+  const when = format(new Date(plannedAt), "EEE MMM d 'at' h:mm a");
+  return `You're invited 🌙 Join me at ${venueName} — ${when}. Tap to RSVP:`;
 }
 
 export function isPlanPast(plan: Pick<PlanRow, "planned_at">): boolean {

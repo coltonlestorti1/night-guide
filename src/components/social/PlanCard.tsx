@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlanFeedItem, PlanRsvpValue, planShareUrl } from "@/lib/plans";
+import { PlanFeedItem, PlanRsvpValue, planShareMessage, planShareUrl } from "@/lib/plans";
 import { useCancelPlan, useSetRsvp } from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
@@ -67,7 +67,7 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
     const url = planShareUrl(plan);
     if (navigator.share) {
       try {
-        await navigator.share({ text: `${venueName} — you in?`, url });
+        await navigator.share({ text: planShareMessage(venueName, plan.planned_at), url });
       } catch {
         // User dismissed the share sheet — not an error
       }

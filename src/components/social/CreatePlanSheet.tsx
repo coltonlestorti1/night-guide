@@ -27,7 +27,7 @@ import { useAuthStore } from "@/store/auth";
 import { useMyFriendships } from "@/hooks/useFriends";
 import { deriveFriends } from "@/lib/friends";
 import { useCreatePlan, useUpdatePlan } from "@/hooks/usePlans";
-import { PLAN_NOTE_MAX, PlanFeedItem, PlanRow, planShareUrl } from "@/lib/plans";
+import { PLAN_NOTE_MAX, PlanFeedItem, PlanRow, planShareMessage, planShareUrl } from "@/lib/plans";
 import { logEvent } from "@/lib/analytics";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 
@@ -173,7 +173,7 @@ export default function CreatePlanSheet({
     if (navigator.share) {
       try {
         await navigator.share({
-          text: `${selectedVenue?.title ?? "Tonight"} — you in?`,
+          text: planShareMessage(selectedVenue?.title ?? "the spot", plannedAt),
           url: link,
         });
       } catch {
@@ -283,16 +283,21 @@ export default function CreatePlanSheet({
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 When
               </p>
-              {/* data-vaul-no-drag: the drawer's drag gesture otherwise
-                  swallows the pointer, so the native date/time picker never
-                  opens ("can't change the time"). Excludes this input from
-                  vaul's drag handling. */}
+              {/* The vaul drawer captures pointer events on its content for
+                  drag-to-dismiss, which eats the click before the native
+                  date/time picker can open ("can't change the time").
+                  data-vaul-no-drag excludes the input from vaul's own drag
+                  check; stopping propagation in the capture phase guarantees
+                  vaul's ancestor handlers never see the pointerdown at all
+                  (the input itself is still the event target, so focus + the
+                  native picker work normally). */}
               <Input
                 type="datetime-local"
                 value={plannedAt}
                 onChange={(e) => setPlannedAt(e.target.value)}
                 className="rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
                 data-vaul-no-drag
+                onPointerDownCapture={(e) => e.stopPropagation()}
               />
             </div>
 
