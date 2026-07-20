@@ -71,6 +71,12 @@ export function planShareUrl(plan: PlanRow): string {
   return `${window.location.origin}/p/${plan.share_token}`;
 }
 
+/** Display name for one RSVP row — ENDZ user's name, else the guest name. */
+export function rsvpDisplayName(r: PlanRsvpRow): string {
+  if (r.profile) return r.profile.display_name || `@${r.profile.username}`;
+  return r.guest_name ?? "Someone";
+}
+
 /** Warm invite line for the native share sheet / SMS. The share URL is sent
  *  as navigator.share's separate `url` field, so this text ends on a natural
  *  lead-in to the link. */

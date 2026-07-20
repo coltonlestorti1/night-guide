@@ -6,7 +6,6 @@
  * edit / cancel.
  */
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { CalendarClock, MapPin, MoreHorizontal, Share } from "lucide-react";
@@ -28,11 +27,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PlanFeedItem, PlanRsvpValue, planShareMessage, planShareUrl } from "@/lib/plans";
+import {
+  PlanFeedItem,
+  PlanRsvpValue,
+  planShareMessage,
+  planShareUrl,
+  rsvpDisplayName,
+} from "@/lib/plans";
 import { useCancelPlan, useSetRsvp } from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 import CreatePlanSheet from "@/components/social/CreatePlanSheet";
+import PlanDetailSheet from "@/components/social/PlanDetailSheet";
 
 const RSVP_OPTIONS: { value: PlanRsvpValue; label: string }[] = [
   { value: "going", label: "Going" },
@@ -40,15 +46,11 @@ const RSVP_OPTIONS: { value: PlanRsvpValue; label: string }[] = [
   { value: "no", label: "Can't" },
 ];
 
-function rsvpName(r: PlanFeedItem["rsvps"][number]): string {
-  if (r.profile) return r.profile.display_name || `@${r.profile.username}`;
-  return r.guest_name ?? "Someone";
-}
-
 export default function PlanCard({ item }: { item: PlanFeedItem }) {
   const setRsvp = useSetRsvp();
   const cancel = useCancelPlan();
   const [editOpen, setEditOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const { plan, venueName, host, isHost, rsvps, counts, myRsvp } = item;
 
   const going = rsvps.filter((r) => r.rsvp === "going");
@@ -84,28 +86,29 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
   return (
     <div className="rounded-2xl border border-border bg-secondary/40 p-3.5 mb-2 last:mb-0">
       <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <Link to={`/venue/${plan.venue_id}`} className="block">
-            <p className="text-sm font-semibold truncate flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-              {venueName}
-            </p>
-          </Link>
-          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+        {/* Tap the info to open the full detail sheet (guest list + event). */}
+        <button
+          type="button"
+          onClick={() => setDetailOpen(true)}
+          className="min-w-0 flex-1 text-left"
+          aria-label={`Open plan at ${venueName}`}
+        >
+          <span className="text-sm font-semibold truncate flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+            {venueName}
+          </span>
+          <span className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
             <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {format(new Date(plan.planned_at), "EEE MMM d · h:mm a")}
-          </p>
+          </span>
           {host && !isHost && (
-            <Link
-              to={`/u/${host.username}`}
-              className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <span className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
               <ProfileAvatar profile={host} className="h-4 w-4" />
               {host.display_name || `@${host.username}`}&apos;s plan
-            </Link>
+            </span>
           )}
-          {plan.note && <p className="text-xs text-foreground/80 mt-1.5">{plan.note}</p>}
-        </div>
+          {plan.note && <span className="block text-xs text-foreground/80 mt-1.5">{plan.note}</span>}
+        </button>
 
         {isHost ? (
           <div className="flex items-center gap-1 shrink-0">
@@ -198,7 +201,7 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
               {going.length > 0 && (
                 <>
                   <span className="font-medium text-foreground/80">
-                    {going.map(rsvpName).join(", ")}
+                    {going.map(rsvpDisplayName).join(", ")}
                   </span>
                   {" going"}
                 </>
@@ -206,7 +209,7 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
               {maybe.length > 0 && (
                 <>
                   {going.length > 0 && " · "}
-                  {maybe.map(rsvpName).join(", ")} maybe
+                  {maybe.map(rsvpDisplayName).join(", ")} maybe
                 </>
               )}
             </p>
@@ -219,6 +222,18 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
           </p>
         )}
       </div>
+
+      <PlanDetailSheet
+        item={item}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEdit={() => {
+          // Close the detail drawer before opening the edit drawer so two
+          // vaul drawers are never mounted at once.
+          setDetailOpen(false);
+          setEditOpen(true);
+        }}
+      />
 
       {isHost && (
         <CreatePlanSheet
