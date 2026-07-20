@@ -29,3 +29,11 @@ export function getSupabase(): SupabaseClient | null {
   }
   return client;
 }
+
+/** Base URL for Edge Functions, same config precedence as getSupabase().
+ *  Null when unconfigured (demo mode) — token surfaces render a dead-end. */
+export function getFunctionsBase(): string | null {
+  const { supabaseUrl } = useConfigStore.getState();
+  const url = import.meta.env.VITE_SUPABASE_URL || supabaseUrl;
+  return url ? `${url.replace(/\/$/, "")}/functions/v1` : null;
+}
