@@ -10,13 +10,13 @@
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarClock, MapPin, MoreHorizontal, Share } from "lucide-react";
+import { CalendarClock, Forward, MapPin, MoreHorizontal } from "lucide-react";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -135,14 +135,18 @@ export default function PlanDetailSheet({
   );
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-card border-border">
-        <DrawerTitle className="sr-only">Plan details</DrawerTitle>
-        <DrawerDescription className="sr-only">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* Centered modal (not a bottom drawer) so it reads as a card on
+          desktop. gap-0/p-0 hand spacing to the inner div; the built-in
+          close X is hidden ([&>button]:hidden) since the header carries
+          share + the ⋯ menu and the modal closes on outside-click. */}
+      <DialogContent className="bg-card border-border max-w-md gap-0 p-0 [&>button]:hidden">
+        <DialogTitle className="sr-only">Plan details</DialogTitle>
+        <DialogDescription className="sr-only">
           Event details, guest list, and RSVP.
-        </DrawerDescription>
+        </DialogDescription>
 
-        <div className="p-5 pb-8 space-y-4 overflow-y-auto max-h-[85vh]">
+        <div className="p-5 space-y-4 overflow-y-auto max-h-[80vh]">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -178,7 +182,7 @@ export default function PlanDetailSheet({
                 onClick={share}
                 aria-label="Share plan link"
               >
-                <Share className="h-4 w-4" />
+                <Forward className="h-4 w-4" />
               </Button>
               {isHost && (
                 <AlertDialog>
@@ -281,7 +285,7 @@ export default function PlanDetailSheet({
             )}
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Check, Share, Share2 } from "lucide-react";
+import { Check, Forward } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -222,7 +222,7 @@ export default function CreatePlanSheet({
                 {copied ? "Copied ✓" : "Copy link"}
               </Button>
               <Button className="h-11 rounded-xl" onClick={shareLink}>
-                <Share2 className="h-4 w-4 mr-2" /> Share
+                <Forward className="h-4 w-4 mr-2" /> Share
               </Button>
             </div>
             <Button
@@ -392,7 +392,7 @@ export default function CreatePlanSheet({
             {!editItem && (
               <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border px-3.5 py-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
-                  <Share className="h-4 w-4" aria-hidden="true" />
+                  <Forward className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Share with anyone</p>

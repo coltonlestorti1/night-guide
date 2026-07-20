@@ -1,6 +1,6 @@
 /** "You're @handle — send it to the crew." Native share, copy fallback. */
 import { useState } from "react";
-import { Share2 } from "lucide-react";
+import { Forward } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +45,7 @@ export default function ShareHandleCard() {
         {copied ? "Copied ✓" : "Copy"}
       </Button>
       <Button size="sm" className="rounded-full shrink-0" onClick={share}>
-        <Share2 className="h-3.5 w-3.5 mr-1" /> Share
+        <Forward className="h-3.5 w-3.5 mr-1" /> Share
       </Button>
     </div>
   );
