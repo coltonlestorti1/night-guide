@@ -43,10 +43,17 @@ no collision. Planned time revealed on tap. (Colton leaned this way; agreed.)
 
 ## Proposed decomposition
 
-- **Slice A — Plan badge on the map (invitees + host opt-in → friends).**
-  Reuses §21 + ONE new scoped RLS policy. Ghost-suppressed. Plans drop off 6h
-  after `planned_at` (existing constant). Shippable, privacy-safe, no new
-  primitives. **← recommended first slice.**
+- **Slice A — Plan "event" badge on the map (invitees + host opt-in →
+  friends).** Reuses §21 + a new scoped RLS policy. Distinct event badge on
+  the venue pin; **tap the bar → event detail → "Request to join" button**
+  (NEW primitive — a non-invited friend asks the host in; today §21 is
+  host-invite + link-RSVP only). Ghost-suppressed. Plans drop off 6h after
+  `planned_at`. **← recommended first slice.** (Adds the request-to-join flow
+  + event-detail surface, so it's bigger than "just a badge.")
+
+**Colton (2026-07-20): wants all four in the eventual MVP, but is fine
+building them one-by-one from this to-do.** So A → B → C → D as separate
+gated slices toward the full vision; nothing dropped, just sequenced.
 - **Slice B — "Planning to go" personal signal** with check-in-supersedes
   logic. Touches the check-in core loop's read model; needs its own design.
 - **Slice C — Approved-list sharing primitive.** New table + UI + policy;
