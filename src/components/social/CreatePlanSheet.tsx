@@ -283,11 +283,16 @@ export default function CreatePlanSheet({
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 When
               </p>
+              {/* data-vaul-no-drag: the drawer's drag gesture otherwise
+                  swallows the pointer, so the native date/time picker never
+                  opens ("can't change the time"). Excludes this input from
+                  vaul's drag handling. */}
               <Input
                 type="datetime-local"
                 value={plannedAt}
                 onChange={(e) => setPlannedAt(e.target.value)}
-                className="rounded-xl"
+                className="rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
+                data-vaul-no-drag
               />
             </div>
 
