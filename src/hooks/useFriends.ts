@@ -18,6 +18,7 @@ import {
   declineRequest,
   deriveFriends,
   friendsOutTonight,
+  getProfileByUsername,
   listMyFriendships,
   removeFriend,
   searchProfiles,
@@ -72,6 +73,16 @@ export function useSuggestedProfiles() {
     enabled: !!userId,
     staleTime: 5 * 60_000,
     queryFn: () => suggestedProfiles(userId!),
+  });
+}
+
+export function useProfileByUsername(username: string | undefined) {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  return useQuery<FriendProfile | null>({
+    queryKey: ["profile-by-username", username?.toLowerCase()],
+    enabled: !!userId && !!username,
+    staleTime: 30_000,
+    queryFn: () => getProfileByUsername(username!),
   });
 }
 

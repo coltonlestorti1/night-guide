@@ -8,6 +8,7 @@ export type Profile = {
   display_name: string | null;
   avatar_url: string | null;
   ghost_mode: boolean;
+  bio: string | null;
 };
 
 export type AuthStatus = "loading" | "signedOut" | "signedIn" | "needsUsername";
@@ -18,7 +19,7 @@ interface AuthState {
   profile: Profile | null;
   init: () => void;
   refreshProfile: () => Promise<void>;
-  updateProfile: (patch: Partial<Pick<Profile, "display_name" | "username" | "avatar_url">>) => Promise<void>;
+  updateProfile: (patch: Partial<Pick<Profile, "display_name" | "username" | "avatar_url" | "bio">>) => Promise<void>;
   setGhostMode: (next: boolean) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -55,11 +56,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const supabase = getSupabase();
     const session = get().session;
     if (!supabase || !session) return;
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, ghost_mode")
+      .select("id, username, display_name, avatar_url, ghost_mode, bio")
       .eq("id", session.user.id)
       .maybeSingle();
+    if (error && error.code === "42703") {
+      // profiles.bio DDL not pasted yet — degrade to the bio-less profile.
+      ({ data, error } = await supabase
+        .from("profiles")
+        .select("id, username, display_name, avatar_url, ghost_mode")
+        .eq("id", session.user.id)
+        .maybeSingle());
+      if (data) (data as Record<string, unknown>).bio = null;
+    }
     if (error) {
       // Can't tell if a profile exists — treat as signed in, retry on next auth event
       set({ status: "signedIn", profile: null });

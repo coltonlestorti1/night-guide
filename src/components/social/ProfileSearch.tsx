@@ -1,5 +1,7 @@
-/** Debounced people search — username + display name, self excluded server-side. */
+/** Debounced people search — username + display name, self excluded
+ *  server-side. Avatar+name tap opens the profile. */
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader2, Search } from "lucide-react";
 import { useSearchProfiles } from "@/hooks/useFriends";
 import { Input } from "@/components/ui/input";
@@ -7,6 +9,7 @@ import ProfileAvatar from "@/components/social/ProfileAvatar";
 import AddButton from "@/components/social/AddButton";
 
 export default function ProfileSearch() {
+  const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [term, setTerm] = useState("");
 
@@ -39,13 +42,21 @@ export default function ProfileSearch() {
         <div className="mt-1">
           {results.map((p) => (
             <div key={p.id} className="flex items-center gap-3 py-2.5">
-              <ProfileAvatar profile={p} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">@{p.username}</p>
-                {p.display_name && (
-                  <p className="text-xs text-muted-foreground truncate">{p.display_name}</p>
-                )}
-              </div>
+              <button
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                onClick={() => navigate(`/u/${p.username}`)}
+                aria-label={`View @${p.username}'s profile`}
+              >
+                <ProfileAvatar profile={p} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">@{p.username}</span>
+                  {p.display_name && (
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {p.display_name}
+                    </span>
+                  )}
+                </span>
+              </button>
               <AddButton profile={p} />
             </div>
           ))}

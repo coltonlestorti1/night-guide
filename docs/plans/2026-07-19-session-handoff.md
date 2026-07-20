@@ -2,6 +2,50 @@
 
 Supersedes the 2026-07-18 handoff. Tracker: `docs/ENDZ_MASTER_TASKS.md`.
 
+## ▶️ MERGE-READY — awaiting Colton's OK
+
+Branch `feat/viewable-profiles` is **built, code-reviewed, review-fixed, and
+FULLY verified (12/12).** Colton confirmed the out-tonight surfaces on
+2026-07-19 (checked in via @colton_lestorti; friend-graph paths worked). The
+only remaining step is Colton's explicit merge OK → `feat/viewable-profiles`
+→ main `--no-ff` + push. DDL pasted + recorded; nothing else pending.
+
+Optional follow-up (not blocking merge): extract the duplicated avatar+name
+tap-through button into one shared component (repeated across 5 row files) —
+flagged in code review, deferred to keep the pre-merge diff stable.
+
+## SESSION 2 UPDATE (2026-07-19, later same day)
+
+- **Social-structure research DONE** → `docs/plans/2026-07-19-social-structure-research.md`
+  (blueprint + hard avoids; confirms ordering profiles → §21 plans → §16 crew → §22 deferred).
+- **Viewable-profiles slice APPROVED + BUILT** on `feat/viewable-profiles`
+  (NOT merged, NOT pushed — Colton's OK required). Plan:
+  `docs/superpowers/plans/2026-07-19-viewable-profiles.md`. All 5 build tasks
+  committed; tsc clean per task. Three-layer visibility model locked (see
+  Decision Log 2026-07-19): identity card always / content behind future
+  private-profile toggle / liveness friends-only.
+- **Code review DONE** (high effort, 8-angle) — 4 findings; 2 fixed on branch
+  (`fix(profiles): apply code-review findings`): self-profile AddButton
+  self-request guard (`myId !== profile.id`), and honest 42703 bio-error copy
+  (old text falsely claimed other fields saved on an atomic-failed update). 2
+  deferred notes: duplicated tap-through button (reuse), duplicated 42703
+  fallback (harmless, now moot post-DDL).
+- **Live verification: 9/12 matrix items PASS** (tsc + build + lint clean).
+  Passing: profile identity card, not-found, own-handle→/profile redirect,
+  bio E2E (save→persist→reopen, DB round-trip with the DDL live — no 42703),
+  tap-throughs from suggested + search rows, Back button, friend-row body
+  tap→profile, kebab→Remove/Block drawer, AddButton states (Requested→Friends
+  ✓ both observed; self-guard confirmed not hiding the normal button).
+  **Final 3 CONFIRMED by Colton 2026-07-19** (checked in via @colton_lestorti):
+  out-tonight line on a friend's profile + tap-to-map, out-tonight-row avatar
+  tap, venue-sheet "friends here" chip tap — all worked. **Matrix now 12/12.**
+- **Colton must paste the `profiles.bio` DDL** (recorded at the end of
+  `~/Documents/endz/endz-schema.sql`; was also on his clipboard). App degrades
+  gracefully without it (42703 fallbacks) but bio can't save until pasted.
+- Earlier this session: tracker/handoff sync commit `a2ba95e` on main
+  (enrichment deadline → ~Aug 14; unblock UI marked merged; deploy + iPhone
+  verified — Colton confirmed Profile works on his phone against production).
+
 ## TL;DR
 **Profile MVP phase 1 is built, reviewed, live-verified, merged to main, and
 pushed** (Colton pre-authorized the full pipeline). The tracker also absorbed
