@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useVenue } from "@/hooks/useVenue";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useSavedStore } from "@/store/saved";
-import { ArrowLeft, Bookmark, Flame, Star, MapPin } from "lucide-react";
+import { ArrowLeft, Bookmark, CalendarClock, Flame, Star, MapPin } from "lucide-react";
 import DirectionsButton from "@/components/DirectionsButton";
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
@@ -11,6 +12,8 @@ import CheckInCard from "@/components/CheckInCard";
 import VenueInfoCard from "@/components/VenueInfoCard";
 import PopularTimesChart from "@/components/PopularTimesChart";
 import { getEnrichment, getSpecials } from "@/data/enrichment";
+import { useAuthStore } from "@/store/auth";
+import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 
 const VenueDetail = () => {
   const { id } = useParams();
@@ -18,6 +21,8 @@ const VenueDetail = () => {
   const { data, isLoading } = useVenue(id);
   const { ids, toggle } = useSavedStore();
   const saved = !!data && ids.includes(data.id);
+  const status = useAuthStore((s) => s.status);
+  const [planOpen, setPlanOpen] = useState(false);
 
   return (
     <section aria-labelledby="venue-heading" className="pb-28">
@@ -93,6 +98,16 @@ const VenueDetail = () => {
             <VenueStatTiles venue={data} />
             <CheckInCard venueId={data.id} />
 
+            {status === "signedIn" && (
+              <Button
+                variant="secondary"
+                className="w-full h-11 rounded-xl"
+                onClick={() => setPlanOpen(true)}
+              >
+                <CalendarClock className="h-4 w-4 mr-2" /> Plan a night here
+              </Button>
+            )}
+
             {getEnrichment(data.title)?.popularTimes && (
               <PopularTimesChart data={getEnrichment(data.title)!.popularTimes!} />
             )}
@@ -155,6 +170,15 @@ const VenueDetail = () => {
             />
           </div>
         </div>
+      )}
+
+      {data && (
+        <CreatePlanSheet
+          open={planOpen}
+          onOpenChange={setPlanOpen}
+          initialVenueId={data.id}
+          surface="venue"
+        />
       )}
     </section>
   );

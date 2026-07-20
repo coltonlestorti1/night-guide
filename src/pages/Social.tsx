@@ -3,9 +3,9 @@
  * Section order (spec): header → requests → out tonight → find friends →
  * your friends. RLS decides every list's contents; nothing is filtered in.
  */
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, MapPin, Search, UserPlus, Users } from "lucide-react";
+import { CalendarClock, ChevronDown, MapPin, Search, UserPlus, Users } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { deriveBlocked, deriveFriends, deriveIncoming, deriveOutgoing } from "@/lib/friends";
 import { useFriendsOutTonight, useMyFriendships } from "@/hooks/useFriends";
@@ -23,6 +23,9 @@ import OutTonightRow from "@/components/social/OutTonightRow";
 import ProfileSearch from "@/components/social/ProfileSearch";
 import ShareHandleCard from "@/components/social/ShareHandleCard";
 import SuggestedList from "@/components/social/SuggestedList";
+import { usePlanFeed } from "@/hooks/usePlans";
+import PlanCard from "@/components/social/PlanCard";
+import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 
 type Tone = "primary" | "live" | "neutral";
 
@@ -63,6 +66,9 @@ const Social = () => {
   const userId = useAuthStore((s) => s.session?.user.id);
   const { data: rows } = useMyFriendships();
   const { data: out } = useFriendsOutTonight();
+  const { data: planItems } = usePlanFeed();
+  const [createOpen, setCreateOpen] = useState(false);
+  const openInvites = (planItems ?? []).filter((p) => p.invitedNoResponse).length;
 
   const header = (
     <header className="relative mb-6 animate-fade-in">
@@ -149,6 +155,37 @@ const Social = () => {
           )}
         </SectionCard>
       )}
+
+      <SectionCard
+        title="Plans"
+        icon={CalendarClock}
+        tone="primary"
+        badge={
+          openInvites > 0 ? (
+            <span className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
+              {openInvites} new
+            </span>
+          ) : undefined
+        }
+      >
+        {(planItems ?? []).map((item) => (
+          <PlanCard key={item.plan.id} item={item} />
+        ))}
+        {(planItems ?? []).length === 0 && (
+          <p className="text-sm text-muted-foreground py-2">
+            Nothing on the books tonight.
+          </p>
+        )}
+        <Button
+          variant="secondary"
+          className="w-full h-10 rounded-xl mt-2"
+          onClick={() => setCreateOpen(true)}
+        >
+          <CalendarClock className="h-4 w-4 mr-2" /> Make a plan
+        </Button>
+      </SectionCard>
+
+      <CreatePlanSheet open={createOpen} onOpenChange={setCreateOpen} surface="social" />
 
       {friends.length > 0 && (
         <SectionCard
