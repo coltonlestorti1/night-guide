@@ -17,6 +17,7 @@ import Join from "@/pages/Join";
 import Qr from "@/pages/Qr";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
+import PlanPage from "@/pages/PlanPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAuthStore } from "@/store/auth";
@@ -50,6 +51,7 @@ const App = () => {
               <Route path="qr" element={<Qr />} />
               <Route path="privacy" element={<Privacy />} />
               <Route path="terms" element={<Terms />} />
+              <Route path="p/:token" element={<PlanPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
