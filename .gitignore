@@ -27,3 +27,6 @@ dist-ssr
 *.sln
 *.sw?
 .claude/worktrees/
+
+# Supabase CLI scratch (project ref cache, tokens) — never commit
+supabase/.temp/
