@@ -2,17 +2,16 @@
 
 Supersedes the 2026-07-18 handoff. Tracker: `docs/ENDZ_MASTER_TASKS.md`.
 
-## ▶️ MERGE-READY — awaiting Colton's OK
+## ✅ SHIPPED — viewable profiles merged + pushed (2026-07-19)
 
-Branch `feat/viewable-profiles` is **built, code-reviewed, review-fixed, and
-FULLY verified (12/12).** Colton confirmed the out-tonight surfaces on
-2026-07-19 (checked in via @colton_lestorti; friend-graph paths worked). The
-only remaining step is Colton's explicit merge OK → `feat/viewable-profiles`
-→ main `--no-ff` + push. DDL pasted + recorded; nothing else pending.
+`feat/viewable-profiles` → main `--no-ff` (`29dbbb9`), pushed → Vercel
+deploying. 12/12 verified, code-reviewed, DDL live. Local branch deleted.
 
-Optional follow-up (not blocking merge): extract the duplicated avatar+name
-tap-through button into one shared component (repeated across 5 row files) —
-flagged in code review, deferred to keep the pre-merge diff stable.
+**Next-session candidates:** (1) confirm the Vercel deploy + eyeball `/u/`
+on your iPhone against production; (2) optional cleanup — extract the shared
+tap-through button (5 row files); (3) next feature discussion per roadmap:
+§21 Group Plans (link-first, Partiful-style) — the approved next major after
+profiles. Research blueprint: `docs/plans/2026-07-19-social-structure-research.md`.
 
 ## SESSION 2 UPDATE (2026-07-19, later same day)
 
