@@ -30,9 +30,8 @@ import {
 import {
   PlanFeedItem,
   PlanRsvpValue,
-  planShareMessage,
-  planShareUrl,
   rsvpDisplayName,
+  sharePlanLink,
 } from "@/lib/plans";
 import { useCancelPlan, useSetRsvp } from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
@@ -66,21 +65,9 @@ export default function PlanCard({ item }: { item: PlanFeedItem }) {
   };
 
   const share = async () => {
-    const url = planShareUrl(plan);
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: planShareMessage(venueName, plan.planned_at), url });
-      } catch {
-        // User dismissed the share sheet — not an error
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copied");
-      } catch {
-        // Clipboard unavailable — nothing sane to do
-      }
-    }
+    const res = await sharePlanLink(plan, venueName);
+    if (res === "copied") toast.success("Link copied");
+    else if (res === "unavailable") toast.error("Couldn't copy the link");
   };
 
   return (

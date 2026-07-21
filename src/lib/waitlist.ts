@@ -5,23 +5,26 @@
  */
 import { getSupabase } from "@/lib/supabase";
 
-export type WaitlistInput = { name: string; contact: string; source?: string };
+export type WaitlistInput = {
+  name: string;
+  email: string;
+  phone: string;
+  source?: string;
+};
 
-// One contact field accepts either an email or a phone; we split on insert.
 export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const isEmail = (v: string) => EMAIL_RE.test(v.trim());
 export const isPhone = (v: string) => v.replace(/[^\d]/g, "").length >= 7;
 
-export async function joinWaitlist({ name, contact, source }: WaitlistInput): Promise<void> {
+export async function joinWaitlist({ name, email, phone, source }: WaitlistInput): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) {
     throw new Error("Signups aren't set up right now — try again in a bit.");
   }
-  const c = contact.trim();
   const { error } = await supabase.from("waitlist").insert({
     name: name.trim(),
-    email: isEmail(c) ? c : null,
-    phone: isEmail(c) ? null : c,
+    email: email.trim(),
+    phone: phone.trim(),
     source: source ?? null,
   });
   if (error) throw error;

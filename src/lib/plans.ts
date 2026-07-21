@@ -85,6 +85,41 @@ export function planShareMessage(venueName: string, plannedAt: string | Date): s
   return `You're invited 🌙 Join me at ${venueName} — ${when}. Tap to RSVP:`;
 }
 
+export type SharePlanResult = "shared" | "copied" | "unavailable";
+
+/**
+ * Share a plan link. On touch devices the native share sheet (SMS/WhatsApp)
+ * is the right affordance; on desktop that OS sheet has no "copy link", so we
+ * copy to the clipboard instead — the reliable way to hand someone the link.
+ * Callers toast on "copied"/"unavailable"; "shared" is silent (the OS gives
+ * its own feedback, and a dismissed sheet is a no-op, not an error).
+ */
+export async function sharePlanLink(
+  plan: PlanRow,
+  venueName: string
+): Promise<SharePlanResult> {
+  const url = planShareUrl(plan);
+  const preferNative =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof matchMedia !== "undefined" &&
+    matchMedia("(pointer: coarse)").matches;
+  if (preferNative) {
+    try {
+      await navigator.share({ text: planShareMessage(venueName, plan.planned_at), url });
+    } catch {
+      // Sheet dismissed — not an error.
+    }
+    return "shared";
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    return "copied";
+  } catch {
+    return "unavailable";
+  }
+}
+
 export function isPlanPast(plan: Pick<PlanRow, "planned_at">): boolean {
   return Date.now() > new Date(plan.planned_at).getTime() + PLAN_EXPIRE_HOURS * 3_600_000;
 }

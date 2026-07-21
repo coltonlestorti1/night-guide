@@ -8,16 +8,17 @@
  * "this one's a wrap" state.
  */
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarClock, MapPin, Moon, Navigation } from "lucide-react";
+import { ArrowRight, CalendarClock, MapPin, Moon, Navigation } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { SIGNUP_LIVE } from "@/lib/constants";
 import { useAuthStore } from "@/store/auth";
 import { directionsUrl } from "@/lib/directions";
 import { PlanRsvpValue } from "@/lib/plans";
@@ -51,6 +52,36 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
     </footer>
   </main>
 );
+
+/**
+ * Signup invitation shown to signed-out visitors. Today it routes to the
+ * `/join` waitlist (real sign-up is gated on Google OAuth publish); once
+ * `SIGNUP_LIVE` flips it calls the real Google sign-in instead.
+ */
+const WelcomeCta = () => {
+  const navigate = useNavigate();
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+  const onClick = () => {
+    logEvent("plan_cta_click", { surface: "link" });
+    if (SIGNUP_LIVE) {
+      void signInWithGoogle();
+    } else {
+      navigate("/join?source=plan");
+    }
+  };
+  return (
+    <div className="mt-4 rounded-3xl border border-primary/30 bg-primary-soft/30 p-5 text-center">
+      <p className="font-display text-lg font-bold">Welcome to ENDZ</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        The live map for where the night's actually happening in the East Village.
+      </p>
+      <Button onClick={onClick} className="mt-4 h-11 rounded-xl px-5 shadow-glow">
+        Get early access
+        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Button>
+    </div>
+  );
+};
 
 const PlanPage = () => {
   const { token } = useParams();
@@ -227,6 +258,9 @@ const PlanPage = () => {
             </div>
           </div>
         )}
+
+        {/* Signup invite — signed-out visitors only */}
+        {!session && <WelcomeCta />}
 
         {/* Guest list */}
         <div className="mt-4 rounded-3xl border border-border bg-card p-5">
