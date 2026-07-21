@@ -96,7 +96,7 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
 
       <FriendsHereRow venueId={venue.id} />
 
-      <PlansHereRow venueId={venue.id} />
+      <PlansHereRow venueId={venue.id} venueName={venue.title} />
 
       {/* Stats */}
       <div className="mt-3">
