@@ -43,7 +43,13 @@ import {
   rsvpDisplayName,
   sharePlanLink,
 } from "@/lib/plans";
-import { useCancelPlan, useSetRsvp } from "@/hooks/usePlans";
+import {
+  useApproveRequest,
+  useCancelPlan,
+  useDenyRequest,
+  usePendingRequests,
+  useSetRsvp,
+} from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 
@@ -77,7 +83,15 @@ export default function PlanDetailSheet({
 }) {
   const setRsvp = useSetRsvp();
   const cancel = useCancelPlan();
+  const approve = useApproveRequest();
+  const deny = useDenyRequest();
   const { plan, venueName, host, isHost, rsvps, counts, myRsvp } = item;
+
+  // Pending join-requests for this plan (host only — the query is scoped to my
+  // hosted plans server-side; filter to this one for the section).
+  const { data: allPending } = usePendingRequests();
+  const pending = isHost ? (allPending ?? []).filter((r) => r.planId === plan.id) : [];
+  const requestBusy = approve.isPending || deny.isPending;
 
   const showNames = isHost || !plan.hide_guest_list;
   const responded = rsvps.filter((r) => r.rsvp !== null);
@@ -228,6 +242,64 @@ export default function PlanDetailSheet({
           </div>
 
           {plan.note && <p className="text-sm text-foreground/90">{plan.note}</p>}
+
+          {/* Join requests (host only) — approve adds them as going, deny drops
+              the request (they can ask again). */}
+          {isHost && pending.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Requests ({pending.length})
+              </p>
+              <ul className="space-y-2">
+                {pending.map((r) => (
+                  <li key={r.rsvpId} className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-sm">
+                      {r.username ? (
+                        <Link
+                          to={`/u/${r.username}`}
+                          onClick={() => onOpenChange(false)}
+                          className="font-medium hover:underline"
+                        >
+                          {r.name || `@${r.username}`}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">{r.name || "Someone"}</span>
+                      )}
+                      <span className="text-muted-foreground"> wants in</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        className="h-8 rounded-lg text-xs"
+                        disabled={requestBusy}
+                        onClick={() =>
+                          approve.mutate(r.rsvpId, {
+                            onSuccess: () => toast.success(`${r.name || "They"}'re in`),
+                            onError: () => toast.error("Couldn't approve that request"),
+                          })
+                        }
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 rounded-lg px-2 text-xs text-muted-foreground"
+                        disabled={requestBusy}
+                        onClick={() =>
+                          deny.mutate(r.rsvpId, {
+                            onError: () => toast.error("Couldn't deny that request"),
+                          })
+                        }
+                      >
+                        Deny
+                      </Button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* RSVP (non-host) */}
           {!isHost && (
