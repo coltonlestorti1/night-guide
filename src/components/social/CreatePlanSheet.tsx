@@ -11,11 +11,11 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { Check, Forward } from "lucide-react";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -193,14 +193,14 @@ export default function CreatePlanSheet({
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-card border-border">
-        <DrawerTitle className="sr-only">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-card border-border max-w-md gap-0 p-0">
+        <DialogTitle className="sr-only">
           {editItem ? "Edit plan" : "Make a plan"}
-        </DrawerTitle>
-        <DrawerDescription className="sr-only">
+        </DialogTitle>
+        <DialogDescription className="sr-only">
           Pick a spot and a time, then share the link.
-        </DrawerDescription>
+        </DialogDescription>
 
         {created ? (
           /* ── Share step ── */
@@ -235,7 +235,7 @@ export default function CreatePlanSheet({
           </div>
         ) : (
           /* ── Form step ── */
-          <div className="p-5 pb-8 space-y-4 overflow-y-auto max-h-[85vh]">
+          <div className="p-5 pb-8 space-y-4 overflow-y-auto max-h-[80vh]">
             <p className="font-display text-lg font-bold">
               {editItem ? "Edit plan" : "Make a plan"}
             </p>
@@ -287,14 +287,7 @@ export default function CreatePlanSheet({
             </div>
 
             {/* When — separate date + time so mobile shows the native OS
-                pickers (iOS renders type="time" as the alarm-clock wheel).
-                The vaul drawer captures pointer events on its content for
-                drag-to-dismiss, which otherwise eats the tap before the
-                picker opens; data-vaul-no-drag excludes the inputs from
-                vaul's drag check, and stopping propagation in the capture
-                phase guarantees vaul's ancestor handlers never see the
-                pointerdown (the input is still the event target, so focus +
-                the native picker work normally). */}
+                pickers (iOS renders type="time" as the alarm-clock wheel). */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 When
@@ -306,8 +299,6 @@ export default function CreatePlanSheet({
                   value={datePart}
                   onChange={(e) => setDatePart(e.target.value)}
                   className="flex-1 rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
-                  data-vaul-no-drag
-                  onPointerDownCapture={(e) => e.stopPropagation()}
                 />
                 <Input
                   type="time"
@@ -315,8 +306,6 @@ export default function CreatePlanSheet({
                   value={timePart}
                   onChange={(e) => setTimePart(e.target.value)}
                   className="flex-1 rounded-xl [color-scheme:light] dark:[color-scheme:dark]"
-                  data-vaul-no-drag
-                  onPointerDownCapture={(e) => e.stopPropagation()}
                 />
               </div>
             </div>
@@ -414,7 +403,7 @@ export default function CreatePlanSheet({
             </Button>
           </div>
         )}
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 }
