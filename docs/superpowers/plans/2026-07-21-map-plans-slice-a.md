@@ -173,7 +173,7 @@ language sql stable security definer set search_path = public as $$
   )
   select
     v.id, v.venue_id, v.planned_at, v.creator_id,
-    hp.name, hp.username,
+    hp.display_name, hp.username,
     (select count(*) from plan_rsvps r where r.plan_id = v.id and r.rsvp = 'going'),
     v.creator_id = auth.uid(),
     public.is_plan_member(v.id),
