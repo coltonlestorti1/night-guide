@@ -33,6 +33,7 @@ export type PlanRow = {
   planned_at: string;
   note: string | null;
   hide_guest_list: boolean;
+  show_on_map: boolean;
   status: "active" | "cancelled";
   share_token: string;
   created_at: string;
@@ -86,7 +87,7 @@ export type HostPendingRequest = {
 };
 
 const PLAN_COLS =
-  "id, creator_id, venue_id, planned_at, note, hide_guest_list, status, share_token, created_at";
+  "id, creator_id, venue_id, planned_at, note, hide_guest_list, show_on_map, status, share_token, created_at";
 // guest_secret is excluded from the authenticated column grant — never select it.
 const RSVP_COLS = "id, plan_id, user_id, guest_name, rsvp, created_at";
 const PROFILE_COLS = "id, username, display_name, avatar_url";
@@ -148,9 +149,12 @@ export function isPlanPast(plan: Pick<PlanRow, "planned_at">): boolean {
   return Date.now() > new Date(plan.planned_at).getTime() + PLAN_EXPIRE_HOURS * 3_600_000;
 }
 
-/** Missing-table grace: true for Postgres 42P01 (plans DDL not pasted yet). */
+/** Schema-not-ready grace: 42P01 (table absent — §21 DDL not pasted) or 42703
+ *  (column absent — a later slice's column, e.g. show_on_map, not pasted yet).
+ *  Either way the feature is dark until Colton pastes, and reads degrade to empty
+ *  instead of throwing. */
 function isMissingTable(error: { code?: string } | null): boolean {
-  return error?.code === "42P01";
+  return error?.code === "42P01" || error?.code === "42703";
 }
 
 /**
