@@ -328,27 +328,26 @@ export async function cancelPlan(planId: string): Promise<void> {
 }
 
 /**
- * One-tap RSVP. Upsert covers both cases: invited (row exists, rsvp null →
- * update) and joining a visible plan with no row yet (insert). onConflict
- * targets the unique(plan_id, user_id) index; created_at isn't in the
- * payload so the snapshot-pattern update policy passes.
+ * One-tap RSVP via the `set_my_rsvp` security-definer RPC. A direct upsert can't
+ * work here: §21 revoked table-level SELECT on plan_rsvps to hide guest_secret,
+ * but INSERT..ON CONFLICT DO UPDATE (and the snapshot update policy) both need
+ * table SELECT — so a client write 42501s "permission denied for table". The RPC
+ * runs as owner and enforces authz in SQL (own row only, no self-approving a
+ * pending request). myId is unused now (the function reads auth.uid()).
  */
 export async function setMyRsvp(
   planId: string,
-  myId: string,
+  _myId: string,
   value: PlanRsvpValue
 ): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { data, error } = await supabase
-    .from("plan_rsvps")
-    .upsert(
-      { plan_id: planId, user_id: myId, rsvp: value },
-      { onConflict: "plan_id,user_id" }
-    )
-    .select("id");
+  const { data, error } = await supabase.rpc("set_my_rsvp", {
+    p_plan_id: planId,
+    p_value: value,
+  });
   if (error) throw error;
-  if (!data || data.length === 0) throw new Error("Couldn't save your RSVP");
+  if (!data) throw new Error("Couldn't save your RSVP");
 }
 
 /* ── Map-plans Slice A: read + request/approve/deny/withdraw ── */
@@ -418,17 +417,18 @@ export async function withdrawRequest(planId: string, myId: string): Promise<voi
   if (error) throw error;
 }
 
-/** Host approves: 'requested' → 'going'. Count-check — 0 rows means RLS blocked it. */
+/** Host approves: 'requested' → 'going' via the `approve_join_request` RPC.
+ *  Same reason as setMyRsvp — the host-approve UPDATE policy's snapshot subquery
+ *  reads guest_secret, which needs table SELECT the client doesn't have. The RPC
+ *  runs as owner and enforces host-only + requested→going in SQL. */
 export async function approveRequest(rsvpId: string): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { data, error } = await supabase
-    .from("plan_rsvps")
-    .update({ rsvp: "going" })
-    .eq("id", rsvpId)
-    .select("id");
+  const { data, error } = await supabase.rpc("approve_join_request", {
+    p_rsvp_id: rsvpId,
+  });
   if (error) throw error;
-  if (!data || data.length === 0) throw new Error("Couldn't approve that request");
+  if (!data) throw new Error("Couldn't approve that request");
 }
 
 /** Host denies: delete the requested row. Count-check for the same reason. */
