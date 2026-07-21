@@ -61,6 +61,30 @@ export type PlanFeedItem = {
   invitedNoResponse: boolean;
 };
 
+/** One venue's plan as seen on the map — curated fields only. Names + note are
+ *  never returned to a non-member friend (enforced in the plans_on_map rpc). */
+export type PlanOnMap = {
+  planId: string;
+  venueId: string;
+  plannedAt: string;
+  hostId: string;
+  hostName: string | null;
+  hostUsername: string | null;
+  goingCount: number;
+  viewerIsHost: boolean;
+  viewerIsMember: boolean;
+  viewerRequest: "requested" | null;
+};
+
+/** A pending request-to-join on one of the host's plans. */
+export type HostPendingRequest = {
+  rsvpId: string;
+  planId: string;
+  userId: string;
+  name: string | null;
+  username: string | null;
+};
+
 const PLAN_COLS =
   "id, creator_id, venue_id, planned_at, note, hide_guest_list, status, share_token, created_at";
 // guest_secret is excluded from the authenticated column grant — never select it.
@@ -225,6 +249,7 @@ export async function createPlan(input: {
   plannedAt: Date;
   note: string;
   hideGuestList: boolean;
+  showOnMap?: boolean;
   inviteFriendIds: string[];
 }): Promise<{ plan: PlanRow; invitesFailed: boolean }> {
   const supabase = getSupabase();
@@ -238,6 +263,7 @@ export async function createPlan(input: {
       planned_at: input.plannedAt.toISOString(),
       note: note || null,
       hide_guest_list: input.hideGuestList,
+      show_on_map: input.showOnMap ?? false,
     })
     .select(PLAN_COLS)
     .single();
@@ -266,7 +292,7 @@ export async function createPlan(input: {
  *  0 rows means RLS blocked it and the UI must not pretend it worked. */
 export async function updatePlan(
   planId: string,
-  patch: { venue_id?: string; planned_at?: string; note?: string | null; hide_guest_list?: boolean }
+  patch: { venue_id?: string; planned_at?: string; note?: string | null; hide_guest_list?: boolean; show_on_map?: boolean }
 ): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
@@ -314,4 +340,125 @@ export async function setMyRsvp(
     .select("id");
   if (error) throw error;
   if (!data || data.length === 0) throw new Error("Couldn't save your RSVP");
+}
+
+/* ── Map-plans Slice A: read + request/approve/deny/withdraw ── */
+
+type PlansOnMapRow = {
+  plan_id: string;
+  venue_id: string;
+  planned_at: string;
+  host_id: string;
+  host_name: string | null;
+  host_username: string | null;
+  going_count: number;
+  viewer_is_host: boolean;
+  viewer_is_member: boolean;
+  viewer_request: string | null;
+};
+
+/**
+ * Every plan I can see on the map: my own (host/member) plus friends' opted-in
+ * plans, with going-counts. Curated columns only (no note, no attendee names) —
+ * the security-definer rpc is the privacy boundary. Pre-DDL grace: a missing
+ * function/table degrades to empty so the map keeps rendering.
+ */
+export async function plansOnMap(): Promise<PlanOnMap[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("plans_on_map");
+  if (error) {
+    if (isMissingTable(error) || error.code === "PGRST202" || error.code === "42883") return [];
+    throw error;
+  }
+  return ((data ?? []) as PlansOnMapRow[]).map((r) => ({
+    planId: r.plan_id,
+    venueId: r.venue_id,
+    plannedAt: r.planned_at,
+    hostId: r.host_id,
+    hostName: r.host_name,
+    hostUsername: r.host_username,
+    goingCount: Number(r.going_count) || 0,
+    viewerIsHost: r.viewer_is_host,
+    viewerIsMember: r.viewer_is_member,
+    viewerRequest: r.viewer_request === "requested" ? "requested" : null,
+  }));
+}
+
+/** A non-invited accepted friend asks the host to join an opted-in plan.
+ *  RLS (can_request_join) is the gate; a duplicate/blocked insert throws. */
+export async function requestToJoin(planId: string, myId: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Backend not configured");
+  const { error } = await supabase
+    .from("plan_rsvps")
+    .insert({ plan_id: planId, user_id: myId, rsvp: "requested" });
+  if (error) throw error;
+}
+
+/** Requester cancels their own pending request (existing own-row delete policy). */
+export async function withdrawRequest(planId: string, myId: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Backend not configured");
+  const { error } = await supabase
+    .from("plan_rsvps")
+    .delete()
+    .eq("plan_id", planId)
+    .eq("user_id", myId)
+    .eq("rsvp", "requested");
+  if (error) throw error;
+}
+
+/** Host approves: 'requested' → 'going'. Count-check — 0 rows means RLS blocked it. */
+export async function approveRequest(rsvpId: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Backend not configured");
+  const { data, error } = await supabase
+    .from("plan_rsvps")
+    .update({ rsvp: "going" })
+    .eq("id", rsvpId)
+    .select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Couldn't approve that request");
+}
+
+/** Host denies: delete the requested row. Count-check for the same reason. */
+export async function denyRequest(rsvpId: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Backend not configured");
+  const { data, error } = await supabase
+    .from("plan_rsvps")
+    .delete()
+    .eq("id", rsvpId)
+    .select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Couldn't deny that request");
+}
+
+/** Pending requests across all of the host's active plans (for the badge + list).
+ *  Host can read 'requested' rows on own plans via §21's rsvps-visible policy. */
+export async function listHostPendingRequests(myId: string): Promise<HostPendingRequest[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("plan_rsvps")
+    .select(
+      `id, plan_id, user_id, plans!inner(creator_id, status), profile:profiles!plan_rsvps_user_id_fkey(display_name, username)`
+    )
+    .eq("rsvp", "requested")
+    .eq("plans.creator_id", myId)
+    .eq("plans.status", "active")
+    .order("created_at", { ascending: true });
+  if (error) {
+    if (isMissingTable(error)) return [];
+    throw error;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map((r) => ({
+    rsvpId: r.id,
+    planId: r.plan_id,
+    userId: r.user_id,
+    name: r.profile?.display_name ?? null,
+    username: r.profile?.username ?? null,
+  }));
 }
