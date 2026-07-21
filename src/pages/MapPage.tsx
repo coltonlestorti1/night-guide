@@ -10,6 +10,7 @@ import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { useFriendsOutTonight } from "@/hooks/useFriends";
+import { usePlansOnMap } from "@/hooks/usePlans";
 import type { PinFriend } from "@/components/Map";
 import { BBox, Venue, VenueCategory } from "@/data/types";
 import Map from "@/components/Map";
@@ -323,6 +324,21 @@ const MapPage = () => {
     return map;
   }, [friendsOut]);
 
+  // Opted-in plans (mine + friends'), grouped by venue → the distinct planning
+  // badge. plans_on_map is RLS/ghost-filtered server-side; count = plans here,
+  // goingCount = total people going across them (the headcount on the badge).
+  const { data: plansOnMap } = usePlansOnMap();
+  const plansByVenue = useMemo(() => {
+    if (!plansOnMap || plansOnMap.length === 0) return undefined;
+    const map: Record<string, { count: number; goingCount: number }> = {};
+    for (const p of plansOnMap) {
+      const e = (map[p.venueId] ??= { count: 0, goingCount: 0 });
+      e.count += 1;
+      e.goingCount += p.goingCount;
+    }
+    return map;
+  }, [plansOnMap]);
+
   return (
     <section aria-labelledby="map-heading" className="relative">
       <h1 id="map-heading" className="sr-only">ENDZ Nightlife Map — East Village</h1>
@@ -384,6 +400,7 @@ const MapPage = () => {
             activity={activityCounts}
             happyHour={hhActiveIds}
             friendsByVenue={friendsByVenue}
+            plansByVenue={plansByVenue}
             selectedId={selected?.id}
             onSelect={(id) => {
               const v = venues.find((x) => x.id === id) || null;
