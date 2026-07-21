@@ -164,17 +164,27 @@ export default function PlanDetailSheet({
     () => (friendRows && myId ? deriveFriends(friendRows, myId) : []),
     [friendRows, myId]
   );
+
+  // Pending join-requests for this plan (host only — the query is scoped to my
+  // hosted plans server-side; filter to this one for the section).
+  const { data: allPending } = usePendingRequests();
+
   // Everyone already on the plan (minus rows mid-removal), so we don't re-offer them.
-  const rosterUserIds = useMemo(
-    () =>
-      new Set(
-        rsvps
-          .filter((r) => !pendingRemovals.has(r.id))
-          .map((r) => r.user_id)
-          .filter((id): id is string => !!id)
-      ),
-    [rsvps, pendingRemovals]
-  );
+  const rosterUserIds = useMemo(() => {
+    const ids = new Set(
+      rsvps
+        .filter((r) => !pendingRemovals.has(r.id))
+        .map((r) => r.user_id)
+        .filter((id): id is string => !!id)
+    );
+    // Friends with an open join-request already have a plan_rsvps row ('requested',
+    // stripped from `rsvps` upstream). Don't offer to invite them — the INSERT would
+    // hit unique(plan_id,user_id); the host approves them in the Requests section.
+    if (isHost && allPending) {
+      for (const r of allPending) if (r.planId === plan.id) ids.add(r.userId);
+    }
+    return ids;
+  }, [rsvps, pendingRemovals, allPending, isHost, plan.id]);
   const invitableFriends = friends.filter((f) => !rosterUserIds.has(f.profile.id));
 
   const inviteFriend = (friendId: string, name: string) =>
@@ -186,9 +196,6 @@ export default function PlanDetailSheet({
       }
     );
 
-  // Pending join-requests for this plan (host only — the query is scoped to my
-  // hosted plans server-side; filter to this one for the section).
-  const { data: allPending } = usePendingRequests();
   const pending = isHost ? (allPending ?? []).filter((r) => r.planId === plan.id) : [];
   const requestBusy = approve.isPending || deny.isPending;
 
