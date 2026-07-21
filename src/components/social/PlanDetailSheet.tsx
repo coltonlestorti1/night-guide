@@ -7,10 +7,11 @@
  * and share are handled here. This is also the surface map-plans "event
  * detail" will reuse.
  */
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarClock, Forward, MapPin, MoreHorizontal } from "lucide-react";
+import { CalendarClock, Forward, MapPin, MoreHorizontal, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,7 @@ import {
   useCancelPlan,
   useDenyRequest,
   usePendingRequests,
+  useRemoveGuest,
   useSetRsvp,
 } from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
@@ -87,6 +89,69 @@ export default function PlanDetailSheet({
   const deny = useDenyRequest();
   const { plan, venueName, host, isHost, rsvps, counts, myRsvp } = item;
 
+  const removeGuest = useRemoveGuest();
+  const [pendingRemovals, setPendingRemovals] = useState<Set<string>>(new Set());
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Fire every still-pending DELETE now (bare mutate — no component state touched,
+  // so it's safe during unmount). Reads only refs + the stable mutate; kept in a
+  // ref so the close/unmount effects always call the latest version.
+  const flushPendingRef = useRef(() => {});
+  flushPendingRef.current = () => {
+    timersRef.current.forEach((timer, rsvpId) => {
+      clearTimeout(timer);
+      removeGuest.mutate(rsvpId);
+    });
+    timersRef.current.clear();
+  };
+
+  // Closing the sheet commits any pending removals (Undo is only offered while open).
+  useEffect(() => {
+    if (!open) {
+      flushPendingRef.current();
+      setPendingRemovals(new Set());
+    }
+  }, [open]);
+  // Unmount safety net.
+  useEffect(() => () => flushPendingRef.current(), []);
+
+  const commitRemoval = (rsvpId: string) => {
+    timersRef.current.delete(rsvpId);
+    removeGuest.mutate(rsvpId, {
+      onError: () => {
+        toast.error("Couldn't remove that guest");
+        setPendingRemovals((prev) => {
+          const next = new Set(prev);
+          next.delete(rsvpId);
+          return next;
+        });
+      },
+    });
+  };
+
+  const startRemoval = (r: PlanRsvpRow) => {
+    const name = rsvpDisplayName(r);
+    setPendingRemovals((prev) => new Set(prev).add(r.id));
+    const timer = setTimeout(() => commitRemoval(r.id), 5000);
+    timersRef.current.set(r.id, timer);
+    toast(`Removed ${name}`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const t = timersRef.current.get(r.id);
+          if (t) clearTimeout(t);
+          timersRef.current.delete(r.id);
+          setPendingRemovals((prev) => {
+            const next = new Set(prev);
+            next.delete(r.id);
+            return next;
+          });
+        },
+      },
+    });
+  };
+
   // Pending join-requests for this plan (host only — the query is scoped to my
   // hosted plans server-side; filter to this one for the section).
   const { data: allPending } = usePendingRequests();
@@ -94,7 +159,9 @@ export default function PlanDetailSheet({
   const requestBusy = approve.isPending || deny.isPending;
 
   const showNames = isHost || !plan.hide_guest_list;
-  const responded = rsvps.filter((r) => r.rsvp !== null);
+  const responded = rsvps.filter((r) => r.rsvp !== null && !pendingRemovals.has(r.id));
+  // Host-only: invited members who haven't answered yet (rsvp null).
+  const pendingInvites = rsvps.filter((r) => r.rsvp === null && !pendingRemovals.has(r.id));
   // going first, then maybe, then can't
   const order: Record<string, number> = { going: 0, maybe: 1, no: 2 };
   const ordered = [...responded].sort(
@@ -115,25 +182,40 @@ export default function PlanDetailSheet({
     else if (res === "unavailable") toast.error("Couldn't copy the link");
   };
 
-  const guestRow = (r: PlanRsvpRow) => (
-    <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
-      <span className="flex items-center gap-2 min-w-0">
-        {r.profile ? (
-          <ProfileAvatar profile={r.profile} className="h-6 w-6" />
-        ) : (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-muted-foreground">
-            {rsvpDisplayName(r).slice(0, 1).toUpperCase()}
-          </span>
-        )}
-        <span className="truncate">{rsvpDisplayName(r)}</span>
-      </span>
-      {r.rsvp && (
-        <span className={cn("shrink-0 text-xs font-medium", STATUS_COLOR[r.rsvp])}>
-          {STATUS_LABEL[r.rsvp]}
+  const guestRow = (r: PlanRsvpRow) => {
+    const removable = isHost && r.user_id !== plan.creator_id;
+    return (
+      <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
+        <span className="flex items-center gap-2 min-w-0">
+          {r.profile ? (
+            <ProfileAvatar profile={r.profile} className="h-6 w-6" />
+          ) : (
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-muted-foreground">
+              {rsvpDisplayName(r).slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <span className="truncate">{rsvpDisplayName(r)}</span>
         </span>
-      )}
-    </li>
-  );
+        <span className="flex shrink-0 items-center gap-2">
+          {r.rsvp && (
+            <span className={cn("text-xs font-medium", STATUS_COLOR[r.rsvp])}>
+              {STATUS_LABEL[r.rsvp]}
+            </span>
+          )}
+          {removable && (
+            <button
+              type="button"
+              onClick={() => startRemoval(r)}
+              aria-label={`Remove ${rsvpDisplayName(r)}`}
+              className="text-muted-foreground transition-colors hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </span>
+      </li>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -328,13 +410,23 @@ export default function PlanDetailSheet({
               Who&apos;s in
             </p>
             {showNames ? (
-              ordered.length > 0 ? (
-                <ul className="space-y-2">{ordered.map(guestRow)}</ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No RSVPs yet — share the link to get people in.
-                </p>
-              )
+              <>
+                {ordered.length > 0 ? (
+                  <ul className="space-y-2">{ordered.map(guestRow)}</ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No RSVPs yet — share the link to get people in.
+                  </p>
+                )}
+                {isHost && pendingInvites.length > 0 && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Invited · no answer yet
+                    </p>
+                    <ul className="space-y-2">{pendingInvites.map(guestRow)}</ul>
+                  </div>
+                )}
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">
                 {counts
