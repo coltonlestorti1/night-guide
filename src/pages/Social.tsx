@@ -23,7 +23,7 @@ import OutTonightRow from "@/components/social/OutTonightRow";
 import ProfileSearch from "@/components/social/ProfileSearch";
 import ShareHandleCard from "@/components/social/ShareHandleCard";
 import SuggestedList from "@/components/social/SuggestedList";
-import { usePlanFeed } from "@/hooks/usePlans";
+import { usePendingRequests, usePlanFeed } from "@/hooks/usePlans";
 import PlanCard from "@/components/social/PlanCard";
 import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 
@@ -67,8 +67,10 @@ const Social = () => {
   const { data: rows } = useMyFriendships();
   const { data: out } = useFriendsOutTonight();
   const { data: planItems } = usePlanFeed();
+  const { data: pendingRequests } = usePendingRequests();
   const [createOpen, setCreateOpen] = useState(false);
   const openInvites = (planItems ?? []).filter((p) => p.invitedNoResponse).length;
+  const requestCount = (pendingRequests ?? []).length;
 
   const header = (
     <header className="relative mb-6 animate-fade-in">
@@ -161,9 +163,18 @@ const Social = () => {
         icon={CalendarClock}
         tone="primary"
         badge={
-          openInvites > 0 ? (
-            <span className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
-              {openInvites} new
+          openInvites > 0 || requestCount > 0 ? (
+            <span className="flex shrink-0 items-center gap-1.5">
+              {requestCount > 0 && (
+                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
+                  {requestCount} to approve
+                </span>
+              )}
+              {openInvites > 0 && (
+                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
+                  {openInvites} new
+                </span>
+              )}
             </span>
           ) : undefined
         }

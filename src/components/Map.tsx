@@ -30,6 +30,10 @@ export type MapProps = {
   happyHour?: Set<string>;
   /** venueId -> visible friends checked in there; renders avatar faces on the pin */
   friendsByVenue?: Record<string, PinFriend[]>;
+  /** venueId -> upcoming opted-in plans here; renders a distinct "planning" badge
+   *  (top-left) separate from the here-now avatar faces. count = plans, goingCount
+   *  = total people going across them (the headcount shown). */
+  plansByVenue?: Record<string, { count: number; goingCount: number }>;
 };
 
 // Ring COLOR is reserved for live state so a colored ring always means
@@ -131,7 +135,7 @@ function friendCluster(friends: { name: string; avatarUrl: string | null }[]): H
   return cluster;
 }
 
-const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged, activity, happyHour, friendsByVenue }) => {
+const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged, activity, happyHour, friendsByVenue, plansByVenue }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -145,6 +149,14 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
   const friendsKey = friendsByVenue
     ? Object.entries(friendsByVenue)
         .map(([vid, list]) => `${vid}:${list.map((f) => f.id).sort().join("-")}`)
+        .sort()
+        .join(",")
+    : "";
+  // Same stable-string trick for plan badges — rebuild markers only when the
+  // per-venue plan/headcount actually changes.
+  const plansKey = plansByVenue
+    ? Object.entries(plansByVenue)
+        .map(([vid, p]) => `${vid}:${p.count}:${p.goingCount}`)
         .sort()
         .join(",")
     : "";
@@ -251,6 +263,59 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
         if (!isSelected) wrapper.style.zIndex = "5";
       }
 
+      // Planning badge (top-left): upcoming opted-in plans here. Distinct purple
+      // + clock glyph so "planning to go later" never reads like "here now"
+      // (which is the top-right count + the bottom avatar faces). Headcount, not
+      // plan-count, is the number — "3 planning".
+      const plans = plansByVenue?.[v.id];
+      if (plans && plans.count > 0) {
+        const pb = document.createElement("div");
+        pb.style.position = "absolute";
+        pb.style.top = "-6px";
+        pb.style.left = "-6px";
+        pb.style.display = "flex";
+        pb.style.alignItems = "center";
+        pb.style.gap = "2px";
+        pb.style.height = "17px";
+        pb.style.padding = "0 5px 0 4px";
+        pb.style.borderRadius = "9px";
+        pb.style.background = "#7c3aed"; // violet — reserved for the plan layer
+        pb.style.color = "#ffffff";
+        pb.style.fontSize = "10px";
+        pb.style.fontWeight = "700";
+        pb.style.lineHeight = "1";
+        pb.style.border = "2px solid #ffffff";
+        pb.style.boxShadow = "0 1px 3px rgba(17,17,17,0.28)";
+        pb.style.zIndex = "3";
+        // Inline clock glyph, built via namespaced DOM (matches friendFace's
+        // createElement idiom; no innerHTML).
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("width", "9");
+        svg.setAttribute("height", "9");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("stroke", "#ffffff");
+        svg.setAttribute("stroke-width", "3");
+        svg.setAttribute("stroke-linecap", "round");
+        svg.setAttribute("stroke-linejoin", "round");
+        svg.setAttribute("aria-hidden", "true");
+        const circle = document.createElementNS(SVG_NS, "circle");
+        circle.setAttribute("cx", "12");
+        circle.setAttribute("cy", "12");
+        circle.setAttribute("r", "9");
+        const hands = document.createElementNS(SVG_NS, "path");
+        hands.setAttribute("d", "M12 7v5l3 2");
+        svg.appendChild(circle);
+        svg.appendChild(hands);
+        pb.appendChild(svg);
+        const n = document.createElement("span");
+        n.textContent = String(plans.goingCount);
+        pb.appendChild(n);
+        wrapper.appendChild(pb);
+        if (!isSelected) wrapper.style.zIndex = "5";
+      }
+
       wrapper.addEventListener("mouseenter", () => { pin.style.transform = `scale(${scale * 1.12})`; });
       wrapper.addEventListener("mouseleave", () => { pin.style.transform = scale !== 1 ? `scale(${scale})` : "scale(1)"; });
 
@@ -269,7 +334,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     // markers rebuild only when ring or friend membership actually changes —
     // not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venues, selectedId, onSelect, clearMarkers, activity, happyHourKey, friendsKey]);
+  }, [venues, selectedId, onSelect, clearMarkers, activity, happyHourKey, friendsKey, plansKey]);
 
   useEffect(() => {
     if (!mapContainer.current) return;

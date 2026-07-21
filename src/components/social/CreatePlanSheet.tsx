@@ -63,6 +63,7 @@ export default function CreatePlanSheet({
   const [plannedAt, setPlannedAt] = useState(defaultPlannedAt());
   const [note, setNote] = useState("");
   const [hideGuestList, setHideGuestList] = useState(false);
+  const [showOnMap, setShowOnMap] = useState(false);
   const [invited, setInvited] = useState<Set<string>>(new Set());
   const [created, setCreated] = useState<PlanRow | null>(null);
   const [copied, setCopied] = useState(false);
@@ -88,11 +89,13 @@ export default function CreatePlanSheet({
       setPlannedAt(format(new Date(editItem.plan.planned_at), "yyyy-MM-dd'T'HH:mm"));
       setNote(editItem.plan.note ?? "");
       setHideGuestList(editItem.plan.hide_guest_list);
+      setShowOnMap(editItem.plan.show_on_map);
     } else {
       setVenueId(initialVenueId ?? null);
       setPlannedAt(defaultPlannedAt());
       setNote("");
       setHideGuestList(false);
+      setShowOnMap(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -132,6 +135,7 @@ export default function CreatePlanSheet({
             planned_at: new Date(plannedAt).toISOString(),
             note: note.trim() || null,
             hide_guest_list: hideGuestList,
+            show_on_map: showOnMap,
           },
         },
         {
@@ -150,6 +154,7 @@ export default function CreatePlanSheet({
         plannedAt: new Date(plannedAt),
         note,
         hideGuestList,
+        showOnMap,
         inviteFriendIds: [...invited],
       },
       {
@@ -334,6 +339,21 @@ export default function CreatePlanSheet({
                 </p>
               </div>
               <Switch checked={hideGuestList} onCheckedChange={setHideGuestList} />
+            </div>
+
+            {/* Show on map — opt-in to the friends map layer (Slice A) */}
+            <div className="flex items-center justify-between rounded-2xl border border-border px-3.5 py-3">
+              <div className="min-w-0 pr-3">
+                <p className="text-sm font-medium">Show this plan on the map</p>
+                <p className="text-xs text-muted-foreground">
+                  Your friends can see it and ask to join.
+                </p>
+              </div>
+              <Switch
+                checked={showOnMap}
+                onCheckedChange={setShowOnMap}
+                aria-label="Show this plan on the map for friends"
+              />
             </div>
 
             {/* Invites — create mode only */}
