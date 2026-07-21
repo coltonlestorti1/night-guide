@@ -7,10 +7,12 @@
  * and share are handled here. This is also the surface map-plans "event
  * detail" will reuse.
  */
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarClock, Forward, MapPin, MoreHorizontal } from "lucide-react";
+import { CalendarClock, Forward, MapPin, MoreHorizontal, Plus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -44,13 +46,18 @@ import {
   sharePlanLink,
 } from "@/lib/plans";
 import {
+  useAddInvitees,
   useApproveRequest,
   useCancelPlan,
   useDenyRequest,
   usePendingRequests,
+  useRemoveGuest,
   useSetRsvp,
 } from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
+import { useAuthStore } from "@/store/auth";
+import { useMyFriendships } from "@/hooks/useFriends";
+import { deriveFriends } from "@/lib/friends";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 
 const RSVP_OPTIONS: { value: PlanRsvpValue; label: string }[] = [
@@ -87,14 +94,115 @@ export default function PlanDetailSheet({
   const deny = useDenyRequest();
   const { plan, venueName, host, isHost, rsvps, counts, myRsvp } = item;
 
+  const removeGuest = useRemoveGuest();
+  const [pendingRemovals, setPendingRemovals] = useState<Set<string>>(new Set());
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Fire every still-pending DELETE now (bare mutate — no component state touched,
+  // so it's safe during unmount). Reads only refs + the stable mutate; kept in a
+  // ref so the close/unmount effects always call the latest version.
+  const flushPendingRef = useRef(() => {});
+  flushPendingRef.current = () => {
+    timersRef.current.forEach((timer, rsvpId) => {
+      clearTimeout(timer);
+      removeGuest.mutate(rsvpId);
+    });
+    timersRef.current.clear();
+  };
+
+  // Pending removals commit when their ~5s timer fires, or immediately if this
+  // component unmounts (below) — deliberately NOT on sheet *close*. The "Removed
+  // … · Undo" toast renders at the app root, outside this dialog, so clicking
+  // Undo counts as an outside-click that closes the sheet; committing on close
+  // would fire the DELETE before Undo could cancel the timer, defeating Undo.
+  // Radix keeps this component mounted when the dialog closes, so the timer (and
+  // therefore Undo) keeps working after a close; a genuine unmount still flushes.
+  useEffect(() => () => flushPendingRef.current(), []);
+
+  const commitRemoval = (rsvpId: string) => {
+    timersRef.current.delete(rsvpId);
+    removeGuest.mutate(rsvpId, {
+      onError: () => {
+        toast.error("Couldn't remove that guest");
+        setPendingRemovals((prev) => {
+          const next = new Set(prev);
+          next.delete(rsvpId);
+          return next;
+        });
+      },
+    });
+  };
+
+  const startRemoval = (r: PlanRsvpRow) => {
+    const name = rsvpDisplayName(r);
+    setPendingRemovals((prev) => new Set(prev).add(r.id));
+    const timer = setTimeout(() => commitRemoval(r.id), 5000);
+    timersRef.current.set(r.id, timer);
+    toast(`Removed ${name}`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const t = timersRef.current.get(r.id);
+          if (t) clearTimeout(t);
+          timersRef.current.delete(r.id);
+          setPendingRemovals((prev) => {
+            const next = new Set(prev);
+            next.delete(r.id);
+            return next;
+          });
+        },
+      },
+    });
+  };
+
+  const addInvitees = useAddInvitees();
+  const [showInvite, setShowInvite] = useState(false);
+  const myId = useAuthStore((s) => s.session?.user.id);
+  const { data: friendRows } = useMyFriendships();
+  const friends = useMemo(
+    () => (friendRows && myId ? deriveFriends(friendRows, myId) : []),
+    [friendRows, myId]
+  );
+
   // Pending join-requests for this plan (host only — the query is scoped to my
   // hosted plans server-side; filter to this one for the section).
   const { data: allPending } = usePendingRequests();
+
+  // Everyone already on the plan (minus rows mid-removal), so we don't re-offer them.
+  const rosterUserIds = useMemo(() => {
+    const ids = new Set(
+      rsvps
+        .filter((r) => !pendingRemovals.has(r.id))
+        .map((r) => r.user_id)
+        .filter((id): id is string => !!id)
+    );
+    // Friends with an open join-request already have a plan_rsvps row ('requested',
+    // stripped from `rsvps` upstream). Don't offer to invite them — the INSERT would
+    // hit unique(plan_id,user_id); the host approves them in the Requests section.
+    if (isHost && allPending) {
+      for (const r of allPending) if (r.planId === plan.id) ids.add(r.userId);
+    }
+    return ids;
+  }, [rsvps, pendingRemovals, allPending, isHost, plan.id]);
+  const invitableFriends = friends.filter((f) => !rosterUserIds.has(f.profile.id));
+
+  const inviteFriend = (friendId: string, name: string) =>
+    addInvitees.mutate(
+      { planId: plan.id, friendIds: [friendId] },
+      {
+        onSuccess: () => toast.success(`Invited ${name}`),
+        onError: () => toast.error("Couldn't add — try again"),
+      }
+    );
+
   const pending = isHost ? (allPending ?? []).filter((r) => r.planId === plan.id) : [];
   const requestBusy = approve.isPending || deny.isPending;
 
   const showNames = isHost || !plan.hide_guest_list;
-  const responded = rsvps.filter((r) => r.rsvp !== null);
+  const responded = rsvps.filter((r) => r.rsvp !== null && !pendingRemovals.has(r.id));
+  // Host-only: invited members who haven't answered yet (rsvp null).
+  const pendingInvites = rsvps.filter((r) => r.rsvp === null && !pendingRemovals.has(r.id));
   // going first, then maybe, then can't
   const order: Record<string, number> = { going: 0, maybe: 1, no: 2 };
   const ordered = [...responded].sort(
@@ -115,33 +223,75 @@ export default function PlanDetailSheet({
     else if (res === "unavailable") toast.error("Couldn't copy the link");
   };
 
-  const guestRow = (r: PlanRsvpRow) => (
-    <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
-      <span className="flex items-center gap-2 min-w-0">
-        {r.profile ? (
-          <ProfileAvatar profile={r.profile} className="h-6 w-6" />
-        ) : (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-muted-foreground">
-            {rsvpDisplayName(r).slice(0, 1).toUpperCase()}
-          </span>
-        )}
-        <span className="truncate">{rsvpDisplayName(r)}</span>
-      </span>
-      {r.rsvp && (
-        <span className={cn("shrink-0 text-xs font-medium", STATUS_COLOR[r.rsvp])}>
-          {STATUS_LABEL[r.rsvp]}
+  const guestRow = (r: PlanRsvpRow) => {
+    const removable = isHost && r.user_id !== plan.creator_id;
+    return (
+      <li key={r.id} className="flex items-center justify-between gap-3 text-sm">
+        <span className="flex items-center gap-2 min-w-0">
+          {r.profile ? (
+            <ProfileAvatar profile={r.profile} className="h-6 w-6" />
+          ) : (
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-muted-foreground">
+              {rsvpDisplayName(r).slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <span className="truncate">{rsvpDisplayName(r)}</span>
         </span>
-      )}
-    </li>
-  );
+        <span className="flex shrink-0 items-center gap-2">
+          {r.rsvp && (
+            <span className={cn("text-xs font-medium", STATUS_COLOR[r.rsvp])}>
+              {STATUS_LABEL[r.rsvp]}
+            </span>
+          )}
+          {removable && (
+            <button
+              type="button"
+              onClick={() => startRemoval(r)}
+              aria-label={`Remove ${rsvpDisplayName(r)}`}
+              className="text-muted-foreground transition-colors hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </span>
+      </li>
+    );
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      {/* The dialog is non-modal (so a sonner toast — the "Removed … · Undo"
+          affordance — stays clickable; a modal dialog blanks outside pointer
+          events and Undo would never fire). Non-modal drops Radix's dimming
+          overlay, so we render our own backdrop, portaled to <body> to sit under
+          the z-50 content but above the page. The toaster's higher z keeps Undo
+          on top and tappable. Clicking the backdrop closes, like the old overlay. */}
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-40 bg-black/80"
+            aria-hidden="true"
+            onClick={() => onOpenChange(false)}
+          />,
+          document.body
+        )}
+      <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       {/* Centered modal (not a bottom drawer) so it reads as a card on
           desktop. gap-0/p-0 hand spacing to the inner div; the built-in
           close X is hidden ([&>button]:hidden) since the header carries
           share + the ⋯ menu and the modal closes on outside-click. */}
-      <DialogContent className="bg-card border-border max-w-md gap-0 p-0 [&>button]:hidden">
+      <DialogContent
+        className="bg-card border-border max-w-md gap-0 p-0 [&>button]:hidden"
+        onInteractOutside={(e) => {
+          // A sonner toast (e.g. the "Removed … · Undo" affordance) renders at
+          // the app root, outside this dialog. Without this guard, clicking it
+          // counts as an outside-click that closes the sheet — and closing
+          // flushes/commits the pending removal before Undo can cancel it, so
+          // Undo never works. Keep the sheet open for interactions on a toast.
+          const target = e.detail.originalEvent.target as Element | null;
+          if (target?.closest("[data-sonner-toaster]")) e.preventDefault();
+        }}
+      >
         <DialogTitle className="sr-only">Plan details</DialogTitle>
         <DialogDescription className="sr-only">
           Event details, guest list, and RSVP.
@@ -328,13 +478,23 @@ export default function PlanDetailSheet({
               Who&apos;s in
             </p>
             {showNames ? (
-              ordered.length > 0 ? (
-                <ul className="space-y-2">{ordered.map(guestRow)}</ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No RSVPs yet — share the link to get people in.
-                </p>
-              )
+              <>
+                {ordered.length > 0 ? (
+                  <ul className="space-y-2">{ordered.map(guestRow)}</ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No RSVPs yet — share the link to get people in.
+                  </p>
+                )}
+                {isHost && pendingInvites.length > 0 && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Invited · no answer yet
+                    </p>
+                    <ul className="space-y-2">{pendingInvites.map(guestRow)}</ul>
+                  </div>
+                )}
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">
                 {counts
@@ -343,8 +503,77 @@ export default function PlanDetailSheet({
               </p>
             )}
           </div>
+
+          {/* Add invitees (host only) — add-on-tap, filtered to friends not yet
+              on the roster. Removal is the × above; this only adds. */}
+          {isHost && (
+            <div>
+              {!showInvite ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 rounded-lg px-2 text-sm text-primary"
+                  onClick={() => setShowInvite(true)}
+                >
+                  <Plus className="mr-1.5 h-4 w-4" /> Invite friends
+                </Button>
+              ) : (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Invite friends
+                  </p>
+                  {invitableFriends.length > 0 ? (
+                    <div className="max-h-44 space-y-1 overflow-y-auto">
+                      {invitableFriends.map((f) => {
+                        const name = f.profile.display_name || `@${f.profile.username}`;
+                        return (
+                          <button
+                            key={f.profile.id}
+                            type="button"
+                            disabled={addInvitees.isPending}
+                            onClick={() => inviteFriend(f.profile.id, name)}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-secondary disabled:opacity-50"
+                          >
+                            <ProfileAvatar profile={f.profile} className="h-8 w-8" />
+                            <span className="truncate text-sm font-medium">{name}</span>
+                            <Plus className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Everyone you know is already on it.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Share with anyone — surface the plan link for people not on ENDZ,
+              right where the host is thinking about who to bring. Same link and
+              share/copy behavior as the header share button. */}
+          {isHost && (
+            <button
+              type="button"
+              onClick={share}
+              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border px-3.5 py-3 text-left transition-colors hover:bg-secondary"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                <Forward className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">Share with anyone</span>
+                <span className="block text-xs text-muted-foreground">
+                  Send a link to friends who aren&apos;t on ENDZ — they can RSVP too.
+                </span>
+              </span>
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
