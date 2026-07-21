@@ -7,14 +7,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
 import {
+  HostPendingRequest,
   PlanFeedItem,
+  PlanOnMap,
   PlanRow,
   PlanRsvpValue,
+  approveRequest,
   cancelPlan,
   createPlan,
+  denyRequest,
+  listHostPendingRequests,
   listMyPlanFeed,
+  plansOnMap,
+  requestToJoin,
   setMyRsvp,
   updatePlan,
+  withdrawRequest,
 } from "@/lib/plans";
 
 export function usePlanFeed() {
@@ -37,6 +45,7 @@ export function useCreatePlan() {
       plannedAt: Date;
       note: string;
       hideGuestList: boolean;
+      showOnMap?: boolean;
       inviteFriendIds: string[];
     }): Promise<{ plan: PlanRow; invitesFailed: boolean }> =>
       createPlan({ creatorId: userId!, ...input }),
@@ -81,7 +90,7 @@ export function useUpdatePlan() {
       patch,
     }: {
       planId: string;
-      patch: { venue_id?: string; planned_at?: string; note?: string | null; hide_guest_list?: boolean };
+      patch: { venue_id?: string; planned_at?: string; note?: string | null; hide_guest_list?: boolean; show_on_map?: boolean };
     }) => updatePlan(planId, patch),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["plans", userId] }),
   });
@@ -93,5 +102,79 @@ export function useCancelPlan() {
   return useMutation({
     mutationFn: (planId: string) => cancelPlan(planId),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["plans", userId] }),
+  });
+}
+
+/* ── Map-plans Slice A ── */
+
+/** Plans on the map: my own + friends' opted-in, polled like out-tonight. */
+export function usePlansOnMap() {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  return useQuery<PlanOnMap[]>({
+    queryKey: ["plans-on-map", userId],
+    enabled: !!userId,
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    queryFn: () => plansOnMap(),
+  });
+}
+
+/** Pending join-requests across all of my hosted plans (badge + list). */
+export function usePendingRequests() {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  return useQuery<HostPendingRequest[]>({
+    queryKey: ["plan-pending-requests", userId],
+    enabled: !!userId,
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    queryFn: () => listHostPendingRequests(userId!),
+  });
+}
+
+/** Invalidate every view a request/approval touches: map layer, host pending
+ *  list, and the Social Plans feed. */
+function useInvalidatePlanViews() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.session?.user.id);
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ["plans-on-map", userId] });
+    queryClient.invalidateQueries({ queryKey: ["plan-pending-requests", userId] });
+    queryClient.invalidateQueries({ queryKey: ["plans", userId] });
+  };
+}
+
+export function useRequestToJoin() {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  const invalidate = useInvalidatePlanViews();
+  return useMutation({
+    mutationFn: (planId: string) => requestToJoin(planId, userId!),
+    onSuccess: invalidate,
+  });
+}
+
+export function useWithdrawRequest() {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  const invalidate = useInvalidatePlanViews();
+  return useMutation({
+    mutationFn: (planId: string) => withdrawRequest(planId, userId!),
+    onSuccess: invalidate,
+  });
+}
+
+export function useApproveRequest() {
+  const invalidate = useInvalidatePlanViews();
+  return useMutation({
+    mutationFn: (rsvpId: string) => approveRequest(rsvpId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDenyRequest() {
+  const invalidate = useInvalidatePlanViews();
+  return useMutation({
+    mutationFn: (rsvpId: string) => denyRequest(rsvpId),
+    onSuccess: invalidate,
   });
 }
