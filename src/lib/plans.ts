@@ -444,6 +444,36 @@ export async function denyRequest(rsvpId: string): Promise<void> {
   if (!data || data.length === 0) throw new Error("Couldn't deny that request");
 }
 
+/** Host removes a guest — a member invite, a responded member, or a link-guest
+ *  (guest_name) — from their plan. RLS "own row or host deletes rsvp" gates it;
+ *  the count-check turns an RLS block or already-gone row into a toastable error. */
+export async function removeGuest(rsvpId: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Backend not configured");
+  const { data, error } = await supabase
+    .from("plan_rsvps")
+    .delete()
+    .eq("id", rsvpId)
+    .select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Couldn't remove that guest");
+}
+
+/** Host invites more accepted friends after creation — inserts null-rsvp rows
+ *  (RLS "host invites accepted friends" gates each). The caller pre-filters
+ *  friends already on the roster, so a unique(plan_id,user_id) conflict is only a
+ *  rare race (a concurrent request-to-join) and surfaces as a thrown error.
+ *  Plain INSERT (not upsert) to avoid the ON-CONFLICT table-SELECT requirement. */
+export async function addInvitees(planId: string, friendIds: string[]): Promise<void> {
+  if (friendIds.length === 0) return;
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Backend not configured");
+  const { error } = await supabase
+    .from("plan_rsvps")
+    .insert(friendIds.map((friendId) => ({ plan_id: planId, user_id: friendId })));
+  if (error) throw error;
+}
+
 /** Pending requests across all of the host's active plans (for the badge + list).
  *  Host can read 'requested' rows on own plans via §21's rsvps-visible policy. */
 export async function listHostPendingRequests(myId: string): Promise<HostPendingRequest[]> {

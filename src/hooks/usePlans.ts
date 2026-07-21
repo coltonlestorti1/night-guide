@@ -12,6 +12,7 @@ import {
   PlanOnMap,
   PlanRow,
   PlanRsvpValue,
+  addInvitees,
   approveRequest,
   cancelPlan,
   createPlan,
@@ -19,6 +20,7 @@ import {
   listHostPendingRequests,
   listMyPlanFeed,
   plansOnMap,
+  removeGuest,
   requestToJoin,
   setMyRsvp,
   updatePlan,
@@ -175,6 +177,23 @@ export function useDenyRequest() {
   const invalidate = useInvalidatePlanViews();
   return useMutation({
     mutationFn: (rsvpId: string) => denyRequest(rsvpId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRemoveGuest() {
+  const invalidate = useInvalidatePlanViews();
+  return useMutation({
+    mutationFn: (rsvpId: string) => removeGuest(rsvpId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useAddInvitees() {
+  const invalidate = useInvalidatePlanViews();
+  return useMutation({
+    mutationFn: ({ planId, friendIds }: { planId: string; friendIds: string[] }) =>
+      addInvitees(planId, friendIds),
     onSuccess: invalidate,
   });
 }
