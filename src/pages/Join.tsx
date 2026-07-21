@@ -3,30 +3,28 @@
  * no bottom tabs, no auth). This is the page the event QR points at.
  */
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, MapPin, Users, Wine, Tag } from "lucide-react";
+import { Loader2, MapPin, Users, Wine, Tag } from "lucide-react";
 import { joinWaitlist, isEmail, isPhone } from "@/lib/waitlist";
 import { logEvent } from "@/lib/analytics";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Enter your name").max(80),
-  contact: z
-    .string()
-    .trim()
-    .min(1, "Phone or email")
-    .refine((v) => isEmail(v) || isPhone(v), "Enter a valid phone or email"),
+  email: z.string().trim().min(1, "Enter your email").refine(isEmail, "Enter a valid email"),
+  phone: z.string().trim().min(1, "Enter your phone").refine(isPhone, "Enter a valid phone"),
 });
-type FormValues = { name: string; contact: string };
+type FormValues = { name: string; email: string; phone: string };
 
 export default function Join() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const source = params.get("source") || "link";
-  const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
@@ -42,9 +40,16 @@ export default function Join() {
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     try {
-      await joinWaitlist({ name: values.name, contact: values.contact, source });
+      await joinWaitlist({
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        source,
+      });
       logEvent("join_submit", { source });
-      setDone(true);
+      // Drop them straight into the map to explore (browsable signed-out).
+      toast.success("You're on the list — welcome to ENDZ 🌙");
+      navigate("/");
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Something went wrong. Try again.");
     }
@@ -68,19 +73,7 @@ export default function Join() {
           ENDZ
         </h1>
 
-        {done ? (
-          <div className="mt-8 rounded-2xl glass p-6 animate-slide-up">
-            <div className="h-12 w-12 rounded-full bg-primary/15 flex items-center justify-center mb-4">
-              <Check className="h-6 w-6 text-primary" />
-            </div>
-            <h2 className="text-xl font-display font-bold">You're on the list.</h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              We'll reach out the second ENDZ goes live in the East Village. See you out there.
-            </p>
-          </div>
-        ) : (
-          <>
-            <p className="mt-3 text-lg leading-snug">
+        <p className="mt-3 text-lg leading-snug">
               The live map for where the night's actually happening.
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -116,14 +109,27 @@ export default function Join() {
               </div>
               <div>
                 <Input
-                  {...register("contact")}
-                  placeholder="Phone or email"
-                  inputMode="text"
+                  {...register("email")}
+                  placeholder="Email"
+                  type="email"
+                  inputMode="email"
                   autoComplete="email"
                   className="h-12 rounded-xl bg-card/80 backdrop-blur-xl border-border/60 transition-shadow focus-visible:shadow-glow focus-visible:border-primary/50"
-                  aria-label="Phone or email"
+                  aria-label="Email"
                 />
-                {errors.contact && <p className="text-xs text-destructive mt-1.5 px-1">{errors.contact.message}</p>}
+                {errors.email && <p className="text-xs text-destructive mt-1.5 px-1">{errors.email.message}</p>}
+              </div>
+              <div>
+                <Input
+                  {...register("phone")}
+                  placeholder="Phone number"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  className="h-12 rounded-xl bg-card/80 backdrop-blur-xl border-border/60 transition-shadow focus-visible:shadow-glow focus-visible:border-primary/50"
+                  aria-label="Phone number"
+                />
+                {errors.phone && <p className="text-xs text-destructive mt-1.5 px-1">{errors.phone.message}</p>}
               </div>
 
               {submitError && <p className="text-xs text-destructive px-1">{submitError}</p>}
@@ -136,8 +142,6 @@ export default function Join() {
             <p className="mt-4 text-[11px] text-muted-foreground/80 text-center">
               No spam. We'll only message you about the ENDZ launch.
             </p>
-          </>
-        )}
 
         <div className="mt-8 text-center text-[11px] text-muted-foreground/70">
           <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
