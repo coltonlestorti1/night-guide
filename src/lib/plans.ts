@@ -208,7 +208,12 @@ export async function listMyPlanFeed(myId: string): Promise<PlanFeedItem[]> {
   const rsvps = (rsvpsRes.data as unknown as PlanRsvpRow[]) ?? [];
 
   const items: PlanFeedItem[] = plans.map((plan) => {
-    const planRsvps = rsvps.filter((r) => r.plan_id === plan.id);
+    // Exclude pending join-requests (rsvp='requested', map-plans Slice A) from the
+    // guest list / myRsvp / counts — they're not guests until the host approves;
+    // they surface in the host's Requests(N) section, not "Who's in".
+    const planRsvps = rsvps.filter(
+      (r) => r.plan_id === plan.id && (r.rsvp as string) !== "requested"
+    );
     const mine = planRsvps.find((r) => r.user_id === myId) ?? null;
     return {
       plan,
