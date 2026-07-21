@@ -164,7 +164,7 @@ export default function PlanDetailSheet({
             <div className="flex items-center gap-1 shrink-0">
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 className="h-9 w-9 p-0 rounded-full"
                 onClick={share}
                 aria-label="Share plan link"
