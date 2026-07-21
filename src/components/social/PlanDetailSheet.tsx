@@ -8,6 +8,7 @@
  * detail" will reuse.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -109,14 +110,13 @@ export default function PlanDetailSheet({
     timersRef.current.clear();
   };
 
-  // Closing the sheet commits any pending removals (Undo is only offered while open).
-  useEffect(() => {
-    if (!open) {
-      flushPendingRef.current();
-      setPendingRemovals(new Set());
-    }
-  }, [open]);
-  // Unmount safety net.
+  // Pending removals commit when their ~5s timer fires, or immediately if this
+  // component unmounts (below) — deliberately NOT on sheet *close*. The "Removed
+  // … · Undo" toast renders at the app root, outside this dialog, so clicking
+  // Undo counts as an outside-click that closes the sheet; committing on close
+  // would fire the DELETE before Undo could cancel the timer, defeating Undo.
+  // Radix keeps this component mounted when the dialog closes, so the timer (and
+  // therefore Undo) keeps working after a close; a genuine unmount still flushes.
   useEffect(() => () => flushPendingRef.current(), []);
 
   const commitRemoval = (rsvpId: string) => {
@@ -259,12 +259,39 @@ export default function PlanDetailSheet({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      {/* The dialog is non-modal (so a sonner toast — the "Removed … · Undo"
+          affordance — stays clickable; a modal dialog blanks outside pointer
+          events and Undo would never fire). Non-modal drops Radix's dimming
+          overlay, so we render our own backdrop, portaled to <body> to sit under
+          the z-50 content but above the page. The toaster's higher z keeps Undo
+          on top and tappable. Clicking the backdrop closes, like the old overlay. */}
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-40 bg-black/80"
+            aria-hidden="true"
+            onClick={() => onOpenChange(false)}
+          />,
+          document.body
+        )}
+      <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       {/* Centered modal (not a bottom drawer) so it reads as a card on
           desktop. gap-0/p-0 hand spacing to the inner div; the built-in
           close X is hidden ([&>button]:hidden) since the header carries
           share + the ⋯ menu and the modal closes on outside-click. */}
-      <DialogContent className="bg-card border-border max-w-md gap-0 p-0 [&>button]:hidden">
+      <DialogContent
+        className="bg-card border-border max-w-md gap-0 p-0 [&>button]:hidden"
+        onInteractOutside={(e) => {
+          // A sonner toast (e.g. the "Removed … · Undo" affordance) renders at
+          // the app root, outside this dialog. Without this guard, clicking it
+          // counts as an outside-click that closes the sheet — and closing
+          // flushes/commits the pending removal before Undo can cancel it, so
+          // Undo never works. Keep the sheet open for interactions on a toast.
+          const target = e.detail.originalEvent.target as Element | null;
+          if (target?.closest("[data-sonner-toaster]")) e.preventDefault();
+        }}
+      >
         <DialogTitle className="sr-only">Plan details</DialogTitle>
         <DialogDescription className="sr-only">
           Event details, guest list, and RSVP.
@@ -523,8 +550,30 @@ export default function PlanDetailSheet({
               )}
             </div>
           )}
+
+          {/* Share with anyone — surface the plan link for people not on ENDZ,
+              right where the host is thinking about who to bring. Same link and
+              share/copy behavior as the header share button. */}
+          {isHost && (
+            <button
+              type="button"
+              onClick={share}
+              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border px-3.5 py-3 text-left transition-colors hover:bg-secondary"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                <Forward className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">Share with anyone</span>
+                <span className="block text-xs text-muted-foreground">
+                  Send a link to friends who aren&apos;t on ENDZ — they can RSVP too.
+                </span>
+              </span>
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
