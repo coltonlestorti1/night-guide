@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarClock, Forward, MapPin, MoreHorizontal, X } from "lucide-react";
+import { CalendarClock, Forward, MapPin, MoreHorizontal, Plus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,7 @@ import {
   sharePlanLink,
 } from "@/lib/plans";
 import {
+  useAddInvitees,
   useApproveRequest,
   useCancelPlan,
   useDenyRequest,
@@ -53,6 +54,9 @@ import {
   useSetRsvp,
 } from "@/hooks/usePlans";
 import { logEvent } from "@/lib/analytics";
+import { useAuthStore } from "@/store/auth";
+import { useMyFriendships } from "@/hooks/useFriends";
+import { deriveFriends } from "@/lib/friends";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 
 const RSVP_OPTIONS: { value: PlanRsvpValue; label: string }[] = [
@@ -151,6 +155,36 @@ export default function PlanDetailSheet({
       },
     });
   };
+
+  const addInvitees = useAddInvitees();
+  const [showInvite, setShowInvite] = useState(false);
+  const myId = useAuthStore((s) => s.session?.user.id);
+  const { data: friendRows } = useMyFriendships();
+  const friends = useMemo(
+    () => (friendRows && myId ? deriveFriends(friendRows, myId) : []),
+    [friendRows, myId]
+  );
+  // Everyone already on the plan (minus rows mid-removal), so we don't re-offer them.
+  const rosterUserIds = useMemo(
+    () =>
+      new Set(
+        rsvps
+          .filter((r) => !pendingRemovals.has(r.id))
+          .map((r) => r.user_id)
+          .filter((id): id is string => !!id)
+      ),
+    [rsvps, pendingRemovals]
+  );
+  const invitableFriends = friends.filter((f) => !rosterUserIds.has(f.profile.id));
+
+  const inviteFriend = (friendId: string, name: string) =>
+    addInvitees.mutate(
+      { planId: plan.id, friendIds: [friendId] },
+      {
+        onSuccess: () => toast.success(`Invited ${name}`),
+        onError: () => toast.error("Couldn't add — try again"),
+      }
+    );
 
   // Pending join-requests for this plan (host only — the query is scoped to my
   // hosted plans server-side; filter to this one for the section).
@@ -435,6 +469,53 @@ export default function PlanDetailSheet({
               </p>
             )}
           </div>
+
+          {/* Add invitees (host only) — add-on-tap, filtered to friends not yet
+              on the roster. Removal is the × above; this only adds. */}
+          {isHost && (
+            <div>
+              {!showInvite ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 rounded-lg px-2 text-sm text-primary"
+                  onClick={() => setShowInvite(true)}
+                >
+                  <Plus className="mr-1.5 h-4 w-4" /> Invite friends
+                </Button>
+              ) : (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Invite friends
+                  </p>
+                  {invitableFriends.length > 0 ? (
+                    <div className="max-h-44 space-y-1 overflow-y-auto">
+                      {invitableFriends.map((f) => {
+                        const name = f.profile.display_name || `@${f.profile.username}`;
+                        return (
+                          <button
+                            key={f.profile.id}
+                            type="button"
+                            disabled={addInvitees.isPending}
+                            onClick={() => inviteFriend(f.profile.id, name)}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-secondary disabled:opacity-50"
+                          >
+                            <ProfileAvatar profile={f.profile} className="h-8 w-8" />
+                            <span className="truncate text-sm font-medium">{name}</span>
+                            <Plus className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Everyone you know is already on it.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
