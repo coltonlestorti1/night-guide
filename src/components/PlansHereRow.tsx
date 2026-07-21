@@ -7,7 +7,7 @@
  * request-to-join control. Names + notes never appear for non-members — the
  * rpc doesn't return them.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { CalendarClock, Clock, MapPin } from "lucide-react";
@@ -157,6 +157,14 @@ export default function PlansHereRow({
     () => (plans ?? []).filter((p) => p.venueId === venueId),
     [plans, venueId]
   );
+
+  // If a polled refetch drops the open/edit plan (expired, cancelled), clear the
+  // stale id so the dialog doesn't silently linger in state.
+  useEffect(() => {
+    if (openPlanId && !here.some((p) => p.planId === openPlanId)) setOpenPlanId(null);
+    if (editPlanId && !here.some((p) => p.planId === editPlanId)) setEditPlanId(null);
+  }, [here, openPlanId, editPlanId]);
+
   if (here.length === 0) return null;
 
   const openPlan = here.find((p) => p.planId === openPlanId) ?? null;
@@ -193,17 +201,30 @@ export default function PlansHereRow({
         ))}
       </div>
 
-      {/* Detail card. Member/host → full PlanDetailSheet; else light card. */}
-      {openPlan && openFeedItem ? (
-        <PlanDetailSheet
-          item={openFeedItem}
-          open={!!openPlanId}
-          onOpenChange={(o) => !o && setOpenPlanId(null)}
-          onEdit={() => {
-            setEditPlanId(openPlanId);
-            setOpenPlanId(null);
-          }}
-        />
+      {/* Detail card. A member/host gets the full PlanDetailSheet — but only once
+          their plan is in the feed; while the feed loads we show a placeholder,
+          NOT the non-member card (which lacks the guest list + host controls).
+          NonMemberDetail is strictly for genuine non-members. */}
+      {openPlan && (openPlan.viewerIsHost || openPlan.viewerIsMember) ? (
+        openFeedItem ? (
+          <PlanDetailSheet
+            item={openFeedItem}
+            open={!!openPlanId}
+            onOpenChange={(o) => !o && setOpenPlanId(null)}
+            onEdit={() => {
+              setEditPlanId(openPlanId);
+              setOpenPlanId(null);
+            }}
+          />
+        ) : (
+          <Dialog open={!!openPlanId} onOpenChange={(o) => !o && setOpenPlanId(null)}>
+            <DialogContent className="bg-card border-border max-w-sm">
+              <DialogTitle className="sr-only">Loading plan</DialogTitle>
+              <DialogDescription className="sr-only">Loading plan details.</DialogDescription>
+              <p className="py-4 text-center text-sm text-muted-foreground">Loading plan…</p>
+            </DialogContent>
+          </Dialog>
+        )
       ) : openPlan ? (
         <NonMemberDetail
           plan={openPlan}
