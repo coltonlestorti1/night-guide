@@ -6,7 +6,7 @@
  */
 import { Venue } from "@/data/types";
 import { getEnrichment, computeOpenState, isWithinPeriods, formatTime, getHappyHourState } from "@/data/enrichment";
-import { isCocktailSpot } from "@/lib/venueTraits";
+import { isCocktailSpot, hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 import { Coords } from "@/store/location";
 import { haversineMiles, formatMiles } from "@/lib/distance";
 
@@ -119,12 +119,12 @@ export function scoreVenues(
     // matches, sink the rest. Curated flags, so absent means "no", not
     // "unknown", and sinking is honest.
     if (prefs.outside === "rooftop") {
-      if (venue.has_rooftop) {
+      if (hasRooftop(venue)) {
         score += 2;
         reasons.push("Rooftop");
       } else score -= 2;
     } else if (prefs.outside === "outdoor") {
-      if (venue.has_outdoor) {
+      if (hasOutdoorSeating(venue)) {
         score += 2;
         reasons.push("Outdoor seating");
       } else score -= 2;

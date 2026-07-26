@@ -25,6 +25,13 @@ export type VenueEnrichment = {
   businessStatus?: string;
   hours?: WeeklyPeriod[];
   happyHour?: WeeklyPeriod[];
+  /**
+   * Google's verified outdoor-seating flag. The enrichment pipeline has always
+   * written this (scripts/lib/transform.mjs) but the type never declared it.
+   * Only `true` is meaningful — `false`/absent means "not recorded", not
+   * "definitely none". Read it via hasOutdoorSeating() in venueTraits.
+   */
+  outdoorSeating?: boolean;
   popularTimes?: PopularTimesDay[];
   popularTimesSource?: "serpapi";
 };

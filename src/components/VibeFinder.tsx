@@ -6,6 +6,7 @@
 import { useMemo, useState } from "react";
 import { Venue } from "@/data/types";
 import { scoreVenues, VibePrefs } from "@/lib/vibeScore";
+import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -118,11 +119,11 @@ export default function VibeFinder({
 
   // Don't offer an option that can't match anything (same rule as the map chips).
   const outsideOptions = useMemo(() => {
-    const hasRooftop = venues.some((v) => v.has_rooftop);
-    const hasOutdoor = venues.some((v) => v.has_outdoor);
-    if (!hasRooftop && !hasOutdoor) return [];
+    const anyRooftop = venues.some((v) => hasRooftop(v));
+    const anyOutdoor = venues.some((v) => hasOutdoorSeating(v));
+    if (!anyRooftop && !anyOutdoor) return [];
     return OUTSIDES.filter(
-      (o) => (o.value !== "rooftop" || hasRooftop) && (o.value !== "outdoor" || hasOutdoor),
+      (o) => (o.value !== "rooftop" || anyRooftop) && (o.value !== "outdoor" || anyOutdoor),
     );
   }, [venues]);
   const results = page === null ? [] : ranked.slice(page * 3, page * 3 + 3);

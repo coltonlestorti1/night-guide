@@ -1,5 +1,5 @@
 /**
- * East Village (NYC) nightlife dataset — 57 venues.
+ * East Village (NYC) nightlife dataset — 56 venues.
  * This file is the single source of truth for demo venue data.
  * Sourced from ~/Documents/endz/endz-seed-venues.sql (the beachhead's
  * real venue list). No fabricated activity stats or images — see
@@ -107,20 +107,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     avg_price_level: 1,
     music_type: "Country",
   },
-  {
-    id: "cienfuegos",
-    title: "Cienfuegos",
-    description: "Cuban rum lounge. Mojitos and sultry lighting.",
-    latitude: 40.7257,
-    longitude: -73.9818,
-    serves_alcohol: true,
-    category: "lounge",
-    neighborhood: "Avenue A",
-    age_range_min: 23,
-    age_range_max: 35,
-    avg_price_level: 3,
-    music_type: "Latin / Jazz",
-  },
+  // Cienfuegos removed 2026-07-26 — Google reports CLOSED_PERMANENTLY (no
+  // opening hours returned either). Same treatment as the 2026-07-15 dead-venue
+  // pass. Soft-hidden rather than deleted in Supabase (is_active = false).
   {
     id: "the-library",
     title: "The Library",
@@ -627,7 +616,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     age_range_min: 23,
     age_range_max: 33,
     music_type: "Pub / Irish Jukebox",
-    has_outdoor: true,
+    // The dataset and Colton's PDF both say backyard, but Google reports
+    // outdoorSeating: false. §20 says don't claim outdoor seating we can't
+    // verify, so no flag until someone confirms it in person.
   },
   {
     id: "nublu-151",

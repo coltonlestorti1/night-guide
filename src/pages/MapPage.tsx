@@ -31,6 +31,7 @@ import OutTonightPrompt from "@/components/OutTonightPrompt";
 import { useOutTonightWatcher } from "@/store/outTonight";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { venueMatches } from "@/lib/searchMatch";
+import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
 
@@ -311,14 +312,14 @@ const MapPage = () => {
   let displayVenues = venues;
   if (hhFilter) displayVenues = displayVenues.filter((v) => hhActiveIds.has(v.id));
   if (savedFilter) displayVenues = displayVenues.filter((v) => savedIds.includes(v.id));
-  if (rooftopFilter) displayVenues = displayVenues.filter((v) => v.has_rooftop);
-  if (outdoorFilter) displayVenues = displayVenues.filter((v) => v.has_outdoor);
+  if (rooftopFilter) displayVenues = displayVenues.filter((v) => hasRooftop(v));
+  if (outdoorFilter) displayVenues = displayVenues.filter((v) => hasOutdoorSeating(v));
 
   // Chip availability is judged against the whole venue set, not the current
   // viewport — otherwise panning away from the one rooftop makes the chip
   // vanish mid-session while it's still switched on.
-  const showRooftop = (allVenues ?? []).some((v) => v.has_rooftop);
-  const showOutdoor = (allVenues ?? []).some((v) => v.has_outdoor);
+  const showRooftop = (allVenues ?? []).some((v) => hasRooftop(v));
+  const showOutdoor = (allVenues ?? []).some((v) => hasOutdoorSeating(v));
 
   const { data: activityData } = useVenueActivity();
   // Memoized: a new object reference here rebuilds every map marker via

@@ -585,17 +585,6 @@
     ],
     "outdoorSeating": false
   },
-  "Cienfuegos": {
-    "placeId": "ChIJObMZS51ZwokRWouOc3qwUmc",
-    "fetchedAt": "2026-07-26T15:13:52.119Z",
-    "rating": 4.5,
-    "userRatingCount": 280,
-    "editorialSummary": "Fancy rum cocktails are paired with Latin small plates at this second-floor East Village lounge.",
-    "phone": "(212) 614-6818",
-    "websiteUri": "http://www.cienfuegosny.com/",
-    "googleMapsUri": "https://maps.google.com/?cid=7445207173968071514&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
-    "businessStatus": "CLOSED_PERMANENTLY"
-  },
   "The Library": {
     "placeId": "ChIJQwDts4NZwokR1G-QaglL6H0",
     "fetchedAt": "2026-07-26T15:13:52.119Z",

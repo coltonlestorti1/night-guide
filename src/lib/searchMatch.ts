@@ -4,16 +4,10 @@
  * by both the filter pipeline and the search dropdown.
  */
 import { Venue } from "@/data/types";
+import { normalize } from "@/lib/normalize";
+import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 
-export function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9 ]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+export { normalize };
 
 export function venueMatches(v: Venue, query: string): boolean {
   const q = normalize(query);
@@ -21,8 +15,8 @@ export function venueMatches(v: Venue, query: string): boolean {
   // Amenity words are searchable too, so "rooftop" or "backyard" finds the
   // venue even though neither appears in its name.
   const amenities = [
-    v.has_rooftop ? "rooftop roof" : "",
-    v.has_outdoor ? "outdoor outside backyard patio" : "",
+    hasRooftop(v) ? "rooftop roof" : "",
+    hasOutdoorSeating(v) ? "outdoor outside backyard patio" : "",
     v.is_college_scene ? "college" : "",
   ].join(" ");
   const hay = normalize(

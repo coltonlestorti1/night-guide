@@ -7,6 +7,7 @@ import { Venue } from "@/data/types";
 import { Music2, Ticket, DollarSign, Users, Zap, Building2, Trees } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatAgeDisplay } from "@/lib/format";
+import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 
 const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
 
@@ -20,8 +21,8 @@ const tilesFor = (v: Venue) => {
   if (v.cover_charge) tiles.push({ label: "Cover", icon: <Ticket className="h-3 w-3" />, value: v.cover_charge });
   // Rooftop and outdoor stay separate tiles with separate icons — a rooftop is
   // never presented as generic outdoor seating, or vice versa.
-  if (v.has_rooftop) tiles.push({ label: "Rooftop", icon: <Building2 className="h-3 w-3" />, value: "Yes" });
-  if (v.has_outdoor) tiles.push({ label: "Outdoor", icon: <Trees className="h-3 w-3" />, value: "Yes" });
+  if (hasRooftop(v)) tiles.push({ label: "Rooftop", icon: <Building2 className="h-3 w-3" />, value: "Yes" });
+  if (hasOutdoorSeating(v)) tiles.push({ label: "Outdoor", icon: <Trees className="h-3 w-3" />, value: "Yes" });
   return tiles;
 };
 
