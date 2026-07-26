@@ -8,6 +8,7 @@ import { Music2, Ticket, DollarSign, Users, Zap, Building2, Trees } from "lucide
 import { cn } from "@/lib/utils";
 import { formatAgeDisplay } from "@/lib/format";
 import { hasOutdoorSeating, hasRooftop, outdoorKind } from "@/lib/venueTraits";
+import { getEnrichment } from "@/data/enrichment";
 
 const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
 
@@ -15,14 +16,21 @@ const tilesFor = (v: Venue) => {
   const tiles: { label: string; icon: React.ReactNode; value: string; accent?: boolean }[] = [];
   if (v.buzz_score != null) tiles.push({ label: "Buzz", icon: <Zap className="h-3 w-3" />, value: String(v.buzz_score), accent: true });
   if (v.music_type) tiles.push({ label: "Music", icon: <Music2 className="h-3 w-3" />, value: v.music_type });
-  if (v.avg_price_level) tiles.push({ label: "Price", icon: <DollarSign className="h-3 w-3" />, value: "$".repeat(v.avg_price_level) });
+  // Curated tier first; otherwise Google's real dollar range. The range is NOT
+  // converted into a tier — calibration showed the two don't line up (a $15
+  // midpoint occurs in both $ and $$ venues), so a derived tier would be a
+  // guess. Showing the actual range keeps it honest and fills 14 more venues.
+  const price = v.avg_price_level
+    ? "$".repeat(v.avg_price_level)
+    : getEnrichment(v.title)?.priceRange ?? null;
+  if (price) tiles.push({ label: "Price", icon: <DollarSign className="h-3 w-3" />, value: price });
   const ages = formatAgeDisplay(v);
   if (ages) tiles.push({ label: "Ages", icon: <Users className="h-3 w-3" />, value: ages });
   if (v.cover_charge) tiles.push({ label: "Cover", icon: <Ticket className="h-3 w-3" />, value: v.cover_charge });
   // Rooftop and outdoor stay separate tiles with separate icons — a rooftop is
   // never presented as generic outdoor seating, or vice versa.
-  if (hasRooftop(v)) tiles.push({ label: "Rooftop", icon: <Building2 className="h-3 w-3" />, value: "Yes" });
-  if (hasOutdoorSeating(v)) tiles.push({ label: "Outdoor", icon: <Trees className="h-3 w-3" />, value: outdoorKind(v) ?? "Yes" });
+  if (hasRooftop(v)) tiles.push({ label: "Rooftop", icon: <Building2 className="h-3 w-3" />, value: "Open-air" });
+  if (hasOutdoorSeating(v)) tiles.push({ label: "Outdoor", icon: <Trees className="h-3 w-3" />, value: outdoorKind(v) ?? "Seating" });
   return tiles;
 };
 

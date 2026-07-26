@@ -2,7 +2,7 @@
  * /join — public early-access waitlist. Rendered OUTSIDE AppLayout (no map,
  * no bottom tabs, no auth). This is the page the event QR points at.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, MapPin, Users, Wine, Tag } from "lucide-react";
 import { joinWaitlist, isEmail, isPhone } from "@/lib/waitlist";
 import { logEvent } from "@/lib/analytics";
+import { resolveJoinSource } from "@/lib/joinSource";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Enter your name").max(80),
@@ -26,6 +27,8 @@ export default function Join() {
   const navigate = useNavigate();
   const source = params.get("source") || "link";
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // The bar whose QR they scanned, when the source names one. Null → generic copy.
+  const scanned = useMemo(() => resolveJoinSource(source), [source]);
 
   const {
     register,
@@ -66,19 +69,47 @@ export default function Join() {
 
       <div className="relative w-full max-w-sm mx-auto">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-6">
-          <MapPin className="h-3.5 w-3.5 text-primary" /> East Village, NYC
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          {scanned ? (
+            <span>
+              You're at <span className="font-medium text-foreground">{scanned.venue.title}</span>
+              {scanned.venue.neighborhood && ` · ${scanned.venue.neighborhood}`}
+            </span>
+          ) : (
+            "East Village, NYC"
+          )}
         </div>
 
         <h1 className="text-5xl font-display font-bold tracking-tight bg-gradient-to-r from-primary to-rose-400 bg-clip-text text-transparent">
           ENDZ
         </h1>
 
-        <p className="mt-3 text-lg leading-snug">
+        {scanned ? (
+          <>
+            <p className="mt-3 text-lg leading-snug">
+              {scanned.nearbyCount > 0 ? (
+                <>
+                  <span className="font-semibold">{scanned.nearbyCount} more spots</span> within a
+                  five-minute walk of here.
+                </>
+              ) : (
+                <>The live map for where the night's actually happening.</>
+              )}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              ENDZ shows you which ones are worth the walk. Launching soon in the East Village.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="mt-3 text-lg leading-snug">
               The live map for where the night's actually happening.
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
               Launching soon — get in before everyone else.
             </p>
+          </>
+        )}
 
             <div className="mt-5 flex flex-wrap gap-2">
               {[

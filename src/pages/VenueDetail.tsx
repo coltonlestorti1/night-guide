@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useVenue } from "@/hooks/useVenue";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,20 @@ import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 const VenueDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /**
+   * Coming from the map's venue sheet, back returns to that sheet — the map
+   * reopens it from the venueId in location.state. Anywhere else (Discover,
+   * Saved spots, a plan) keeps plain history-back, so those flows are unchanged.
+   */
+  const goBack = () => {
+    if ((location.state as { fromMap?: boolean } | null)?.fromMap && id) {
+      navigate("/", { state: { venueId: id } });
+    } else {
+      navigate(-1);
+    }
+  };
   const { data, isLoading } = useVenue(id);
   const { ids, toggle } = useSavedStore();
   const saved = !!data && ids.includes(data.id);
@@ -54,7 +68,7 @@ const VenueDetail = () => {
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             <button
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="absolute top-4 left-4 h-10 w-10 rounded-full bg-black/60 backdrop-blur flex items-center justify-center hover:bg-black/80 transition-colors"
               aria-label="Back"
             >

@@ -113,7 +113,10 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
           longitude={venue.longitude}
           className="h-11 rounded-xl w-full"
         />
-        <Button className="h-11 rounded-xl" onClick={() => navigate(`/venue/${venue.id}`)}>
+        {/* fromMap tells VenueDetail's back button to reopen THIS sheet rather
+            than dropping the user on a bare map. Other entry points (Discover,
+            Saved, Plans) omit it and keep plain history-back. */}
+        <Button className="h-11 rounded-xl" onClick={() => navigate(`/venue/${venue.id}`, { state: { fromMap: true } })}>
           View Details
         </Button>
       </div>
