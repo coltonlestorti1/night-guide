@@ -17,6 +17,8 @@ export type VibePrefs = {
   near?: boolean;
   happyHour?: boolean;
   age?: "21-25" | "25-30" | "30+";
+  /** Kept as one single-select preference — you want a roof or a yard, not both. */
+  outside?: "rooftop" | "outdoor";
 };
 
 export type ScoredVenue = { venue: Venue; score: number; reasons: string[] };
@@ -110,6 +112,21 @@ export function scoreVenues(
       else if (hh.status === "upcoming-today") {
         score += 1;
         reasons.push(`🥂 Happy hour at ${hh.startsAt}`);
+      } else score -= 2;
+    }
+
+    // Rooftop / outdoor preference — same shape as happy hour: boost the
+    // matches, sink the rest. Curated flags, so absent means "no", not
+    // "unknown", and sinking is honest.
+    if (prefs.outside === "rooftop") {
+      if (venue.has_rooftop) {
+        score += 2;
+        reasons.push("Rooftop");
+      } else score -= 2;
+    } else if (prefs.outside === "outdoor") {
+      if (venue.has_outdoor) {
+        score += 2;
+        reasons.push("Outdoor seating");
       } else score -= 2;
     }
 

@@ -22,6 +22,8 @@ export function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
     if (q.musicVibe && v.music_type && !v.music_type.toLowerCase().includes(q.musicVibe.toLowerCase())) return false;
     if (q.priceMin != null && (v.avg_price_level ?? 0) < q.priceMin) return false;
     if (q.priceMax != null && (v.avg_price_level ?? 5) > q.priceMax) return false;
+    if (q.rooftop && !v.has_rooftop) return false;
+    if (q.outdoor && !v.has_outdoor) return false;
     if (q.search && !venueMatches(v, q.search)) return false;
     return true;
   });

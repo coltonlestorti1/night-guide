@@ -19,7 +19,7 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  List, X, MapIcon, Search, Flame, Sparkles, Music, Wine, Bookmark
+  List, X, MapIcon, Search, Flame, Sparkles, Music, Wine, Bookmark, Building2, Trees
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,11 +34,15 @@ import { venueMatches } from "@/lib/searchMatch";
 import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
 
-const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour" | "saved"; Icon?: React.ComponentType<{ className?: string }> }[] = [
+const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour" | "saved" | "rooftop" | "outdoor"; Icon?: React.ComponentType<{ className?: string }> }[] = [
   { label: "Find the move", value: "vibe-finder", Icon: Sparkles },
   { label: "All", value: "all" },
   { label: "Saved", value: "saved", Icon: Bookmark },
   { label: "Happy hour", value: "happy-hour", Icon: Wine },
+  // Rooftop and outdoor are deliberately two chips, not one "outside" chip —
+  // a rooftop is a different promise than a backyard.
+  { label: "Rooftop", value: "rooftop", Icon: Building2 },
+  { label: "Outdoor", value: "outdoor", Icon: Trees },
   { label: "Bars", value: "bar" },
   { label: "Clubs", value: "club" },
   { label: "Lounges", value: "lounge" },
@@ -140,9 +144,15 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
 };
 
 /* ── Filter chips ──────────────────────────── */
-const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, savedActive, onSaved }: { count: number; hasFilters: boolean; onVibeFinder: () => void; hhActive: boolean; onHappyHour: () => void; savedActive: boolean; onSaved: () => void }) => {
+const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, savedActive, onSaved, rooftopActive, onRooftop, outdoorActive, onOutdoor, showRooftop, showOutdoor }: { count: number; hasFilters: boolean; onVibeFinder: () => void; hhActive: boolean; onHappyHour: () => void; savedActive: boolean; onSaved: () => void; rooftopActive: boolean; onRooftop: () => void; outdoorActive: boolean; onOutdoor: () => void; showRooftop: boolean; showOutdoor: boolean }) => {
   const { categories, crowdLevel, musicVibe, set, reset } = useFilterStore();
   const [musicOpen, setMusicOpen] = useState(false);
+
+  // Same rule as MUSIC_VIBES: a chip that can never match anything is a
+  // dead-end filter, so it doesn't render at all.
+  const chips = PRIMARY_FILTERS.filter(
+    (f) => (f.value !== "rooftop" || showRooftop) && (f.value !== "outdoor" || showOutdoor),
+  );
 
   const isActive = (v: string) => {
     if (v === "all") return categories.length === 0 && !crowdLevel && !musicVibe;
@@ -151,6 +161,8 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, s
     if (v === "vibe-finder") return false;
     if (v === "happy-hour") return hhActive;
     if (v === "saved") return savedActive;
+    if (v === "rooftop") return rooftopActive;
+    if (v === "outdoor") return outdoorActive;
     return categories.includes(v as VenueCategory);
   };
 
@@ -158,6 +170,8 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, s
     if (v === "vibe-finder") return onVibeFinder();
     if (v === "happy-hour") return onHappyHour();
     if (v === "saved") return onSaved();
+    if (v === "rooftop") return onRooftop();
+    if (v === "outdoor") return onOutdoor();
     if (v === "all") return reset();
     if (v === "hot") return set({ crowdLevel: crowdLevel === "high" ? undefined : "high" });
     if (v === "music") return setMusicOpen((o) => !o);
@@ -175,7 +189,7 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, s
             WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
           }}
         >
-          {PRIMARY_FILTERS.map((f) => {
+          {chips.map((f) => {
             const active = isActive(f.value);
             return (
               <button
@@ -240,6 +254,8 @@ const MapPage = () => {
   const [vibeOpen, setVibeOpen] = useState(false);
   const [hhFilter, setHhFilter] = useState(false);
   const [savedFilter, setSavedFilter] = useState(false);
+  const [rooftopFilter, setRooftopFilter] = useState(false);
+  const [outdoorFilter, setOutdoorFilter] = useState(false);
   const savedIds = useSavedStore((s) => s.ids);
 
   const hasFilters =
@@ -295,6 +311,14 @@ const MapPage = () => {
   let displayVenues = venues;
   if (hhFilter) displayVenues = displayVenues.filter((v) => hhActiveIds.has(v.id));
   if (savedFilter) displayVenues = displayVenues.filter((v) => savedIds.includes(v.id));
+  if (rooftopFilter) displayVenues = displayVenues.filter((v) => v.has_rooftop);
+  if (outdoorFilter) displayVenues = displayVenues.filter((v) => v.has_outdoor);
+
+  // Chip availability is judged against the whole venue set, not the current
+  // viewport — otherwise panning away from the one rooftop makes the chip
+  // vanish mid-session while it's still switched on.
+  const showRooftop = (allVenues ?? []).some((v) => v.has_rooftop);
+  const showOutdoor = (allVenues ?? []).some((v) => v.has_outdoor);
 
   const { data: activityData } = useVenueActivity();
   // Memoized: a new object reference here rebuilds every map marker via
@@ -352,6 +376,12 @@ const MapPage = () => {
         onHappyHour={() => setHhFilter((f) => !f)}
         savedActive={savedFilter}
         onSaved={() => setSavedFilter((f) => !f)}
+        rooftopActive={rooftopFilter}
+        onRooftop={() => setRooftopFilter((f) => !f)}
+        outdoorActive={outdoorFilter}
+        onOutdoor={() => setOutdoorFilter((f) => !f)}
+        showRooftop={showRooftop}
+        showOutdoor={showOutdoor}
       />
       <VibeFinder
         open={vibeOpen}

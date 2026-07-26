@@ -14,6 +14,13 @@ type VenueRow = {
   age_range: string | null;
   lat: number;
   lng: number;
+  // Added 2026-07-25 with the East Village import. Optional on the row type
+  // because the code ships before the DDL is pasted — select("*") simply
+  // returns fewer columns until then, and every read below is defensive.
+  neighborhood?: string | null;
+  is_college_scene?: boolean | null;
+  has_rooftop?: boolean | null;
+  has_outdoor?: boolean | null;
 };
 
 const PRICE_LEVEL: Record<string, 1 | 2 | 3 | 4> = { $: 1, $$: 2, $$$: 3, $$$$: 4 };
@@ -52,6 +59,10 @@ export function mapVenueRow(row: VenueRow): Venue {
   if (row.music && row.music.toLowerCase() !== "none") venue.music_type = titleCaseMusic(row.music);
   if (age.min !== undefined) venue.age_range_min = age.min;
   if (age.max !== undefined) venue.age_range_max = age.max;
+  if (row.neighborhood) venue.neighborhood = row.neighborhood;
+  if (row.is_college_scene) venue.is_college_scene = true;
+  if (row.has_rooftop) venue.has_rooftop = true;
+  if (row.has_outdoor) venue.has_outdoor = true;
   return venue;
 }
 

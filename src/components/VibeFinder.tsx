@@ -14,7 +14,7 @@ import { useLocationStore, geolocationPermission, hasPermissionsApi } from "@/st
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import LocationDeniedDialog from "@/components/LocationDeniedDialog";
-import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine } from "lucide-react";
+import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine, Building2, Trees } from "lucide-react";
 
 type Activity = Record<string, { count: number; vibe?: string }> | undefined;
 
@@ -39,6 +39,11 @@ const DISTANCES = [
 const HAPPY_HOURS = [
   { value: true, label: "Happy hour", Icon: Wine },
   { value: false, label: "Doesn't matter", Icon: Shuffle },
+] as const;
+const OUTSIDES = [
+  { value: "rooftop", label: "Rooftop", Icon: Building2 },
+  { value: "outdoor", label: "Outdoor", Icon: Trees },
+  { value: undefined, label: "Doesn't matter", Icon: Shuffle },
 ] as const;
 const AGES = ["21-25", "25-30", "30+"] as const;
 
@@ -73,6 +78,7 @@ export default function VibeFinder({
   const [when, setWhen] = useState<VibePrefs["when"]>("now");
   const [near, setNear] = useState(false);
   const [happyHour, setHappyHour] = useState(false);
+  const [outside, setOutside] = useState<VibePrefs["outside"]>(undefined);
   const [age, setAge] = useState<VibePrefs["age"]>(undefined);
   const [page, setPage] = useState<number | null>(null); // null = answers screen
   const [showDeniedDialog, setShowDeniedDialog] = useState(false);
@@ -106,9 +112,19 @@ export default function VibeFinder({
   };
 
   const ranked = useMemo(
-    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near, happyHour, age }, activity, undefined, coords)),
-    [page, venues, vibe, drinks, when, near, happyHour, age, activity, coords],
+    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near, happyHour, outside, age }, activity, undefined, coords)),
+    [page, venues, vibe, drinks, when, near, happyHour, outside, age, activity, coords],
   );
+
+  // Don't offer an option that can't match anything (same rule as the map chips).
+  const outsideOptions = useMemo(() => {
+    const hasRooftop = venues.some((v) => v.has_rooftop);
+    const hasOutdoor = venues.some((v) => v.has_outdoor);
+    if (!hasRooftop && !hasOutdoor) return [];
+    return OUTSIDES.filter(
+      (o) => (o.value !== "rooftop" || hasRooftop) && (o.value !== "outdoor" || hasOutdoor),
+    );
+  }, [venues]);
   const results = page === null ? [] : ranked.slice(page * 3, page * 3 + 3);
 
   const reset = () => setPage(null);
@@ -177,6 +193,18 @@ export default function VibeFinder({
                     ))}
                   </div>
                 </div>
+                {outsideOptions.length > 0 && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Outside?</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {outsideOptions.map((o) => (
+                        <Chip key={o.label} active={outside === o.value} onClick={() => setOutside(o.value)}>
+                          <o.Icon className="h-4 w-4" /> {o.label}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Your age?</p>
                   <div className="flex gap-2 flex-wrap">
@@ -191,7 +219,7 @@ export default function VibeFinder({
               <Button
                 className="w-full h-11 rounded-xl mt-5"
                 onClick={() => {
-                  logEvent("find_the_move", { vibe, drinks, when, near, happy_hour: happyHour, age });
+                  logEvent("find_the_move", { vibe, drinks, when, near, happy_hour: happyHour, outside, age });
                   setPage(0);
                 }}
               >

@@ -13,6 +13,15 @@ export type Venue = {
   neighborhood?: string;
   age_range_min?: number;
   age_range_max?: number;
+  /**
+   * The youngest/college cohort. Kept separate from the numeric band on
+   * purpose: age_range stays clean numbers, and the display layer composes
+   * the two (see formatAgeDisplay). Never render a sub-21 number.
+   */
+  is_college_scene?: boolean;
+  /** Rooftop and general outdoor seating are deliberately separate signals. */
+  has_rooftop?: boolean;
+  has_outdoor?: boolean;
   avg_price_level?: 1 | 2 | 3 | 4 | 5 | null;
   music_type?: string | null;
   image_url?: string | null;
@@ -51,4 +60,6 @@ export type VenueQuery = {
   crowdLevel?: CrowdLevel;
   musicVibe?: string;
   search?: string;
+  rooftop?: boolean;
+  outdoor?: boolean;
 };
