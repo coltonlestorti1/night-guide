@@ -3,9 +3,10 @@
  * /join?source=qr on whatever origin this is deployed to. Outside AppLayout.
  */
 import { QRCodeSVG } from "qrcode.react";
+import { APP_URL } from "@/lib/constants";
 
 export default function Qr() {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const origin = APP_URL;
   const url = `${origin}/join?source=qr`;
 
   return (

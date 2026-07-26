@@ -17,6 +17,7 @@
 import { format } from "date-fns";
 import { getSupabase } from "@/lib/supabase";
 import { FriendProfile } from "@/lib/friends";
+import { APP_URL } from "@/lib/constants";
 
 /** Plans auto-age into "past" this many hours after planned_at.
  *  Duplicated in supabase/functions/plan-guest/index.ts — keep in sync. */
@@ -93,7 +94,9 @@ const RSVP_COLS = "id, plan_id, user_id, guest_name, rsvp, created_at";
 const PROFILE_COLS = "id, username, display_name, avatar_url";
 
 export function planShareUrl(plan: PlanRow): string {
-  return `${window.location.origin}/p/${plan.share_token}`;
+  // APP_URL, not window.location.origin — a plan created on the dev server was
+  // handing out localhost:8080 links that are dead for every recipient.
+  return `${APP_URL}/p/${plan.share_token}`;
 }
 
 /** Display name for one RSVP row — ENDZ user's name, else the guest name. */

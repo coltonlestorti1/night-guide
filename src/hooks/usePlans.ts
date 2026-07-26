@@ -39,8 +39,8 @@ export function usePlanFeed() {
 }
 
 export function useCreatePlan() {
-  const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.session?.user.id);
+  const invalidate = useInvalidatePlanViews();
   return useMutation({
     mutationFn: (input: {
       venueId: string;
@@ -51,13 +51,16 @@ export function useCreatePlan() {
       inviteFriendIds: string[];
     }): Promise<{ plan: PlanRow; invitesFailed: boolean }> =>
       createPlan({ creatorId: userId!, ...input }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["plans", userId] }),
+    // A plan created with show_on_map on must reach the pin without waiting
+    // for the next poll.
+    onSettled: invalidate,
   });
 }
 
 export function useSetRsvp() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.session?.user.id);
+  const invalidate = useInvalidatePlanViews();
   return useMutation({
     mutationFn: ({ planId, value }: { planId: string; value: PlanRsvpValue }) =>
       setMyRsvp(planId, userId!, value),
@@ -79,13 +82,13 @@ export function useSetRsvp() {
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(["plans", userId], ctx.prev);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["plans", userId] }),
+    // The map badge carries a going-count, so an RSVP has to refresh it too.
+    onSettled: invalidate,
   });
 }
 
 export function useUpdatePlan() {
-  const queryClient = useQueryClient();
-  const userId = useAuthStore((s) => s.session?.user.id);
+  const invalidate = useInvalidatePlanViews();
   return useMutation({
     mutationFn: ({
       planId,
@@ -94,16 +97,19 @@ export function useUpdatePlan() {
       planId: string;
       patch: { venue_id?: string; planned_at?: string; note?: string | null; hide_guest_list?: boolean; show_on_map?: boolean };
     }) => updatePlan(planId, patch),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["plans", userId] }),
+    // Editing time/venue/show_on_map must move the pin badge too.
+    onSettled: invalidate,
   });
 }
 
 export function useCancelPlan() {
-  const queryClient = useQueryClient();
-  const userId = useAuthStore((s) => s.session?.user.id);
+  const invalidate = useInvalidatePlanViews();
   return useMutation({
     mutationFn: (planId: string) => cancelPlan(planId),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["plans", userId] }),
+    // Every plan view, not just the Social feed: a cancelled plan was still
+    // showing as "Planning to go" on the venue sheet and as a badge on the pin
+    // until the 60s poll caught up.
+    onSettled: invalidate,
   });
 }
 

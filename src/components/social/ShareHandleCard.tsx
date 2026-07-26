@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Forward } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { Button } from "@/components/ui/button";
+import { APP_URL } from "@/lib/constants";
 
 export default function ShareHandleCard() {
   const profile = useAuthStore((s) => s.profile);
@@ -25,7 +26,7 @@ export default function ShareHandleCard() {
       try {
         await navigator.share({
           text: `I'm ${handle} on ENDZ — add me`,
-          url: window.location.origin,
+          url: APP_URL,
         });
       } catch {
         // User dismissed the share sheet — not an error
