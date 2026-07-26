@@ -511,7 +511,10 @@ const MapPage = () => {
             <DrawerDescription className="sr-only">Venue activity, hours, and actions.</DrawerDescription>
             {selected && (
               <div className="max-w-lg mx-auto w-full min-h-0 overflow-y-auto">
-                <VenuePreview venue={selected} onClose={() => setSelected(null)} defaultExpanded />
+                {/* Deliberately NOT defaultExpanded — the mobile sheet opens
+                    collapsed so tapping a pin stays a glance. Only the desktop
+                    panel and the standalone page open expanded. */}
+                <VenuePreview venue={selected} onClose={() => setSelected(null)} />
               </div>
             )}
           </DrawerContent>
