@@ -258,5 +258,30 @@
     "placeId": "ChIJR4DCmHZZwokRabhwmFJnhnE",
     "matchedName": "Otto's Shrunken Head",
     "address": "538 E 14th St, New York, NY 10009, USA"
+  },
+  "Phebe's Tavern": {
+    "placeId": "ChIJK3tvLJtZwokReGHk-DS62eY",
+    "matchedName": "Phebe's",
+    "address": "361 Bowery, New York, NY 10003, USA"
+  },
+  "Joyface": {
+    "placeId": "ChIJyVOaMJtZwokRdMND4_f_L-U",
+    "matchedName": "Joyface",
+    "address": "104 Loisaida Ave, New York, NY 10009, USA"
+  },
+  "St. Dymphna's": {
+    "placeId": "ChIJ5XAAap1ZwokRk-eUiFS2OaY",
+    "matchedName": "St. Dymphna's",
+    "address": "117 Avenue A, New York, NY 10009, USA"
+  },
+  "Nublu 151": {
+    "placeId": "ChIJ5UXURXdZwokR4sn8rm7f9Q4",
+    "matchedName": "Nublu",
+    "address": "151 Loisaida Ave, New York, NY 10009, USA"
+  },
+  "The Ready Rooftop": {
+    "placeId": "ChIJ-1HxQCdZwokRLHj8Dl1rVOo",
+    "matchedName": "The Ready Cantina",
+    "address": "112 E 11th St, New York, NY 10003, USA"
   }
 }
