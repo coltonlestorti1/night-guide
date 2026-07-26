@@ -1,13 +1,10 @@
 import { Venue } from "@/data/types";
 
-export function formatAgeRange(venue: Venue): string {
-  if (
-    typeof venue.age_range_min === "number" &&
-    typeof venue.age_range_max === "number"
-  )
-    return `${venue.age_range_min}\u2013${venue.age_range_max}`;
-  return "Not provided";
-}
+/**
+ * formatAgeRange was removed 2026-07-25. It had no callers and formatted any
+ * band verbatim, so calling it would have printed a sub-21 range and bypassed
+ * the rule below. Use formatAgeDisplay \u2014 it is the only supported path.
+ */
 
 /** Legal drinking age \u2014 no band starting below this ever renders. */
 const MIN_DISPLAYABLE_AGE = 21;

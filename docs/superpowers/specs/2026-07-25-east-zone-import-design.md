@@ -77,13 +77,20 @@ composes the string. Every surface calls it.
 only `College scene` renders. This is the enforcement point for "the string 18–21 never
 renders anywhere" — it holds even if bad data reaches the column later.
 
-The existing `formatAgeRange` is kept for its current callers and returns
-`"Not provided"` as it does today; `formatAgeDisplay` returns `null` when there is
-nothing to show, so `VenueStatTiles` can keep its "no permanent — placeholders" rule.
+`formatAgeDisplay` returns `null` when there is nothing to show, so
+`VenueStatTiles` keeps its "no permanent — placeholders" rule.
+
+**`formatAgeRange` was deleted.** Implementation found it had zero callers, and it
+formatted any band verbatim — a future caller would have printed a sub-21 range and
+walked straight past the guard above. Removing it leaves exactly one supported path.
 
 ## Surfaces
 
-**Cards** — `VenueStatTiles.tsx`. The `Ages` tile switches to `formatAgeDisplay`.
+**Cards** — two components, because they show different things. `BarCard` (list and
+Find-the-Move results) never displayed age at all, so it gets only compact
+`Rooftop` / `Outdoor` labels in its existing meta row next to 🎵 music.
+`VenueStatTiles.tsx` (venue detail + the tap-a-pin preview) is where age actually
+lives. The `Ages` tile switches to `formatAgeDisplay`.
 Rooftop and outdoor become two additional tiles in the same grid, **each with its own
 icon** — per §20's hard rule that rooftops are never lumped in with general outdoor
 seating. Tiles only render when true, matching the file's existing behavior.
@@ -131,6 +138,26 @@ noted below. **Colton should eyeball these before the paste.**
 Sanity-checked against neighbors already on the map: St. Dymphna's (117 Ave A) lands
 just south of Doc Holliday's (141 Ave A), as it should.
 
+### Finding: the existing 52 pins have inconsistent accuracy (NOT fixed here)
+
+Cross-checking surfaced a pre-existing problem in data that predates this work.
+Against OSM, the current entries drift by varying amounts:
+
+| Venue | In `venues.ts` | OSM (by name) | Drift |
+|---|---|---|---|
+| The Grafton | 40.7268, -73.9862 | 40.727249, -73.985335 | ~75 m |
+| Niagara Bar | 40.7264, -73.9816 | 40.725928, -73.983462 | ~160 m |
+| **Coyote Ugly** | 40.7283, -73.9854 | 40.732844, -73.985703 | **~500 m** |
+
+Coyote Ugly is listed near E 7th but is actually at 233 E 14th St. The drift is not a
+constant offset, so it can't be corrected in bulk — each pin needs checking.
+
+**Deliberately out of scope.** The 5 new venues use accurate coordinates; all 52
+existing pins are untouched. Moving live pins is Colton's call, and a side effect
+is that correctly-placed new venues sit beside drifted old ones — St. Dymphna's
+(117 Ave A) and Niagara (112 Ave A) are across the street from each other but will
+render ~160 m apart until the old data is corrected. Logged for its own gate.
+
 **Sub-neighborhoods:** St. Dymphna's → `Avenue A` and The Ready → `Upper East Village`
 reuse existing buckets. Phebe's needs a new `Bowery`; Joyface and Nublu need a new
 `Avenue C / Alphabet City`. Two new values, both accurate — better than forcing Ave C
@@ -168,8 +195,28 @@ Post-paste, the data appears with no redeploy.
 8. Typing "rooftop" in search surfaces The Ready.
 9. With the DDL unpasted, the app loads and behaves exactly as it does today.
 
+## Known gaps
+
+- **The SQL was never executed.** No local Postgres or Docker, and only the anon key
+  is available, so the staged block is hand-reviewed only. It opens with a pre-flight
+  `select` that reports whether each name-matched target row exists, because
+  `endz-seed-venues.sql` is stale (19 rows vs ~52 live) and the live spelling of
+  `Downtown Social` / `Wiggle Room` could not be confirmed from the repo. A name miss
+  makes that `UPDATE` a silent no-op.
+- **The 5 new venues have no Google enrichment.** `enrichment.json` is keyed by title
+  and refreshed by `scripts/enrich-venues.mjs`, so until that runs they have no
+  rating, open/closed state, happy hour, or specials. Every consumer already handles
+  `getEnrichment` returning undefined, so this degrades rather than breaks.
+- **No live signed-in verification.** Behavior is covered by a 30-assertion harness
+  over the real dataset (age composition incl. the sub-21 guard, filters, search,
+  vibe ranking), plus tsc and a production build. Nobody has clicked the UI.
+
 ## What Colton does on return
 
 1. Review this spec and the coordinate table.
-2. Paste the staged DDL + inserts from `~/Documents/endz/endz-schema.sql`.
-3. Decide merge / push.
+2. Run the **pre-flight** `select` in `~/Documents/endz/endz-schema.sql`; confirm all
+   5 rows report `found = true`, fixing any name that doesn't.
+3. Paste the rest of that block.
+4. Click through the map: rooftop/outdoor chips, Find the Vibe "Outside?", the Ages
+   tile on Phebe's and Downtown Social.
+5. Decide merge / push, and whether the coordinate drift above gets its own gate.
