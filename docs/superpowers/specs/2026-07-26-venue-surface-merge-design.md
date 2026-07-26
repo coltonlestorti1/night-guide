@@ -213,8 +213,15 @@ still navigate away from and back to the map.
 10. Exactly **one** Directions button and **one** Save affordance per screen, in
     every container.
 11. `grep -rn "fromMap" src` returns zero hits.
-12. `npx tsc --noEmit -p tsconfig.app.json` clean; production build clean; the
-    37-assertion behavior harness green.
+12. `npx tsc --noEmit -p tsconfig.app.json` clean; `npm run build` clean.
+
+**Note on the harness:** the Decision Log cites a "37-assertion behavior
+harness" as green on 2026-07-26, but it was never committed — `git log
+--diff-filter=A` shows the only committed test is `node scripts/enrich-venues.mjs
+test` (Places transform, July 6), and the repo has no test framework, no
+`*.test.*` files, and no test dependency. Criteria 1–11 are therefore verified by
+a **live browser matrix**, enumerated in the plan. Adding a real test runner is
+recommended but out of scope here.
 
 ---
 
