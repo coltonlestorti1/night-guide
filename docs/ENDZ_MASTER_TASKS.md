@@ -34,6 +34,7 @@ Decision Log as they're made.
 | 23 | "Share with anyone" plan card → clickable, clean link | NOT DISCUSSED (added 2026-07-21, Colton) | The CreatePlanSheet "Share with anyone" affordance is a **non-clickable info card** today (`src/components/social/CreatePlanSheet.tsx`). Make it **clickable → a clean, clear ENDZ plan link** (the `/p/:token` link, minted on create). Colton screenshot 2026-07-21. Relates to §21. → Decision Log |
 | 24 | Referral invite link with auto-friend on join | NOT DISCUSSED (added 2026-07-21, Colton) | The Social "Find friends" **Share/Copy your handle** (`@user` · "Send it to the crew", `ShareHandleCard`) should share an **ENDZ invite link** with copy like *"hey I'm on ENDZ — join"*, and **auto-friend the sender** when the recipient signs up via that link. New primitive: referral-token attribution → friendship on signup (touches invite link, `/join`/onboarding, friendships). Colton screenshot 2026-07-21. Relates to §15. → Decision Log |
 | 25 | "Your past events" archive in Social | NOT DISCUSSED (added 2026-07-21, Colton) | Plans **drop off the map/live surfaces after the night ends** (today: `planned_at + 6h`, no delete — rows persist) but Colton now wants a **"Your past events" history section in Social** listing plans you hosted/attended. **Reverses §21's deliberate "one-night ethos, no archive" decision** — needs a past-plans query (`planned_at < cutoff`, my plans) + a Social section + retention/visibility questions. Relates to §21 + §15. → Decision Log |
+| 26 | Downtown nightlife dataset + 5-zone expansion (source for rooftops/outdoor/age/hotspot-times) | INFO CAPTURED (added 2026-07-25, Colton); NOT DISCUSSED for build | Retained reference `docs/ENDZ_NIGHTLIFE_DATASET.md`: 40 verified venues + hand-made PDF backlog, cross-checked, organized into **5 general zones** (East · West · Meatpacking & Chelsea · Flatiron & Midtown · Brooklyn). Enriched per-venue: age display w/ **College scene** rule, drink prices/deals, music, activities, rooftop/outdoor/queer/table flags, happy-hour windows, occasion, 2-sentence descriptions. **Direct source for §20/§11/§18.** Import + College-scene tier + zone expansion all gate-blocked. → §26 |
 
 ---
 
@@ -698,6 +699,11 @@ Never present outdoor seating as available if it's seasonal, closed,
 weather-dependent, or unverified. (Verification/freshness display ties into the
 item-1-style verified/estimated/stale vocabulary.)
 
+**Source now exists (2026-07-25):** `docs/ENDZ_NIGHTLIFE_DATASET.md` carries
+per-venue **rooftop** and **outdoor** (backyard / beer-garden / open-air) flags
+for 40 verified venues plus a rooftop/outdoor rollup — the data this section was
+blocked on. Import still gated. See §26.
+
 ### 21. Group Plans
 **APPROVED 2026-07-19 (gate done; scope in
 `docs/superpowers/specs/2026-07-19-group-plans-design.md`).** Link-first plan
@@ -729,6 +735,42 @@ Store review and safety requirements?
 Likely MVP alternative (Colton's lean): share a venue · share a Find the Move
 result · lightweight group plan (§21) · comments later · DMs only after privacy
 + moderation are ready.
+
+### 26. Downtown Nightlife Dataset + 5-Zone Expansion (INFO / reference)
+**INFO CAPTURED 2026-07-25 (Colton) — this is a retained reference, NOT a build.
+Import gate applies.** File: `docs/ENDZ_NIGHTLIFE_DATASET.md`.
+
+Merges two sources: a **40-venue verified research set** (East Village,
+Greenwich Village, West Village, Meatpacking) + Colton's hand-made
+`~/Downloads/NYC NIGHTLIFE 2025.pdf` (wider footprint — LES, Chelsea/SoHo,
+Tribeca, Flatiron, NoHo, Midtown, Brooklyn). Cross-checked (research wins on
+facts, PDF on personal signal; conflicts flagged), then organized into **5
+general zones**: East · West · Meatpacking & Chelsea · Flatiron & Midtown ·
+Brooklyn. (PDF text pulled via macOS PDFKit/JXA — no poppler installed.)
+
+Enriched per-venue fields, ready to feed the app: **age display** (numeric band
+for all except the youngest cohort → **`College scene`** badge; mixed shows both,
+e.g. `College scene · 21–25`; the string "18–21" never renders; bands are
+heuristic estimates from crowd descriptions, flagged as such), **drink
+prices/deals** (only where sourced — no fabricated prices), specific music,
+activities, **rooftop / outdoor / queer-friendly / table-VIP / dance-floor /
+live-music** flags, **happy-hour windows** (feeds `HappyHourRail`), occasion
+index, clean 2-sentence descriptions + separate punchy taglines, and
+INTERNAL-only reputation flags ("bro-heavy" / "mid" — never render publicly).
+
+**Source-of-record for the venue attributes §20 (rooftop/outdoor), §11 (age),
+and §18 (Discover) were blocked on.** Gate-blocked follow-ons (none approved —
+each needs Colton's explicit OK):
+- Import verified venues into `src/data/venues.ts` (skip the 8 already present:
+  Doc Holliday's, The Library, Niagara, Wiggle Room, Downtown Social, KGB,
+  Paradise Lost, Mona's).
+- Add the **`College scene`** tier + numeric-band age display rule to the app.
+- Add the 5-zone taxonomy (today: East Village sub-neighborhoods only).
+- Rooftop/outdoor + happy-hour + occasion filters (§20).
+- Verify the PDF backlog venues before any of them ship.
+
+Extends (does not reverse) the 2026-07-15 "no new venues, focus on what we have"
+standing decision — Colton decides if/when to import. Related: §20, §11, §18.
 
 ---
 
@@ -766,4 +808,5 @@ _Append decisions here as features clear the discussion gate: date, feature, dec
 - 2026-07-21 — **Map-Plans Slice A GATE PASSED + BUILT** (`feat/map-plans`, NOT merged/pushed). Full gate discussion → **9 decisions locked:** scope = plan badge on pin + venue-sheet event detail + request-to-join; **host-approval gatekeeping** (not auto-join); **in-app request badge, no push** (§21's deferral held); approve→going; deny = soft (re-requestable, no tombstone); badge shows **host + "N going" count only**, attendee **names stay member-only** (consent enforced in the `plans_on_map` rpc, not just UI); opt-in **off by default** + create/edit toggle; **ghost mode suppresses** the plan from friends; **friends-of-friends deferred to Slice D**. Spec `docs/superpowers/specs/2026-07-21-map-plans-slice-a-design.md`, plan `docs/superpowers/plans/2026-07-21-map-plans-slice-a.md`. Built **inline** (7 code tasks, tsc+build green each): `plans.show_on_map` + `'requested'` rsvp state + new RLS (`can_request_join`, friend-request INSERT, host-approve UPDATE, self-approval guard, `is_plan_member` excl-requested) + security-definer `plans_on_map()` (curated cols); lib+hooks; CreatePlanSheet toggle; distinct violet clock badge on pins; `PlansHereRow` on the venue sheet; host Requests(N) approve/deny + Social "N to approve" badge. Self-review caught+fixed: profiles col is `display_name` not `name` (pre-paste, in DDL); `'requested'` rows leaking into §21 "Who's in" (excluded at source); innerHTML→namespaced SVG; 42703 pre-DDL grace. **DDL pasted by Colton (2026-07-21, "success, no rows returned").** Pending: signed-in live acceptance → optional /code-review → merge decision. Slices B (personal "planning to go" signal), C (approved-list), D (FoF tier) still deferred to their own gates.
 - 2026-07-21 — **Item §25 added + map-plans expiry clarified** (Colton, mid-Slice-A live test). **#25 "Your past events" archive in Social** — NOT DISCUSSED, gate applies; **explicitly reverses §21's "one-night ethos, no archive" decision.** Plans already persist in the DB (expiry is a time filter, not a delete), so a past-events history is a query + a Social section. **Map-plans expiry confirmed:** a plan stays on the map through the night and drops after `planned_at + 6h` (a 9pm plan → gone ~3am) — matches Colton's "goes away only after the night ends"; if he later wants a fixed night boundary (e.g. 5am) instead of +6h it's a one-line change to `plans_on_map()` + `PLAN_EXPIRE_HOURS`. Also this session: **tap a "Planning to go" row → centered detail card** shipped as part of Slice A (members/hosts get the full PlanDetailSheet, non-members a light request card).
 - 2026-07-21 — **RSVP write blocker FIXED + Host guest-list editing SHIPPED (merged + PUSHED to production, Colton OK'd).** Session 8. (1) **RSVP 42501 fix:** authenticated RSVP/approve writes failed `42501 permission denied for table plan_rsvps` — root-caused (via a `set role authenticated` SQL repro; Postgres printed the HINT) to the upsert/host-approve UPDATE needing **table-level SELECT** that §21 revoked to hide `guest_secret`. Grants were exhausted (re-granting table SELECT re-exposes guest_secret). Fix = reworked `setMyRsvp`→`set_my_rsvp()` and `approveRequest`→`approve_join_request()` as **security-definer RPCs** (§21 pattern); DDL pasted, DB-verified. (2) **Host guest-list editing** (§21 follow-up, full gate → spec+plan `docs/superpowers/*/2026-07-21-plan-guest-editing*`, subagent-driven build, per-task + opus whole-branch review, live-verified): host-only in PlanDetailSheet — full roster incl. **"Invited · no answer yet"**, **× remove w/ deferred-delete Undo**, inline **"+ Invite friends"** add-on-tap (excludes roster + open join-requesters), plus a **"Share with anyone"** link affordance (Colton's mid-flow request). No DDL (reuses delete/insert RLS+grants). **Live-verify caught+fixed:** Undo never worked — the sonner toast is outside a MODAL dialog so Radix blanked outside pointer events; fixed via `modal={false}` + a **portaled dim backdrop** + toaster outside-click guard + commit-on-timer-not-close. Gotcha logged: app SW (`/sw.js`) serves stale JS — unregister before live-testing edits. Merged `feat/plan-guest-editing`→main `--no-ff` (`0287cd2`), tsc+build green, **pushed `b468418..0287cd2`** → Vercel deploy. Cross-account acceptance (friend responds / removal-loses-access) still open for Colton's 2nd account. Deferred to-dos §23–25 unchanged.
+- 2026-07-25 — **§26 Downtown nightlife dataset CAPTURED (info-only; no code / DB / deploy).** New retained reference `docs/ENDZ_NIGHTLIFE_DATASET.md`. Built from two sources Colton supplied: a 40-venue verified research set (East Village, Greenwich Village, West Village, Meatpacking) + his hand-made `NYC NIGHTLIFE 2025.pdf` (wider footprint — LES/Chelsea/SoHo/Tribeca/Flatiron/NoHo/Midtown/Brooklyn). PDF text extracted via macOS PDFKit/JXA (no poppler). Cross-checked the two (research wins on facts, PDF on personal signal); resolved all flagged conflicts — Wiggle Room & The Library = East, Red Lion = West, and via a web check **Carroll Place (157 Bleecker) is a separate venue from Red Lion (151) and is now closed → excluded**; **Jean's moved to East (NoHo)**. Organized into **5 general zones** (Colton's call: East / West / Meatpacking & Chelsea / Flatiron & Midtown / Brooklyn). Enriched all 40 verified venues with age display, drink prices/deals, music, activities, rooftop/outdoor/queer/table/dance/live flags, happy-hour windows, occasion index, 2-sentence descriptions + taglines, internal-only reputation flags. **Age display rule locked:** numeric band for everyone EXCEPT the youngest/college cohort → **`College scene`** badge (mixed shows both, e.g. `College scene · 21–25`); "18–21" never renders — Colton wants the college segment without stating the sub-21 age; bands are heuristic, flagged. **Directly unblocks the venue attributes §20/§11/§18 needed.** Everything **gate-blocked** for build (import, College-scene tier, zone taxonomy, filters, backlog verification) — extends the "no new venues, focus on what we have" standing decision. Memory: `endz-nightlife-dataset.md`.
 - 2026-07-25 — **§23 clean plan-link SHIPPED (merged + pushed, Colton OK'd via "get everything complete").** Chose approach A (the create-sheet "Share with anyone" card stays an info hint — no link exists pre-creation; the "clickable clean link" work lands on the post-create "Plan made" step). The raw-URL box → a **tappable copy chip**: link icon + cleaned URL (drops `https://`, single truncated line) + Copy/Copied ✓; redundant "Copy link" button folded in, Share stays full-width. Reuses copyLink/shareLink (no logic change). Live-verified (clean chip, tap → Copied ✓). Merged `feat/plan-link-clickable`→main `--no-ff`, tsc+build green, pushed → Vercel. §23 CLOSED. (Browser gotcha reconfirmed: the stuck MCP tab needed a fresh tab; SW still serves stale JS — unregister before testing.)
