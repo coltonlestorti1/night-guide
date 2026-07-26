@@ -22,6 +22,12 @@ export type Venue = {
   /** Rooftop and general outdoor seating are deliberately separate signals. */
   has_rooftop?: boolean;
   has_outdoor?: boolean;
+  /**
+   * What the outdoor space actually is ("Patio", "Backyard"). Curated — set it
+   * only from first-hand knowledge or a real source, never a guess. Overrides
+   * the term derived from Google's summary. See outdoorKind() in venueTraits.
+   */
+  outdoor_kind?: string;
   avg_price_level?: 1 | 2 | 3 | 4 | 5 | null;
   music_type?: string | null;
   image_url?: string | null;

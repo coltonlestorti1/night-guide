@@ -60,6 +60,8 @@ const OUTDOOR_KINDS = ["backyard", "beer garden", "patio", "terrace", "courtyard
  */
 export function outdoorKind(v: Venue): string | null {
   if (!hasOutdoorSeating(v)) return null;
+  // Curated first-hand knowledge beats anything inferred from Google.
+  if (v.outdoor_kind) return v.outdoor_kind;
   const summary = getEnrichment(v.title)?.editorialSummary?.toLowerCase();
   if (!summary) return null;
   // Longest first, so "beer garden" wins over "garden".

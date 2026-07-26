@@ -11,7 +11,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "the-grafton",
     title: "The Grafton",
-    description: "Chill neighborhood Irish pub. Launch-night anchor.",
+    description: "Chill neighborhood Irish pub with a front and back patio. Launch-night anchor.",
     latitude: 40.7268,
     longitude: -73.9862,
     serves_alcohol: true,
@@ -21,6 +21,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     age_range_max: 30,
     avg_price_level: 2,
     music_type: "Mixed",
+    // Front and back patio — Colton, first-hand (2026-07-26). Google flags
+    // Grafton as outdoor but its summary never names the space.
+    outdoor_kind: "Patio",
   },
   {
     id: "standings",
