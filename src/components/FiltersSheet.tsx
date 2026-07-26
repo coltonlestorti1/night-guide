@@ -20,6 +20,9 @@ const CATEGORIES: { value: VenueCategory; label: string }[] = [
   { value: "lounge", label: "Lounges" },
 ];
 
+/** A genre must narrow to more than one venue to earn a chip. */
+const MIN_GENRE_VENUES = 2;
+
 const PRICES = [
   { value: 1, label: "$" },
   { value: 2, label: "$$" },
@@ -74,17 +77,31 @@ export default function FiltersSheet({
   const anyRooftop = venues.some(hasRooftop);
   const anyOutdoor = venues.some(hasOutdoorSeating);
 
-  // Genres come from the venues actually loaded — a hardcoded list had "Latin"
-  // in it, which matched nothing.
-  const genres = [
-    ...new Set(
-      venues
-        .map((v) => v.music_type)
-        .filter((m): m is string => !!m)
-        .flatMap((m) => m.split("/").map((p) => p.trim()))
-        .filter(Boolean),
-    ),
-  ].sort();
+  /**
+   * Genres come from the venues actually loaded — the old hardcoded list had
+   * "Latin" in it, which matched nothing.
+   *
+   * Two rules keep this useful rather than noisy. Splitting music_type on "/"
+   * yields 18 tokens across the 18 venues that have any music at all, and 14 of
+   * them match exactly one venue — an option that returns a single result isn't
+   * a filter, it's a shortcut to one bar. So a genre needs at least
+   * MIN_GENRE_VENUES matches. "Mixed" is dropped separately: it means
+   * "unspecified", so filtering by it says nothing.
+   *
+   * This gets richer on its own as §28 crowd-sources music from check-ins.
+   */
+  const counts = new Map<string, number>();
+  for (const v of venues) {
+    if (!v.music_type) continue;
+    for (const g of v.music_type.split("/").map((p) => p.trim()).filter(Boolean)) {
+      if (g.toLowerCase() === "mixed") continue;
+      counts.set(g, (counts.get(g) ?? 0) + 1);
+    }
+  }
+  const genres = [...counts.entries()]
+    .filter(([, n]) => n >= MIN_GENRE_VENUES)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([g]) => g);
 
   const categoriesWith = CATEGORIES.filter((c) => venues.some((v) => v.category === c.value));
   const pricesWith = PRICES.filter((p) => venues.some((v) => v.avg_price_level === p.value));
