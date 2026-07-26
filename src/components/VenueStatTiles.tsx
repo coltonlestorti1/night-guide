@@ -4,8 +4,9 @@
  * check-in data starts populating those fields.
  */
 import { Venue } from "@/data/types";
-import { Music2, Ticket, DollarSign, Users, Zap } from "lucide-react";
+import { Music2, Ticket, DollarSign, Users, Zap, Building2, Trees } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatAgeDisplay } from "@/lib/format";
 
 const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
 
@@ -14,8 +15,13 @@ const tilesFor = (v: Venue) => {
   if (v.buzz_score != null) tiles.push({ label: "Buzz", icon: <Zap className="h-3 w-3" />, value: String(v.buzz_score), accent: true });
   if (v.music_type) tiles.push({ label: "Music", icon: <Music2 className="h-3 w-3" />, value: v.music_type });
   if (v.avg_price_level) tiles.push({ label: "Price", icon: <DollarSign className="h-3 w-3" />, value: "$".repeat(v.avg_price_level) });
-  if (v.age_range_min && v.age_range_max) tiles.push({ label: "Ages", icon: <Users className="h-3 w-3" />, value: `${v.age_range_min}–${v.age_range_max}` });
+  const ages = formatAgeDisplay(v);
+  if (ages) tiles.push({ label: "Ages", icon: <Users className="h-3 w-3" />, value: ages });
   if (v.cover_charge) tiles.push({ label: "Cover", icon: <Ticket className="h-3 w-3" />, value: v.cover_charge });
+  // Rooftop and outdoor stay separate tiles with separate icons — a rooftop is
+  // never presented as generic outdoor seating, or vice versa.
+  if (v.has_rooftop) tiles.push({ label: "Rooftop", icon: <Building2 className="h-3 w-3" />, value: "Yes" });
+  if (v.has_outdoor) tiles.push({ label: "Outdoor", icon: <Trees className="h-3 w-3" />, value: "Yes" });
   return tiles;
 };
 

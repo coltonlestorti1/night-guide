@@ -1,4 +1,4 @@
-import { ChevronRight, Bookmark, Flame, Star } from "lucide-react";
+import { ChevronRight, Bookmark, Flame, Star, Building2, Trees } from "lucide-react";
 import { Venue } from "@/data/types";
 import { useSavedStore } from "@/store/saved";
 import { useVenueActivity } from "@/hooks/useCheckIns";
@@ -82,6 +82,13 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
               <span className="text-primary font-semibold">{hereCount} here now</span>
             )}
             {venue.music_type && <span className="truncate">🎵 {venue.music_type}</span>}
+            {/* Separate signals, separate labels — a roof is not a backyard. */}
+            {venue.has_rooftop && (
+              <span className="inline-flex items-center gap-1"><Building2 className="h-3 w-3" /> Rooftop</span>
+            )}
+            {venue.has_outdoor && (
+              <span className="inline-flex items-center gap-1"><Trees className="h-3 w-3" /> Outdoor</span>
+            )}
             {venue.venue_stats?.crowd_level && (
               <span className="inline-flex items-center gap-1">
                 <span className={cn("h-1.5 w-1.5 rounded-full", crowdDot[venue.venue_stats.crowd_level])} />

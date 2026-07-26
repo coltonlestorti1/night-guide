@@ -1,5 +1,5 @@
 /**
- * East Village (NYC) nightlife dataset — 19 venues.
+ * East Village (NYC) nightlife dataset — 57 venues.
  * This file is the single source of truth for demo venue data.
  * Sourced from ~/Documents/endz/endz-seed-venues.sql (the beachhead's
  * real venue list). No fabricated activity stats or images — see
@@ -76,6 +76,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     age_range_max: 30,
     avg_price_level: 1,
     music_type: "Rock",
+    has_outdoor: true,
   },
   {
     id: "lucys-bar",
@@ -100,8 +101,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     serves_alcohol: true,
     category: "bar",
     neighborhood: "Avenue A",
-    age_range_min: 21,
-    age_range_max: 30,
+    // 21–30 -> 23–35 per the 2026-07-25 research pass (skews older than logged).
+    age_range_min: 23,
+    age_range_max: 35,
     avg_price_level: 1,
     music_type: "Country",
   },
@@ -129,7 +131,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     category: "bar",
     neighborhood: "Avenue A",
     age_range_min: 21,
-    age_range_max: 28,
+    age_range_max: 30,
     avg_price_level: 1,
     music_type: "Mixed",
   },
@@ -451,10 +453,15 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "wiggle-room",
     title: "Wiggle Room",
+    description: "Two-level dance bar, DJs Thu–Sat, no cover cited.",
     latitude: 40.7226597,
     longitude: -73.9863316,
     serves_alcohol: true,
     category: "club",
+    neighborhood: "Avenue A",
+    age_range_min: 21,
+    age_range_max: 27,
+    music_type: "DJ / House / Hip-hop",
   },
   {
     id: "96-tears",
@@ -556,6 +563,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     category: "bar",
     age_range_min: 21,
     age_range_max: 25,
+    is_college_scene: true,
   },
   {
     id: "otto-s-shrunken-head",
@@ -570,5 +578,82 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
     avg_price_level: 1,
     age_range_min: 21,
     age_range_max: 28,
+  },
+
+  /**
+   * East Village additions, 2026-07-25 — the five verified venues from
+   * docs/ENDZ_NIGHTLIFE_DATASET.md that weren't already here. Coordinates
+   * geocoded from street addresses (OSM), not copied from the older entries
+   * above, whose accuracy varies. Age bands are the dataset's heuristic
+   * estimates from crowd descriptions, not sourced ages.
+   */
+  {
+    id: "phebes-tavern",
+    title: "Phebe's Tavern",
+    description: "Sports bar by day, DJ-and-dance-floor student party on weekends.",
+    neighborhood: "Bowery",
+    latitude: 40.726876,
+    longitude: -73.991353,
+    serves_alcohol: true,
+    category: "bar",
+    avg_price_level: 2,
+    age_range_min: 21,
+    age_range_max: 25,
+    is_college_scene: true,
+    music_type: "DJ / Top-40",
+  },
+  {
+    id: "joyface",
+    title: "Joyface",
+    description: "1970s rec-room lounge with disco-forward DJs and an early Saturday party.",
+    neighborhood: "Avenue C / Alphabet City",
+    latitude: 40.723918,
+    longitude: -73.978791,
+    serves_alcohol: true,
+    category: "lounge",
+    age_range_min: 21,
+    age_range_max: 27,
+    music_type: "Disco / Funk / Dance",
+  },
+  {
+    id: "st-dymphnas",
+    title: "St. Dymphna's",
+    description: "Easygoing Irish pub with a pool table, Tuesday trivia, and a backyard.",
+    neighborhood: "Avenue A",
+    latitude: 40.726384,
+    longitude: -73.983473,
+    serves_alcohol: true,
+    category: "bar",
+    age_range_min: 23,
+    age_range_max: 33,
+    music_type: "Pub / Irish Jukebox",
+    has_outdoor: true,
+  },
+  {
+    id: "nublu-151",
+    title: "Nublu 151",
+    description: "Live-music and electronic/jazz club — home of Producer Mondays.",
+    neighborhood: "Avenue C / Alphabet City",
+    latitude: 40.725651,
+    longitude: -73.97802,
+    serves_alcohol: true,
+    category: "club",
+    age_range_min: 21,
+    age_range_max: 30,
+    music_type: "Jazz / Electronic / Live",
+  },
+  {
+    id: "the-ready-rooftop",
+    title: "The Ready Rooftop",
+    description: "Moxy rooftop with frozen cocktails, beer pong, and daytime-party energy.",
+    neighborhood: "Upper East Village",
+    latitude: 40.731407,
+    longitude: -73.989437,
+    serves_alcohol: true,
+    category: "lounge",
+    age_range_min: 21,
+    age_range_max: 28,
+    music_type: "DJ / Party",
+    has_rooftop: true,
   },
 ];
