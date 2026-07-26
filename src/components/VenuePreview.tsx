@@ -4,25 +4,42 @@
  * music, and the primary actions. Self-contained: owns its saved state so the
  * host only supplies the venue and a close handler.
  */
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { MapPin, X, Bookmark, Flame, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MapPin, X, ArrowLeft, ChevronDown, Bookmark, Flame, Star } from "lucide-react";
 import { Venue } from "@/data/types";
 import { logEvent } from "@/lib/analytics";
 import { useSavedStore } from "@/store/saved";
+import { useAuthStore } from "@/store/auth";
+import { hasMoreInfo } from "@/lib/venueTraits";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
 import DirectionsButton from "@/components/DirectionsButton";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
+import VenueMoreInfo from "@/components/VenueMoreInfo";
 import FriendsHereRow from "@/components/FriendsHereRow";
 import PlansHereRow from "@/components/PlansHereRow";
 
-export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose: () => void }) {
-  const navigate = useNavigate();
+export default function VenuePreview({
+  venue,
+  onClose,
+  defaultExpanded = false,
+  closeIcon = "close",
+}: {
+  venue: Venue;
+  onClose: () => void;
+  /** Desktop panel and the full page open expanded — they have the room, and
+      on the page the user navigated here deliberately. */
+  defaultExpanded?: boolean;
+  /** The page reuses onClose as "go back", so the glyph has to follow. */
+  closeIcon?: "close" | "back";
+}) {
   const { ids: savedIds, toggle: toggleSaved } = useSavedStore();
   const saved = savedIds.includes(venue.id);
+  const signedIn = useAuthStore((s) => s.status) === "signedIn";
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const showMore = hasMoreInfo(venue, signedIn);
 
   // One venue_open per venue surfaced — the single choke point for every open
   // path (map pin, search, list, Find-the-move pick, Social spotlight).
@@ -49,9 +66,13 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
         <button
           onClick={onClose}
           className="absolute top-2 right-2 h-9 w-9 rounded-full bg-black/45 backdrop-blur flex items-center justify-center hover:bg-black/65 transition-colors"
-          aria-label="Close"
+          aria-label={closeIcon === "back" ? "Back" : "Close"}
         >
-          <X className="h-4 w-4 text-white" />
+          {closeIcon === "back" ? (
+            <ArrowLeft className="h-4 w-4 text-white" />
+          ) : (
+            <X className="h-4 w-4 text-white" />
+          )}
         </button>
         <div className="absolute top-2 left-2 flex gap-1.5">
           {venue.hot_tonight && (
@@ -105,7 +126,7 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
       <CheckInCard venueId={venue.id} />
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-2 mt-4">
+      <div className="mt-4">
         <DirectionsButton
           title={venue.title}
           venueId={venue.id}
@@ -113,13 +134,29 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
           longitude={venue.longitude}
           className="h-11 rounded-xl w-full"
         />
-        {/* fromMap tells VenueDetail's back button to reopen THIS sheet rather
-            than dropping the user on a bare map. Other entry points (Discover,
-            Saved, Plans) omit it and keep plain history-back. */}
-        <Button className="h-11 rounded-xl" onClick={() => navigate(`/venue/${venue.id}`, { state: { fromMap: true } })}>
-          View Details
-        </Button>
       </div>
+
+      {/* The deeper layer, in place — this replaced a "View Details" button
+          that navigated to /venue/:id and re-rendered most of this component.
+          Hidden entirely when there is nothing behind it (hasMoreInfo). */}
+      {showMore && (
+        <div className="mt-2">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className="w-full h-11 rounded-xl bg-secondary/60 hover:bg-secondary flex items-center justify-between px-4 text-sm font-medium transition-colors"
+          >
+            <span>{expanded ? "Less info" : "More info"}</span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform",
+                expanded && "rotate-180",
+              )}
+            />
+          </button>
+          {expanded && <VenueMoreInfo venue={venue} />}
+        </div>
+      )}
     </div>
   );
 }
