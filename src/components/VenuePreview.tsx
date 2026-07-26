@@ -11,7 +11,6 @@ import { logEvent } from "@/lib/analytics";
 import { useSavedStore } from "@/store/saved";
 import { useAuthStore } from "@/store/auth";
 import { hasMoreInfo } from "@/lib/venueTraits";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
@@ -46,6 +45,13 @@ export default function VenuePreview({
   useEffect(() => {
     logEvent("venue_open", { venue_id: venue.id, category: venue.category });
   }, [venue.id, venue.category]);
+
+  // The sheet is not remounted when a different venue is selected (same JSX
+  // position, no key), so the previous venue's expanded state would otherwise
+  // carry over. Reset per venue so defaultExpanded actually governs each one.
+  useEffect(() => {
+    setExpanded(defaultExpanded);
+  }, [venue.id, defaultExpanded]);
 
   return (
     <div className="px-4 pt-2 pb-6 w-full animate-slide-up">
