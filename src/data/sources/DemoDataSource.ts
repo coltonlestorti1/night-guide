@@ -20,7 +20,10 @@ export function filterVenues(venues: Venue[], q: VenueQuery): Venue[] {
       if (!q.types.some((t) => venueTypes.includes(t))) return false;
     }
     if (q.crowdLevel && v.venue_stats?.crowd_level !== q.crowdLevel) return false;
-    if (q.musicVibe && v.music_type && !v.music_type.toLowerCase().includes(q.musicVibe.toLowerCase())) return false;
+    // A venue with no music_type used to pass straight through this guard, so
+    // filtering by "Latin" returned 38 venues and none of them were Latin.
+    // Unknown music is now excluded rather than assumed to match.
+    if (q.musicVibe && !v.music_type?.toLowerCase().includes(q.musicVibe.toLowerCase())) return false;
     if (q.priceMin != null && (v.avg_price_level ?? 0) < q.priceMin) return false;
     if (q.priceMax != null && (v.avg_price_level ?? 5) > q.priceMax) return false;
     if (q.rooftop && !hasRooftop(v)) return false;

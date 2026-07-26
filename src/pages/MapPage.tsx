@@ -5,7 +5,7 @@
  */
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useFilterStore } from "@/store/filters";
+import { useFilterStore, activeFilterCount, HOT_MIN_ACTIVITY } from "@/store/filters";
 import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
@@ -19,12 +19,13 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  List, X, MapIcon, Search, Flame, Sparkles, Music, Wine, Bookmark, Building2, Trees
+  List, X, MapIcon, Search, Flame, Sparkles, Wine, Bookmark, Clock, SlidersHorizontal
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import VibeFinder from "@/components/VibeFinder";
+import FiltersSheet from "@/components/FiltersSheet";
 import VenuePreview from "@/components/VenuePreview";
 import OutTonightToggle from "@/components/OutTonightToggle";
 import OutTonightPrompt from "@/components/OutTonightPrompt";
@@ -35,25 +36,18 @@ import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 import { getEnrichment, computeOpenState, getHappyHourState } from "@/data/enrichment";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
 
-const PRIMARY_FILTERS: { label: string; value: VenueCategory | "all" | "hot" | "music" | "vibe-finder" | "happy-hour" | "saved" | "rooftop" | "outdoor"; Icon?: React.ComponentType<{ className?: string }> }[] = [
+const PRIMARY_FILTERS: { label: string; value: "all" | "happy-hour" | "saved" | "open-now" | "hot" | "vibe-finder"; Icon?: React.ComponentType<{ className?: string }> }[] = [
   { label: "Find the move", value: "vibe-finder", Icon: Sparkles },
   { label: "All", value: "all" },
-  { label: "Saved", value: "saved", Icon: Bookmark },
+  { label: "Open now", value: "open-now", Icon: Clock },
   { label: "Happy hour", value: "happy-hour", Icon: Wine },
-  // Rooftop and outdoor are deliberately two chips, not one "outside" chip —
-  // a rooftop is a different promise than a backyard.
-  { label: "Rooftop", value: "rooftop", Icon: Building2 },
-  { label: "Outdoor", value: "outdoor", Icon: Trees },
-  { label: "Bars", value: "bar" },
-  { label: "Clubs", value: "club" },
-  { label: "Lounges", value: "lounge" },
+  { label: "Saved", value: "saved", Icon: Bookmark },
+  // Hot Tonight renders only when live check-ins actually make a venue hot —
+  // it used to compare against venue_stats, which nothing populates, so it
+  // emptied the map every time.
   { label: "Hot Tonight", value: "hot", Icon: Flame },
-  { label: "Music", value: "music", Icon: Music },
 ];
 
-// Keep in sync with the music genres that actually exist in the venue data —
-// a vibe chip with zero matches is a dead-end filter.
-const MUSIC_VIBES = ["Rock", "Pop", "Jazz", "Indie", "Country", "Latin", "Mixed"];
 
 /* ── Header ────────────────────────────────── */
 const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => void }) => {
@@ -145,39 +139,46 @@ const QuickInfoInline = ({ venue }: { venue: Venue }) => {
 };
 
 /* ── Filter chips ──────────────────────────── */
-const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, savedActive, onSaved, rooftopActive, onRooftop, outdoorActive, onOutdoor, showRooftop, showOutdoor }: { count: number; hasFilters: boolean; onVibeFinder: () => void; hhActive: boolean; onHappyHour: () => void; savedActive: boolean; onSaved: () => void; rooftopActive: boolean; onRooftop: () => void; outdoorActive: boolean; onOutdoor: () => void; showRooftop: boolean; showOutdoor: boolean }) => {
-  const { categories, crowdLevel, musicVibe, set, reset } = useFilterStore();
-  const [musicOpen, setMusicOpen] = useState(false);
+/**
+ * Four decisions you'd make standing on a corner, plus Find the move and a
+ * Filters button. Everything else moved into FiltersSheet (§27) — the row had
+ * reached 11 chips with only ~4 visible on a phone.
+ */
+const FilterChips = ({
+  count,
+  onVibeFinder,
+  onOpenFilters,
+  showHot,
+  filterCount,
+}: {
+  count: number;
+  onVibeFinder: () => void;
+  onOpenFilters: () => void;
+  showHot: boolean;
+  filterCount: number;
+}) => {
+  const f = useFilterStore();
+  const { set, reset } = f;
 
-  // Same rule as MUSIC_VIBES: a chip that can never match anything is a
-  // dead-end filter, so it doesn't render at all.
-  const chips = PRIMARY_FILTERS.filter(
-    (f) => (f.value !== "rooftop" || showRooftop) && (f.value !== "outdoor" || showOutdoor),
-  );
+  const chips = PRIMARY_FILTERS.filter((c) => c.value !== "hot" || showHot);
 
   const isActive = (v: string) => {
-    if (v === "all") return categories.length === 0 && !crowdLevel && !musicVibe;
-    if (v === "hot") return crowdLevel === "high";
-    if (v === "music") return !!musicVibe;
+    if (v === "all") return filterCount === 0;
     if (v === "vibe-finder") return false;
-    if (v === "happy-hour") return hhActive;
-    if (v === "saved") return savedActive;
-    if (v === "rooftop") return rooftopActive;
-    if (v === "outdoor") return outdoorActive;
-    return categories.includes(v as VenueCategory);
+    if (v === "happy-hour") return f.happyHour;
+    if (v === "saved") return f.saved;
+    if (v === "open-now") return f.openNow;
+    if (v === "hot") return f.hot;
+    return false;
   };
 
   const handle = (v: string) => {
     if (v === "vibe-finder") return onVibeFinder();
-    if (v === "happy-hour") return onHappyHour();
-    if (v === "saved") return onSaved();
-    if (v === "rooftop") return onRooftop();
-    if (v === "outdoor") return onOutdoor();
     if (v === "all") return reset();
-    if (v === "hot") return set({ crowdLevel: crowdLevel === "high" ? undefined : "high" });
-    if (v === "music") return setMusicOpen((o) => !o);
-    const cat = v as VenueCategory;
-    set({ categories: categories.includes(cat) ? categories.filter((c) => c !== cat) : [...categories, cat] });
+    if (v === "happy-hour") return set({ happyHour: !f.happyHour });
+    if (v === "saved") return set({ saved: !f.saved });
+    if (v === "open-now") return set({ openNow: !f.openNow });
+    if (v === "hot") return set({ hot: !f.hot });
   };
 
   return (
@@ -190,12 +191,12 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, s
             WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
           }}
         >
-          {chips.map((f) => {
-            const active = isActive(f.value);
+          {chips.map((c) => {
+            const active = isActive(c.value);
             return (
               <button
-                key={f.value}
-                onClick={() => handle(f.value)}
+                key={c.value}
+                onClick={() => handle(c.value)}
                 className={cn(
                   "shrink-0 inline-flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
                   active
@@ -204,36 +205,37 @@ const FilterChips = ({ count, hasFilters, onVibeFinder, hhActive, onHappyHour, s
                 )}
                 aria-pressed={active}
               >
-                {f.Icon && <f.Icon className="h-4 w-4" />}
-                {f.label}
-                {f.value === "music" && musicVibe ? `: ${musicVibe}` : ""}
+                {c.Icon && <c.Icon className="h-4 w-4" />}
+                {c.label}
               </button>
             );
           })}
-        </div>
 
-        {musicOpen && (
-          <div className="mt-2 flex flex-wrap gap-2 p-2 rounded-2xl glass animate-fade-in">
-            {MUSIC_VIBES.map((v) => (
-              <button
-                key={v}
-                onClick={() => { set({ musicVibe: musicVibe === v ? undefined : v }); }}
-                className={cn(
-                  "text-xs px-3 py-1 rounded-full border transition-colors",
-                  musicVibe === v ? "bg-primary text-primary-foreground border-transparent" : "bg-secondary border-border"
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        )}
+          <button
+            onClick={onOpenFilters}
+            className={cn(
+              "shrink-0 inline-flex items-center gap-1.5 text-sm px-3.5 py-1.5 rounded-full border transition-all whitespace-nowrap",
+              filterCount > 0
+                ? "bg-primary text-primary-foreground border-transparent shadow-glow"
+                : "bg-card/80 backdrop-blur-xl text-foreground border-border/60 hover:bg-secondary"
+            )}
+            aria-label={filterCount > 0 ? `Filters, ${filterCount} active` : "Filters"}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+            {filterCount > 0 && (
+              <span className="ml-0.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-background/25 text-[11px] font-semibold inline-flex items-center justify-center">
+                {filterCount}
+              </span>
+            )}
+          </button>
+        </div>
 
         <div className="flex items-center justify-between mt-2 px-1">
           <span className="text-xs text-muted-foreground">
             <span className="text-foreground font-semibold">{count}</span> spots found
           </span>
-          {hasFilters && (
+          {(filterCount > 0 || f.search) && (
             <button onClick={reset} className="text-xs text-primary flex items-center gap-1 hover:underline">
               <X className="h-3 w-3" /> Clear filters
             </button>
@@ -253,20 +255,16 @@ const MapPage = () => {
   const [selected, setSelected] = useState<Venue | null>(null);
   const [view, setView] = useState<"map" | "list">("map");
   const [vibeOpen, setVibeOpen] = useState(false);
-  const [hhFilter, setHhFilter] = useState(false);
-  const [savedFilter, setSavedFilter] = useState(false);
-  const [rooftopFilter, setRooftopFilter] = useState(false);
-  const [outdoorFilter, setOutdoorFilter] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const savedIds = useSavedStore((s) => s.ids);
 
-  const hasFilters =
-    filters.categories.length > 0 || !!filters.crowdLevel || !!filters.musicVibe || !!filters.search;
+  const filterCount = activeFilterCount(filters);
 
   const baseQuery = {
     categories: filters.categories.length > 0 ? filters.categories : undefined,
-    crowdLevel: filters.crowdLevel,
     musicVibe: filters.musicVibe,
     search: filters.search,
+    priceMax: filters.priceMax,
   };
 
   const { data, isLoading, isError, refetch } = useVenues({
@@ -309,19 +307,32 @@ const MapPage = () => {
 
   // 🥂 chip narrows to active happy hours; 🔖 Saved chip narrows to bookmarked
   // venues. Both stack (AND) and are client-side (saved ids live on-device).
-  let displayVenues = venues;
-  if (hhFilter) displayVenues = displayVenues.filter((v) => hhActiveIds.has(v.id));
-  if (savedFilter) displayVenues = displayVenues.filter((v) => savedIds.includes(v.id));
-  if (rooftopFilter) displayVenues = displayVenues.filter((v) => hasRooftop(v));
-  if (outdoorFilter) displayVenues = displayVenues.filter((v) => hasOutdoorSeating(v));
-
-  // Chip availability is judged against the whole venue set, not the current
-  // viewport — otherwise panning away from the one rooftop makes the chip
-  // vanish mid-session while it's still switched on.
-  const showRooftop = (allVenues ?? []).some((v) => hasRooftop(v));
-  const showOutdoor = (allVenues ?? []).some((v) => hasOutdoorSeating(v));
-
   const { data: activityData } = useVenueActivity();
+
+  // Hot = real check-in activity. The old chip compared against venue_stats,
+  // which nothing populates, so it filtered every venue out and blanked the map.
+  const hotIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const [venueId, a] of Object.entries(activityData ?? {})) {
+      if (a.count >= HOT_MIN_ACTIVITY) ids.add(venueId);
+    }
+    return ids;
+  }, [activityData]);
+  // Hidden entirely when nothing is hot — never offer a filter that empties the map.
+  const showHot = hotIds.size > 0;
+
+  let displayVenues = venues;
+  if (filters.happyHour) displayVenues = displayVenues.filter((v) => hhActiveIds.has(v.id));
+  if (filters.saved) displayVenues = displayVenues.filter((v) => savedIds.includes(v.id));
+  if (filters.rooftop) displayVenues = displayVenues.filter((v) => hasRooftop(v));
+  if (filters.outdoor) displayVenues = displayVenues.filter((v) => hasOutdoorSeating(v));
+  if (filters.openNow) {
+    displayVenues = displayVenues.filter(
+      (v) => computeOpenState(getEnrichment(v.title)?.hours)?.open === true,
+    );
+  }
+  if (filters.hot) displayVenues = displayVenues.filter((v) => hotIds.has(v.id));
+
   // Memoized: a new object reference here rebuilds every map marker via
   // addMarkers' dependency array — only do that when activity actually changes.
   const activityCounts = useMemo(
@@ -371,18 +382,16 @@ const MapPage = () => {
       <TopHeader venues={venues} onPick={(v) => setSelected(v)} />
       <FilterChips
         count={displayVenues.length}
-        hasFilters={hasFilters}
         onVibeFinder={() => setVibeOpen(true)}
-        hhActive={hhFilter}
-        onHappyHour={() => setHhFilter((f) => !f)}
-        savedActive={savedFilter}
-        onSaved={() => setSavedFilter((f) => !f)}
-        rooftopActive={rooftopFilter}
-        onRooftop={() => setRooftopFilter((f) => !f)}
-        outdoorActive={outdoorFilter}
-        onOutdoor={() => setOutdoorFilter((f) => !f)}
-        showRooftop={showRooftop}
-        showOutdoor={showOutdoor}
+        onOpenFilters={() => setFiltersOpen(true)}
+        showHot={showHot}
+        filterCount={filterCount}
+      />
+      <FiltersSheet
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        venues={allVenues ?? venues}
+        resultCount={displayVenues.length}
       />
       <VibeFinder
         open={vibeOpen}
@@ -458,13 +467,13 @@ const MapPage = () => {
                 <BarCard key={v.id} venue={v} onClick={() => setSelected(v)} />
               ))}
             </div>
-          ) : savedFilter && savedIds.length === 0 ? (
+          ) : filters.saved && savedIds.length === 0 ? (
             <div className="text-center glass rounded-2xl p-8 animate-fade-in">
               <Bookmark className="h-7 w-7 mx-auto text-primary" />
               <p className="font-medium mt-2">No saved spots yet</p>
               <p className="text-sm text-muted-foreground mt-1">Tap the bookmark on any venue to add it here.</p>
             </div>
-          ) : hhFilter ? (
+          ) : filters.happyHour ? (
             <div className="text-center glass rounded-2xl p-8 animate-fade-in">
               <Wine className="h-7 w-7 mx-auto text-amber-500" />
               <p className="font-medium mt-2">No happy hours running</p>
@@ -478,7 +487,7 @@ const MapPage = () => {
               <Sparkles className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="font-medium">No spots match your filters</p>
               <p className="text-sm text-muted-foreground mt-1">Try clearing a filter to see more places.</p>
-              {hasFilters && (
+              {filterCount > 0 && (
                 <Button variant="secondary" size="sm" className="mt-4" onClick={() => filters.reset()}>
                   Clear filters
                 </Button>
