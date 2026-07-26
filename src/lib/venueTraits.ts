@@ -31,6 +31,12 @@ export function isCocktailSpot(v: Venue): boolean {
  * seating as available when it is unverified.
  */
 export function hasOutdoorSeating(v: Venue): boolean {
+  // Rooftops are excluded on purpose, so the two mean genuinely different
+  // things: Outdoor = ground-level backyard / patio / beer garden, Rooftop =
+  // up top. Google flags rooftops as outdoorSeating:true (technically true —
+  // a roof is outdoors), which would otherwise make "Outdoor" return rooftop
+  // bars to someone looking for a backyard.
+  if (hasRooftop(v)) return false;
   return getEnrichment(v.title)?.outdoorSeating === true || v.has_outdoor === true;
 }
 
@@ -38,6 +44,27 @@ export function hasOutdoorSeating(v: Venue): boolean {
  *  deliberately separate from general outdoor seating (§20 hard rule). */
 export function hasRooftop(v: Venue): boolean {
   return v.has_rooftop === true;
+}
+
+/** Outdoor kinds we'll repeat, only when a real source says the word. */
+const OUTDOOR_KINDS = ["backyard", "beer garden", "patio", "terrace", "courtyard", "garden"] as const;
+
+/**
+ * What KIND of outdoor space it is ("Backyard", "Patio"), read out of Google's
+ * editorial summary — never guessed. Returns null when no source says, and the
+ * caller falls back to a plain yes.
+ *
+ * Deliberately narrow: only 3 of 23 outdoor venues currently have a summary
+ * that names the space. Inventing "patio" for the other 20 would be making up
+ * a detail about a real business.
+ */
+export function outdoorKind(v: Venue): string | null {
+  if (!hasOutdoorSeating(v)) return null;
+  const summary = getEnrichment(v.title)?.editorialSummary?.toLowerCase();
+  if (!summary) return null;
+  // Longest first, so "beer garden" wins over "garden".
+  const hit = [...OUTDOOR_KINDS].sort((a, b) => b.length - a.length).find((k) => summary.includes(k));
+  return hit ? hit.charAt(0).toUpperCase() + hit.slice(1) : null;
 }
 
 /** Pin glyph: 🍺 bars, 🍸 lounges + cocktail-forward bars, 🪩 clubs. */

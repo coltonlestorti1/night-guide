@@ -1,5 +1,5 @@
 import { ChevronRight, Bookmark, Flame, Star, Building2, Trees } from "lucide-react";
-import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
+import { hasOutdoorSeating, hasRooftop, outdoorKind } from "@/lib/venueTraits";
 import { Venue } from "@/data/types";
 import { useSavedStore } from "@/store/saved";
 import { useVenueActivity } from "@/hooks/useCheckIns";
@@ -88,7 +88,7 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
               <span className="inline-flex items-center gap-1"><Building2 className="h-3 w-3" /> Rooftop</span>
             )}
             {hasOutdoorSeating(venue) && (
-              <span className="inline-flex items-center gap-1"><Trees className="h-3 w-3" /> Outdoor</span>
+              <span className="inline-flex items-center gap-1"><Trees className="h-3 w-3" /> {outdoorKind(venue) ?? "Outdoor"}</span>
             )}
             {venue.venue_stats?.crowd_level && (
               <span className="inline-flex items-center gap-1">
