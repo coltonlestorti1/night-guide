@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Check, Forward } from "lucide-react";
+import { Check, Forward, Link as LinkIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -219,17 +219,26 @@ export default function CreatePlanSheet({
                 Anyone with this link can see it and RSVP — no app needed.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-secondary/60 px-3.5 py-3 text-xs font-mono break-all">
-              {link}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary" className="h-11 rounded-xl" onClick={copyLink}>
-                {copied ? "Copied ✓" : "Copy link"}
-              </Button>
-              <Button className="h-11 rounded-xl" onClick={shareLink}>
-                <Forward className="h-4 w-4 mr-2" /> Share
-              </Button>
-            </div>
+            {/* The link IS the affordance — tap the whole chip to copy. Display
+                is cleaned (no scheme, single truncated line) since it's copied,
+                not read; the full URL is what lands on the clipboard. */}
+            <button
+              type="button"
+              onClick={copyLink}
+              aria-label="Copy plan link"
+              className="flex w-full items-center gap-2 rounded-2xl border border-border bg-secondary/60 px-3.5 py-3 text-left transition-colors hover:bg-secondary"
+            >
+              <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground/80">
+                {link.replace(/^https?:\/\//, "")}
+              </span>
+              <span className="shrink-0 text-xs font-semibold text-primary">
+                {copied ? "Copied ✓" : "Copy"}
+              </span>
+            </button>
+            <Button className="h-11 w-full rounded-xl" onClick={shareLink}>
+              <Forward className="h-4 w-4 mr-2" /> Share
+            </Button>
             <Button
               variant="ghost"
               className="w-full h-10 rounded-xl text-muted-foreground"
