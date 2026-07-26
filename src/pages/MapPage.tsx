@@ -500,12 +500,18 @@ const MapPage = () => {
       {/* Venue preview — bottom sheet on mobile, right-side panel on tablet/desktop */}
       {isMobile ? (
         <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-          <DrawerContent className="bg-card border-border">
+          {/* max-h + an inner scroll region: DrawerContent is h-auto with no
+              overflow, so an expanded card would otherwise clip off the top of
+              the screen with no way to reach it. svh (not vh) so mobile browser
+              chrome doesn't eat the bottom action row. The grabber handle lives
+              in DrawerContent above this div, so it stays pinned while the body
+              scrolls — and keeps its single meaning, drag down to dismiss. */}
+          <DrawerContent className="bg-card border-border max-h-[85svh]">
             <DrawerTitle className="sr-only">{selected?.title ?? "Venue details"}</DrawerTitle>
             <DrawerDescription className="sr-only">Venue activity, hours, and actions.</DrawerDescription>
             {selected && (
-              <div className="max-w-lg mx-auto w-full">
-                <VenuePreview venue={selected} onClose={() => setSelected(null)} />
+              <div className="max-w-lg mx-auto w-full min-h-0 overflow-y-auto">
+                <VenuePreview venue={selected} onClose={() => setSelected(null)} defaultExpanded />
               </div>
             )}
           </DrawerContent>
@@ -520,7 +526,7 @@ const MapPage = () => {
             <SheetDescription className="sr-only">Venue activity, hours, and actions.</SheetDescription>
             {selected && (
               <div className="pt-4">
-                <VenuePreview venue={selected} onClose={() => setSelected(null)} />
+                <VenuePreview venue={selected} onClose={() => setSelected(null)} defaultExpanded />
               </div>
             )}
           </SheetContent>
