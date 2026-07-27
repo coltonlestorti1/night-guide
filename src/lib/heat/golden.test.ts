@@ -151,3 +151,30 @@ describe("properties", () => {
     }
   });
 });
+
+describe("rising", () => {
+  it("is true while the curve is climbing", () => {
+    const r = computeHeat({
+      baseline: base({ archetype: "party_bar" }), events: [], signals: EMPTY_SIGNALS,
+      now: new Date(2026, 6, 25, 20, 0), hours: OPEN_ALWAYS,
+    });
+    expect(r.rising).toBe(true);
+  });
+
+  it("is false once the curve is falling", () => {
+    const r = computeHeat({
+      baseline: base({ archetype: "party_bar" }), events: [], signals: EMPTY_SIGNALS,
+      now: new Date(2026, 6, 26, 2, 0), hours: OPEN_ALWAYS,
+    });
+    expect(r.rising).toBe(false);
+  });
+
+  it("is false when closed", () => {
+    const r = computeHeat({
+      baseline: base({}), events: [], signals: EMPTY_SIGNALS,
+      now: new Date(2026, 6, 25, 10, 0),
+      hours: [{ day: 6, openHour: 18, openMinute: 0, closeHour: 2, closeMinute: 0, closeDayOffset: 1 }],
+    });
+    expect(r.rising).toBe(false);
+  });
+});

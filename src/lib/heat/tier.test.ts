@@ -4,7 +4,7 @@ import { HeatResult } from "./types";
 
 const heat = (o: Partial<HeatResult>): HeatResult => ({
   score: 0, label: "Quiet", lineRisk: 0, lineLikely: false,
-  pastPeak: false, confidence: 0, liveWeight: 0, baselineScore: 0, ...o,
+  pastPeak: false, rising: false, confidence: 0, liveWeight: 0, baselineScore: 0, ...o,
 });
 
 describe("heatTier", () => {

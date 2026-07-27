@@ -33,6 +33,7 @@ const CLOSED: HeatResult = {
   lineRisk: 0,
   lineLikely: false,
   pastPeak: false,
+  rising: false,
   confidence: 0,
   liveWeight: 0,
   baselineScore: 0,
@@ -54,12 +55,20 @@ export function computeHeat(input: HeatInput): HeatResult {
   const min = nightMinutes(now);
   const pastPeak = baseline.peak_end != null && min >= baseline.peak_end && score >= 30;
 
+  // Which way the night is heading — the copy machine needs this to tell
+  // "starting to pick up" apart from "past peak". A full hour, not less: the
+  // archetype curve is an hour-granularity step function, so a shorter horizon
+  // can land in the same bucket and read as flat when the night is climbing.
+  const soon = new Date(now.getTime() + 60 * 60_000);
+  const rising = baselineScore(baseline, events, soon) > base;
+
   return {
     score,
     label: scoreLabel(score),
     lineRisk: risk,
     lineLikely: risk >= LINE_LIKELY_THRESHOLD,
     pastPeak,
+    rising,
     confidence,
     liveWeight,
     baselineScore: base,

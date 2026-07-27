@@ -91,6 +91,8 @@ export type HeatResult = {
   lineRisk: number;
   lineLikely: boolean;
   pastPeak: boolean;
+  /** The next hour's baseline is higher than this hour's. */
+  rising: boolean;
   /** 0–100. Gates how specific the copy may be. */
   confidence: number;
   /** 0–0.75. How much of the score came from live signals. */
