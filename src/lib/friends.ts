@@ -24,6 +24,8 @@ export type FriendProfile = {
   /** Present only on profile-page fetches (getProfileByUsername); list
    *  queries keep the lean PROFILE_COLS select. */
   bio?: string | null;
+  college_slug?: string | null;
+  class_year?: number | null;
 };
 
 export type FriendshipStatus = "pending" | "accepted" | "blocked";
@@ -140,8 +142,9 @@ export async function suggestedProfiles(myId: string): Promise<FriendProfile[]> 
 
 /**
  * Full identity card by handle (case-insensitive; leading @ ok). Null when
- * no such user. Selects bio but falls back to a bio-less select while the
- * profiles.bio column DDL is pending (Postgres 42703 = undefined column).
+ * no such user. Selects the optional columns (bio, college) but falls back to
+ * the lean select while their DDL is pending (Postgres 42703 = undefined
+ * column) — a profile page must still render before the paste lands.
  */
 export async function getProfileByUsername(username: string): Promise<FriendProfile | null> {
   const supabase = getSupabase();
@@ -150,7 +153,7 @@ export async function getProfileByUsername(username: string): Promise<FriendProf
   if (!handle) return null;
   let { data, error } = await supabase
     .from("profiles")
-    .select(`${PROFILE_COLS}, bio`)
+    .select(`${PROFILE_COLS}, bio, college_slug, class_year`)
     .eq("username", handle)
     .maybeSingle();
   if (error && error.code === "42703") {

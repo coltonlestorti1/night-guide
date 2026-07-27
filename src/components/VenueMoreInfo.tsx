@@ -7,20 +7,12 @@
  * Render guard lives in the caller (hasMoreInfo) so the expander row itself
  * can be hidden — this component assumes it has something to show.
  */
-import { useState } from "react";
-import { CalendarClock } from "lucide-react";
 import { Venue } from "@/data/types";
-import { Button } from "@/components/ui/button";
 import { getEnrichment, getSpecials } from "@/data/enrichment";
-import { useAuthStore } from "@/store/auth";
 import VenueInfoCard from "@/components/VenueInfoCard";
 import PopularTimesChart from "@/components/PopularTimesChart";
-import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 
 export default function VenueMoreInfo({ venue }: { venue: Venue }) {
-  const status = useAuthStore((s) => s.status);
-  const [planOpen, setPlanOpen] = useState(false);
-
   const e = getEnrichment(venue.title);
   const specials = getSpecials(venue.title);
   const about = venue.description ?? e?.editorialSummary;
@@ -64,24 +56,6 @@ export default function VenueMoreInfo({ venue }: { venue: Venue }) {
             ))}
           </ul>
         </div>
-      )}
-
-      {status === "signedIn" && (
-        <>
-          <Button
-            variant="secondary"
-            className="w-full h-11 rounded-xl"
-            onClick={() => setPlanOpen(true)}
-          >
-            <CalendarClock className="h-4 w-4 mr-2" /> Plan a night here
-          </Button>
-          <CreatePlanSheet
-            open={planOpen}
-            onOpenChange={setPlanOpen}
-            initialVenueId={venue.id}
-            surface="venue"
-          />
-        </>
       )}
     </div>
   );

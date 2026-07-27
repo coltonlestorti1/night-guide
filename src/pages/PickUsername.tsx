@@ -8,6 +8,7 @@ import { Check, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { suggestUsername } from "@/lib/username";
 import { useUsernameAvailability } from "@/hooks/useUsernameAvailability";
+import CollegeField from "@/components/CollegeField";
 
 const PickUsername = () => {
   const navigate = useNavigate();
@@ -16,6 +17,10 @@ const PickUsername = () => {
   const [availability, setAvailability] = useUsernameAvailability(username);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Both optional — never gate "Claim it" on them. A user who skips can add
+  // their school later from Edit profile.
+  const [collegeSlug, setCollegeSlug] = useState<string | null>(null);
+  const [classYear, setClassYear] = useState<number | null>(null);
   // Set the instant we claim, so the redirect effect below doesn't race the
   // signedIn flip and yank us to "/" before the location step can show.
   const claimedRef = useRef(false);
@@ -49,12 +54,21 @@ const PickUsername = () => {
     setSubmitting(true);
     setError("");
     const meta = session.user.user_metadata as { full_name?: string; name?: string; avatar_url?: string; picture?: string };
-    const { error: insertError } = await supabase.from("profiles").insert({
+    const base = {
       id: session.user.id,
       username,
       display_name: meta.full_name || meta.name || null,
       avatar_url: meta.avatar_url || meta.picture || null,
-    });
+    };
+    let { error: insertError } = await supabase
+      .from("profiles")
+      .insert({ ...base, college_slug: collegeSlug, class_year: classYear });
+    // The college DDL is pasted by hand and may not have landed yet. Claiming a
+    // username is the gate to the whole app — it must never fail over an
+    // optional field, so retry without it and let the user re-add it later.
+    if (insertError?.code === "42703") {
+      ({ error: insertError } = await supabase.from("profiles").insert(base));
+    }
     if (insertError) {
       setSubmitting(false);
       if (insertError.code === "23505") {
@@ -107,6 +121,25 @@ const PickUsername = () => {
         <p className={cn("text-xs mt-2 min-h-4", availability === "available" ? "text-green-500" : "text-muted-foreground")}>
           {availability === "available" ? "It's yours if you want it." : hint}
         </p>
+
+        {/* Optional, on this screen rather than a third onboarding step —
+            cold-start is the #1 risk and another gate before the map costs
+            signups. Never blocks "Claim it". */}
+        <div className="mt-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+            School <span className="normal-case font-normal">(optional)</span>
+          </p>
+          <CollegeField
+            collegeSlug={collegeSlug}
+            classYear={classYear}
+            onCollegeChange={setCollegeSlug}
+            onClassYearChange={setClassYear}
+            disabled={submitting}
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            Find people from your school. You can add this later.
+          </p>
+        </div>
 
         <Button
           onClick={claim}
