@@ -96,9 +96,6 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
                 {crowdLabel[venue.venue_stats.crowd_level]}
               </span>
             )}
-            {typeof venue.buzz_score === "number" && (
-              <span className="text-primary font-medium">⚡ {venue.buzz_score}</span>
-            )}
           </div>
         </div>
         <button

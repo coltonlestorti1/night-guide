@@ -1,10 +1,11 @@
 /**
  * Stat tiles render only for data the venue actually has — no permanent
- * "—" placeholders. Buzz/Cover slots resurface automatically once real
- * check-in data starts populating those fields.
+ * "—" placeholders. Cover resurfaces automatically once that field is
+ * populated. Buzz moved to the Activity section, which shows a label rather
+ * than a number: users never see a raw score.
  */
 import { Venue } from "@/data/types";
-import { Music2, Ticket, DollarSign, Users, Zap, Building2, Trees } from "lucide-react";
+import { Music2, Ticket, DollarSign, Users, Building2, Trees } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatAgeDisplay } from "@/lib/format";
 import { hasOutdoorSeating, hasRooftop, outdoorKind } from "@/lib/venueTraits";
@@ -14,7 +15,6 @@ const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2", 
 
 const tilesFor = (v: Venue) => {
   const tiles: { label: string; icon: React.ReactNode; value: string; accent?: boolean }[] = [];
-  if (v.buzz_score != null) tiles.push({ label: "Buzz", icon: <Zap className="h-3 w-3" />, value: String(v.buzz_score), accent: true });
   if (v.music_type) tiles.push({ label: "Music", icon: <Music2 className="h-3 w-3" />, value: v.music_type });
   // Curated tier first; otherwise Google's real dollar range. The range is NOT
   // converted into a tier — calibration showed the two don't line up (a $15
