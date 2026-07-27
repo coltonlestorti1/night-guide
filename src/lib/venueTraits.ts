@@ -4,7 +4,7 @@
  */
 import { Venue } from "@/data/types";
 import { normalize } from "@/lib/normalize";
-import { getEnrichment } from "@/data/enrichment";
+import { getEnrichment, getSpecials } from "@/data/enrichment";
 
 /** Cocktail-forward spot: keyword match or upscale bar pricing. */
 export function isCocktailSpot(v: Venue): boolean {
@@ -74,4 +74,26 @@ export function pinGlyph(v: Venue): string {
   if (v.category === "club") return "🪩";
   if (v.category === "lounge") return "🍸";
   return isCocktailSpot(v) ? "🍸" : "🍺";
+}
+
+/**
+ * Does this venue have anything behind "More info"?
+ *
+ * Must stay in lockstep with what VenueMoreInfo actually renders — if this
+ * returns false the expander row does not render at all. Same dead-end rule
+ * §27 applies to filter chips: never offer an affordance that opens onto
+ * nothing.
+ *
+ * Signed-in users always have "Plan a night here", so the section always has
+ * at least one row for them.
+ *
+ * getEnrichment() returns undefined for expired (>30d) records, so a venue
+ * whose data has gone stale loses the expander rather than showing an empty
+ * shell — the same "go quiet rather than assert" rule as hasOutdoorSeating.
+ */
+export function hasMoreInfo(v: Venue, signedIn: boolean): boolean {
+  if (signedIn) return true;
+  return Boolean(
+    v.description || getEnrichment(v.title) || getSpecials(v.title).length > 0,
+  );
 }
