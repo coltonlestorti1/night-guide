@@ -2,16 +2,18 @@
   "The Grafton": {
     "archetype": "pub",
     "line_pattern": "occasion",
-    "confidence_base": "low",
-    "source_type": "archetype_default",
-    "last_reviewed": "2026-07-27"
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27",
+    "evidence_url": "docs/research/2026-07-26-signals-merged.md"
   },
   "Standings": {
     "archetype": "pub",
     "line_pattern": "occasion",
-    "confidence_base": "low",
-    "source_type": "archetype_default",
-    "last_reviewed": "2026-07-27"
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27",
+    "evidence_url": "docs/research/2026-07-26-signals-merged.md"
   },
   "International Bar": {
     "archetype": "dive",
@@ -87,9 +89,10 @@
   "Death & Co": {
     "archetype": "cocktail_room",
     "line_pattern": "capacity_wait",
-    "confidence_base": "low",
-    "source_type": "archetype_default",
-    "last_reviewed": "2026-07-27"
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27",
+    "evidence_url": "docs/research/2026-07-26-signals-merged.md"
   },
   "The Summit Bar": {
     "archetype": "cocktail_room",
@@ -115,9 +118,10 @@
   "McSorley's Old Ale House": {
     "archetype": "pub",
     "line_pattern": "occasion",
-    "confidence_base": "low",
-    "source_type": "archetype_default",
-    "last_reviewed": "2026-07-27"
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27",
+    "evidence_url": "docs/research/2026-07-26-signals-merged.md"
   },
   "Beauty Bar": {
     "archetype": "party_bar",
@@ -129,9 +133,10 @@
   "Please Don't Tell": {
     "archetype": "cocktail_room",
     "line_pattern": "capacity_wait",
-    "confidence_base": "low",
-    "source_type": "archetype_default",
-    "last_reviewed": "2026-07-27"
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27",
+    "evidence_url": "docs/research/2026-07-26-signals-merged.md"
   },
   "The Wayland": {
     "archetype": "cocktail_room",

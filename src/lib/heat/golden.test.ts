@@ -6,6 +6,8 @@
 import { describe, it, expect } from "vitest";
 import { computeHeat } from "./index";
 import { EMPTY_SIGNALS, LiveSignals, VenueBaseline } from "./types";
+import { activityCopy } from "./copy";
+import { getBaseline, getEvents } from "@/data/activity";
 
 const sig = (o: Partial<LiveSignals>): LiveSignals => ({ ...EMPTY_SIGNALS, ...o });
 
@@ -176,5 +178,28 @@ describe("rising", () => {
       hours: [{ day: 6, openHour: 18, openMinute: 0, closeHour: 2, closeMinute: 0, closeDayOffset: 1 }],
     });
     expect(r.rising).toBe(false);
+  });
+});
+
+describe("golden: the capacity_wait advice actually reaches the user", () => {
+  it("tells you to come later at Death & Co on a busy Friday evening", () => {
+    // The strongest sourced evidence in the dataset: a 2-hour wait from
+    // opening. If this renders nothing, the evidence is not reaching anyone.
+    const b = getBaseline("Death & Co")!;
+    const r = computeHeat({
+      baseline: b, events: getEvents("Death & Co"), signals: EMPTY_SIGNALS,
+      now: new Date(2026, 6, 24, 20, 0), hours: undefined,
+    });
+    expect(r.lineLikely).toBe(true);
+    expect(activityCopy(r, b, EMPTY_SIGNALS).lineNote).toBe("Better later tonight");
+  });
+
+  it("but eases off later, as the evidence says", () => {
+    const b = getBaseline("Death & Co")!;
+    const late = computeHeat({
+      baseline: b, events: getEvents("Death & Co"), signals: EMPTY_SIGNALS,
+      now: new Date(2026, 6, 25, 1, 0), hours: undefined,
+    });
+    expect(late.lineLikely).toBe(false);
   });
 });

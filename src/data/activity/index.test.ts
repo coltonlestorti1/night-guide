@@ -43,16 +43,38 @@ describe("activity data", () => {
   });
 
   it("has researched windows for the ten seeded venues", () => {
-    const researched = ALL_BASELINE_TITLES.filter(
-      (id) => getBaseline(id)!.source_type === "research_estimate",
-    );
-    expect(researched.length).toBe(10);
-    for (const id of researched) {
-      const b = getBaseline(id)!;
-      expect(b.busy_start).toBeTypeOf("number");
+    const windowed = ALL_BASELINE_TITLES.filter((t) => getBaseline(t)!.busy_start != null);
+    expect(windowed.length).toBe(10);
+    for (const t of windowed) {
+      const b = getBaseline(t)!;
       expect(b.peak_start).toBeTypeOf("number");
       expect(b.busy_end!).toBeGreaterThan(b.busy_start!);
       expect(b.peak_end!).toBeGreaterThan(b.peak_start!);
+      expect(b.source_type).toBe("research_estimate");
+    }
+  });
+
+  it("never claims research confidence without evidence behind it", () => {
+    // research_estimate covers two kinds: venues with researched WINDOWS, and
+    // venues whose line_pattern came from sourced evidence. Either is fine —
+    // claiming the label with neither is not.
+    for (const t of ALL_BASELINE_TITLES) {
+      const b = getBaseline(t)!;
+      if (b.source_type !== "research_estimate") continue;
+      const hasWindows = b.busy_start != null;
+      const hasEvidence = b.evidence_url != null;
+      expect(hasWindows || hasEvidence, `${t} claims research with neither`).toBe(true);
+    }
+  });
+
+  it("only assigns a non-none line_pattern with a reason", () => {
+    for (const t of ALL_BASELINE_TITLES) {
+      const b = getBaseline(t)!;
+      if (b.line_pattern === "none") continue;
+      // Either sourced evidence, or the derived door_pick rule (archetype +
+      // late close), which leaves source_type as archetype_default.
+      const derived = b.source_type === "archetype_default" && b.line_pattern === "door_pick";
+      expect(derived || b.source_type === "research_estimate", `${t}`).toBe(true);
     }
   });
 });

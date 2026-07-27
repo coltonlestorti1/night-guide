@@ -51,8 +51,13 @@ export default function ActivitySection({ venue }: { venue: Venue }) {
         </p>
       )}
 
-      {venue.description && (
-        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{venue.description}</p>
+      {(copy.momentNote || venue.description) && (
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+          {/* The moment clause shifts with the night; the venue description is
+              fixed and describes its character. Together they read as one line. */}
+          {copy.momentNote && <span className="text-foreground/80">{copy.momentNote} </span>}
+          {venue.description}
+        </p>
       )}
     </section>
   );

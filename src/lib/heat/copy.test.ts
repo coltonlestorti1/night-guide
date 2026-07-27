@@ -213,3 +213,60 @@ describe("researched line time", () => {
     expect(c.lineNote).toBe("Line likely after 11 PM");
   });
 });
+
+describe("moment note", () => {
+  const HOT = base({ line_pattern: "door_pick", peak_start: 23 * 60, peak_end: 26 * 60 });
+
+  it("says what to do about a line rather than restating the crowd", () => {
+    const c = activityCopy(heat({ label: "Hot Now", lineLikely: true, confidence: 85 }), HOT, EMPTY_SIGNALS);
+    expect(c.momentNote).toBe("Expect a wait at the door.");
+  });
+
+  it("sends you later at a capacity_wait venue", () => {
+    const c = activityCopy(
+      heat({ label: "Hot Now", lineLikely: true, confidence: 85 }),
+      base({ line_pattern: "capacity_wait" }), EMPTY_SIGNALS,
+    );
+    expect(c.momentNote).toBe("Easier later tonight.");
+  });
+
+  it("names the hour to come back at when quiet and confident", () => {
+    const c = activityCopy(heat({ label: "Quiet", rising: true, confidence: 85 }), HOT, EMPTY_SIGNALS);
+    expect(c.momentNote).toBe("Worth coming back around 11 PM.");
+  });
+
+  it("stays vague about the hour at medium confidence", () => {
+    const c = activityCopy(heat({ label: "Quiet", rising: true, confidence: 55 }), HOT, EMPTY_SIGNALS);
+    expect(c.momentNote).toBe("Worth coming back later tonight.");
+  });
+
+  it("encourages arriving while it is still building", () => {
+    const c = activityCopy(heat({ label: "Building", rising: true, confidence: 85 }), HOT, EMPTY_SIGNALS);
+    expect(c.momentNote).toBe("Good time to arrive before it fills.");
+  });
+
+  it("says it is winding down past peak", () => {
+    const c = activityCopy(heat({ label: "Busy", pastPeak: true, confidence: 85 }), HOT, EMPTY_SIGNALS);
+    expect(c.momentNote).toBe("Winding down now.");
+  });
+
+  it("is silent when closed", () => {
+    expect(activityCopy(heat({ label: "Closed" }), HOT, EMPTY_SIGNALS).momentNote).toBeNull();
+  });
+
+  it("is silent at low confidence", () => {
+    expect(activityCopy(heat({ label: "Hot Now", confidence: 20 }), HOT, EMPTY_SIGNALS).momentNote).toBeNull();
+  });
+
+  it("never simply repeats the status", () => {
+    for (const label of ["Quiet", "Building", "Busy", "Hot Now"] as const) {
+      const c = activityCopy(heat({ label, rising: true, confidence: 85 }), HOT, EMPTY_SIGNALS);
+      if (c.momentNote) expect(c.momentNote.toLowerCase()).not.toContain(c.status.toLowerCase());
+    }
+  });
+
+  it("still emits no time string at low confidence", () => {
+    const c = activityCopy(heat({ label: "Quiet", rising: true, confidence: 20 }), HOT, EMPTY_SIGNALS);
+    expect(c.momentNote ?? "").not.toMatch(/\d\s?(AM|PM)/);
+  });
+});

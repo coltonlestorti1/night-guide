@@ -17,6 +17,12 @@ export type ActivityCopy = {
   peakNote: string | null;
   bestNightsNote: string | null;
   signalNote: string | null;
+  /**
+   * A short "so what" clause that shifts with the moment — what to DO about the
+   * current state, rather than a restatement of it. Rendered ahead of the
+   * venue's own description, which stays fixed and describes its character.
+   */
+  momentNote: string | null;
 };
 
 /** Below this, only the status renders — no windows, no line claims. */
@@ -64,13 +70,46 @@ function signalNote(signals: LiveSignals): string | null {
   return total >= 2 ? `Multiple people reported it ${word}` : "Recently reported busy";
 }
 
+/**
+ * The advice clause. Deliberately never repeats the status: "Hot Now" already
+ * says it is busy, so this says what that means for you.
+ */
+function momentNote(heat: HeatResult, baseline: VenueBaseline, exact: boolean): string | null {
+  if (heat.pastPeak) return "Winding down now.";
+
+  if (heat.label === "Hot Now") {
+    if (heat.lineLikely && baseline.line_pattern === "capacity_wait") return "Easier later tonight.";
+    if (heat.lineLikely) return "Expect a wait at the door.";
+    return "About as busy as it gets.";
+  }
+
+  if (heat.label === "Busy") {
+    return heat.rising ? "Still filling up." : "Steady right now.";
+  }
+
+  if (heat.label === "Building") {
+    return heat.rising ? "Good time to arrive before it fills." : "Picking up slowly.";
+  }
+
+  // Quiet: the useful thing is when to come instead.
+  if (heat.rising && baseline.peak_start != null) {
+    return exact
+      ? `Worth coming back around ${displayTime(baseline.peak_start)}.`
+      : "Worth coming back later tonight.";
+  }
+  return null;
+}
+
 export function activityCopy(
   heat: HeatResult,
   baseline: VenueBaseline,
   signals: LiveSignals,
 ): ActivityCopy {
   if (heat.label === "Closed") {
-    return { status: "Closed", lineNote: null, peakNote: null, bestNightsNote: null, signalNote: null };
+    return {
+      status: "Closed", lineNote: null, peakNote: null,
+      bestNightsNote: null, signalNote: null, momentNote: null,
+    };
   }
 
   const exact = mayStateExactTimes(heat.confidence);
@@ -118,5 +157,12 @@ export function activityCopy(
       ? `Best nights: ${baseline.best_nights.map((d) => DAY_NAMES[d]).join(", ")}`
       : null;
 
-  return { status, lineNote, peakNote, bestNightsNote, signalNote: signalNote(signals) };
+  return {
+    status,
+    lineNote,
+    peakNote,
+    bestNightsNote,
+    signalNote: signalNote(signals),
+    momentNote: mayClaim ? momentNote(heat, baseline, exact) : null,
+  };
 }

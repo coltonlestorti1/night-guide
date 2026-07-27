@@ -60,7 +60,12 @@ export function computeHeat(input: HeatInput): HeatResult {
   // archetype curve is an hour-granularity step function, so a shorter horizon
   // can land in the same bucket and read as flat when the night is climbing.
   const soon = new Date(now.getTime() + 60 * 60_000);
-  const rising = baselineScore(baseline, events, soon) > base;
+  // A researched peak that has not happened yet means the night is ahead of
+  // you, even where the curve is flat: outside a researched busy window the
+  // score is capped, which would otherwise read as "not rising" during exactly
+  // the run-up when "come back later" is the most useful thing to say.
+  const peakAhead = baseline.peak_start != null && min < baseline.peak_start;
+  const rising = peakAhead || baselineScore(baseline, events, soon) > base;
 
   return {
     score,

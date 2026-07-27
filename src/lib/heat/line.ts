@@ -58,8 +58,12 @@ export function lineRisk(
     if (score < CAPACITY_WAIT_THRESHOLD) return 0;
     if (min < EARLY_START || min >= EARLY_END) return 0;
     // Risk falls as the night goes on: worst at the start of the window.
+    // The slope is steeper than door_pick's because in a small capped room,
+    // busy IS waiting — a big room absorbs the same crowd without a queue.
+    // Calibrated against Death & Co, the best-evidenced case in the dataset:
+    // "showed up 15m after they opened, the wait was 2hrs" (2022).
     const progress = (min - EARLY_START) / (EARLY_END - EARLY_START);
-    return clamp((score - CAPACITY_WAIT_THRESHOLD) * 2.5 * cap * (1 - progress));
+    return clamp((score - CAPACITY_WAIT_THRESHOLD) * 4 * cap * (1 - progress));
   }
 
   // occasion: inert until a sports/holiday calendar exists. See spec, Open questions.
