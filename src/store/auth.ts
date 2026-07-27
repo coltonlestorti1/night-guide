@@ -9,6 +9,10 @@ export type Profile = {
   avatar_url: string | null;
   ghost_mode: boolean;
   bio: string | null;
+  /** FK to colleges.slug. Null = not answered; the onboarding field is optional. */
+  college_slug: string | null;
+  /** Graduation year. Past years read as alum. Null = not answered. */
+  class_year: number | null;
 };
 
 export type AuthStatus = "loading" | "signedOut" | "signedIn" | "needsUsername";
@@ -58,17 +62,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase || !session) return;
     let { data, error } = await supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, ghost_mode, bio")
+      .select(
+        "id, username, display_name, avatar_url, ghost_mode, bio, college_slug, class_year",
+      )
       .eq("id", session.user.id)
       .maybeSingle();
     if (error && error.code === "42703") {
-      // profiles.bio DDL not pasted yet — degrade to the bio-less profile.
+      // Optional-column DDL not pasted yet (bio, or the college fields) —
+      // degrade to the columns that have always existed rather than leaving
+      // the user profile-less, and null the rest.
       ({ data, error } = await supabase
         .from("profiles")
         .select("id, username, display_name, avatar_url, ghost_mode")
         .eq("id", session.user.id)
         .maybeSingle());
-      if (data) (data as Record<string, unknown>).bio = null;
+      if (data) {
+        const row = data as Record<string, unknown>;
+        row.bio = null;
+        row.college_slug = null;
+        row.class_year = null;
+      }
     }
     if (error) {
       // Can't tell if a profile exists — treat as signed in, retry on next auth event

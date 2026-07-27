@@ -25,6 +25,14 @@ export default function Privacy() {
           shown to friends.
         </li>
         <li>
+          <strong>Profile details you choose to add.</strong> Your display name,
+          bio, and optionally your <strong>school and class year</strong>. These are
+          entirely optional — you can skip them at sign-up, and add, change, or
+          clear them at any time from Edit profile. If you add a school, it's shown
+          on your profile to other signed-in people and is used to help you find
+          others from your school.
+        </li>
+        <li>
           <strong>Your activity.</strong> When you check in to a venue, we store
           that check-in (the venue, the vibe you picked, and the time). When you
           add friends, we store those connections.

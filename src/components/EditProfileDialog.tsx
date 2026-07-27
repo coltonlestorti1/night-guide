@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Camera, Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import CollegeField from "@/components/CollegeField";
 
 interface Props {
   open: boolean;
@@ -28,6 +29,8 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [collegeSlug, setCollegeSlug] = useState<string | null>(null);
+  const [classYear, setClassYear] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -45,6 +48,8 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
         setDisplayName(p.display_name ?? "");
         setUsername(p.username);
         setBio(p.bio ?? "");
+        setCollegeSlug(p.college_slug ?? null);
+        setClassYear(p.class_year ?? null);
       }
     }
   }, [open]);
@@ -59,7 +64,10 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const usernameChanged = username !== profile.username;
   const nameChanged = displayName.trim() !== (profile.display_name ?? "");
   const bioChanged = bio.trim() !== (profile.bio ?? "");
-  const dirty = usernameChanged || nameChanged || bioChanged;
+  const collegeChanged = collegeSlug !== (profile.college_slug ?? null);
+  const classYearChanged = classYear !== (profile.class_year ?? null);
+  const dirty =
+    usernameChanged || nameChanged || bioChanged || collegeChanged || classYearChanged;
   const usernameBlocked =
     usernameChanged && availability !== "available";
 
@@ -86,10 +94,18 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const save = async () => {
     if (!dirty || usernameBlocked || saving || uploading) return;
     setSaving(true);
-    const patch: { display_name?: string | null; username?: string; bio?: string | null } = {};
+    const patch: {
+      display_name?: string | null;
+      username?: string;
+      bio?: string | null;
+      college_slug?: string | null;
+      class_year?: number | null;
+    } = {};
     if (nameChanged) patch.display_name = displayName.trim() || null;
     if (usernameChanged) patch.username = username;
     if (bioChanged) patch.bio = bio.trim() || null;
+    if (collegeChanged) patch.college_slug = collegeSlug;
+    if (classYearChanged) patch.class_year = classYear;
     try {
       await updateProfile(patch);
       toast.success("Profile updated.");
@@ -200,6 +216,19 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
           >
             {usernameHint}
           </p>
+        </div>
+
+        {/* The escape hatch for anyone who skipped it at onboarding — without
+            this, a skip would be permanent and they could never be matched. */}
+        <div className="space-y-2">
+          <span className="text-sm font-medium">School</span>
+          <CollegeField
+            collegeSlug={collegeSlug}
+            classYear={classYear}
+            onCollegeChange={setCollegeSlug}
+            onClassYearChange={setClassYear}
+            disabled={saving}
+          />
         </div>
 
         <div className="space-y-2">
