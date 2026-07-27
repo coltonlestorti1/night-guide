@@ -1,0 +1,138 @@
+import { describe, it, expect } from "vitest";
+import { defaultTab, representativeDay, axisHours, typicalNight } from "./typicalNight";
+import { VenueBaseline, WeeklyEvent } from "./types";
+import { WeeklyPeriod } from "@/data/enrichment/types";
+
+const base = (o: Partial<VenueBaseline> = {}): VenueBaseline => ({
+  archetype: "dive",
+  line_pattern: "none",
+  confidence_base: "low",
+  source_type: "archetype_default",
+  last_reviewed: "2026-07-27",
+  ...o,
+});
+
+/** Niagara Bar's real researched record. */
+const niagara = base({
+  archetype: "dive",
+  line_pattern: "door_pick",
+  busy_start: 1290, busy_end: 1590,
+  peak_start: 1410, peak_end: 1530,
+  best_nights: [5, 6],
+  confidence_base: "medium",
+  source_type: "research_estimate",
+});
+
+const period = (day: number, closeHour: number, closeDayOffset: 0 | 1): WeeklyPeriod => ({
+  day, openHour: 17, openMinute: 0, closeHour, closeMinute: 0, closeDayOffset,
+});
+
+describe("defaultTab", () => {
+  it("returns weekend on a Saturday evening", () => {
+    // Saturday 2026-07-25, 11 PM
+    expect(defaultTab(new Date(2026, 6, 25, 23, 0))).toBe("weekend");
+  });
+
+  it("returns weekend at 1 AM Sunday — still Saturday night", () => {
+    expect(defaultTab(new Date(2026, 6, 26, 1, 0))).toBe("weekend");
+  });
+
+  it("returns sunday on a Sunday evening", () => {
+    expect(defaultTab(new Date(2026, 6, 26, 21, 0))).toBe("sunday");
+  });
+
+  it("returns thursday on a Thursday", () => {
+    expect(defaultTab(new Date(2026, 6, 23, 21, 0))).toBe("thursday");
+  });
+
+  it("returns weeknight on a Tuesday", () => {
+    expect(defaultTab(new Date(2026, 6, 21, 21, 0))).toBe("weeknight");
+  });
+});
+
+describe("axisHours", () => {
+  it("runs in night order starting at 5 PM, never 0 to 23", () => {
+    const hours = axisHours([period(6, 4, 1)], 6);
+    expect(hours[0]).toBe(17);
+    // Strictly increasing in absolute-hour space.
+    for (let i = 1; i < hours.length; i++) expect(hours[i]).toBeGreaterThan(hours[i - 1]);
+  });
+
+  it("ends before a 4 AM close", () => {
+    expect(axisHours([period(6, 4, 1)], 6).at(-1)).toBe(27);
+  });
+
+  it("ends before a 2 AM close", () => {
+    expect(axisHours([period(2, 2, 1)], 2).at(-1)).toBe(25);
+  });
+
+  it("floors a 10 PM close at the 11 PM end stop", () => {
+    expect(axisHours([period(2, 22, 0)], 2).at(-1)).toBe(22);
+  });
+
+  it("caps a 6 AM close at 4 AM", () => {
+    expect(axisHours([period(6, 6, 1)], 6).at(-1)).toBe(27);
+  });
+
+  it("falls back to a 2 AM end with no hours data", () => {
+    expect(axisHours(undefined, 6).at(-1)).toBe(25);
+  });
+});
+
+describe("representativeDay", () => {
+  it("picks the day carrying an event over its dead neighbours", () => {
+    const events: WeeklyEvent[] = [
+      { venue: "X", day: 2, name: "Karaoke", start_min: 1320, source_url: "https://example.com" },
+    ];
+    expect(representativeDay(base(), events, "weeknight")).toBe(2);
+  });
+
+  it("picks a best_night over its neighbours", () => {
+    expect(representativeDay(base({ best_nights: [3] }), [], "weeknight")).toBe(3);
+  });
+
+  it("resolves ties to the earliest day in the group", () => {
+    expect(representativeDay(base(), [], "weeknight")).toBe(1);
+    expect(representativeDay(base(), [], "weekend")).toBe(5);
+  });
+
+  it("returns the only day for single-day groups", () => {
+    expect(representativeDay(base(), [], "thursday")).toBe(4);
+    expect(representativeDay(base(), [], "sunday")).toBe(0);
+  });
+});
+
+describe("typicalNight bars", () => {
+  it("builds one bar per axis hour, in night order", () => {
+    const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
+    expect(r.bars.map((b) => b.hour)).toEqual(axisHours([period(6, 4, 1)], r.day));
+  });
+
+  it("scores the weekend above the weeknight for the same venue", () => {
+    const hours = [period(6, 4, 1), period(2, 4, 1)];
+    const weekend = typicalNight(niagara, [], hours, "weekend");
+    const weeknight = typicalNight(niagara, [], hours, "weeknight");
+    const peakOf = (bars: { value: number }[]) => Math.max(...bars.map((b) => b.value));
+    expect(peakOf(weekend.bars)).toBeGreaterThan(peakOf(weeknight.bars));
+  });
+
+  it("agrees with baselineScore — bars are not drawn from the raw curve", async () => {
+    const { baselineScore } = await import("./baseline");
+    const { dateFor } = await import("./typicalNight");
+    const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
+    const bar = r.bars.find((b) => b.hour === 23)!;
+    // The bar at hour 23 represents the picked day at 11 PM
+    expect(bar.value).toBe(baselineScore(niagara, [], dateFor(r.day, 23)));
+  });
+
+  it("lifts the bars on the day an event lands", () => {
+    const events: WeeklyEvent[] = [
+      { venue: "X", day: 2, name: "Karaoke", start_min: 1320, source_url: "https://example.com" },
+    ];
+    const withEvent = typicalNight(base(), events, undefined, "weeknight");
+    const without = typicalNight(base(), [], undefined, "weeknight");
+    const at10 = (r: { bars: { hour: number; value: number }[] }) =>
+      r.bars.find((b) => b.hour === 22)!.value;
+    expect(at10(withEvent)).toBeGreaterThan(at10(without));
+  });
+});
