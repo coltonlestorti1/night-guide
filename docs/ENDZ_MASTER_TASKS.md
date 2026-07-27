@@ -851,6 +851,44 @@ Needs a new table + touches the protected check-in loop. Would also settle the
 St. Dymphna's backyard question (dataset says yes, Google says no). Relates to
 §11, §20, §26.
 
+### 29. College in onboarding (school + class year) — SLICE 1 SHIPPED 2026-07-27
+**Discussed and approved 2026-07-27 (Colton).** First slice of §11's
+"sign-up demographics", scoped to school only — gender/age/birthday remain
+NOT DISCUSSED and are untouched.
+
+**Shipped:** `colleges` reference table (145 schools, HWS first as the fall
+campus beachhead, then NYC, then NJ/CT/MA/Northeast/national);
+`profiles.college_slug` + `profiles.class_year`, both nullable; an optional
+picker on the existing `/welcome` screen (deliberately NOT a third onboarding
+step — cold-start is the #1 risk); the same field in Edit profile so skipping
+is never permanent; `NYU '27` on the profile card; Privacy Policy updated to
+disclose the new fields.
+
+**Decisions taken:**
+- **Curated list, no free text.** Free text fragments "NYU" into four spellings
+  and silently breaks the matching this exists to enable.
+- **slug, not uuid, as the join key** — so `src/data/colleges.ts` and the
+  database stay diffable against each other. Slugs are permanent; renaming one
+  orphans every profile pointing at it.
+- **Local list, not a Supabase query** — onboarding must not wait on a round
+  trip. `scripts/emit-colleges-sql.mjs` generates the DDL from the TS file so
+  they cannot drift. Adding a school = edit TS, re-run, re-paste (idempotent).
+- **Visible to all signed-in users**, like username/display_name/avatar. The
+  friends-only privacy principle governs the *location* layer; college is
+  profile identity, and friends-only would defeat school-based discovery. The
+  consent story is that it's optional and clearable, not that it's hidden.
+
+**Explicitly NOT built (each needs its own gate):** school-based friend
+discovery ("people from your school"), alum filtering, and any
+college → `venues.is_college_scene` matching or recommendation logic.
+
+**Loose end CLOSED 2026-07-27:** "my school isn't listed" is built. The empty
+search state offers it, firing a `college_missing` event with the typed term
+(deliberate tap only, trimmed, capped at 60 chars to keep analytics props
+low-cardinality and PII-free). Rides the existing `events` table — no new DDL.
+Grow the list from it:
+`select props->>'query', count(*) from events where event_name = 'college_missing' group by 1 order by 2 desc;`
+
 ---
 
 ## Decision Log

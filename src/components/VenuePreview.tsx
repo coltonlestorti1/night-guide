@@ -5,13 +5,15 @@
  * host only supplies the venue and a close handler.
  */
 import { useEffect, useLayoutEffect, useState } from "react";
-import { MapPin, X, ArrowLeft, ChevronDown, Bookmark, Flame, Star } from "lucide-react";
+import { MapPin, X, ArrowLeft, ChevronDown, Bookmark, Flame, Star, CalendarClock } from "lucide-react";
 import { Venue } from "@/data/types";
 import { logEvent } from "@/lib/analytics";
 import { useSavedStore } from "@/store/saved";
 import { useAuthStore } from "@/store/auth";
 import { hasMoreInfo } from "@/lib/venueTraits";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
 import DirectionsButton from "@/components/DirectionsButton";
@@ -38,7 +40,8 @@ export default function VenuePreview({
   const saved = savedIds.includes(venue.id);
   const signedIn = useAuthStore((s) => s.status) === "signedIn";
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const showMore = hasMoreInfo(venue, signedIn);
+  const [planOpen, setPlanOpen] = useState(false);
+  const showMore = hasMoreInfo(venue);
   // The back glyph is currently synonymous with the standalone page — the two
   // sheet containers both close. Page gets top-left back (the app's convention
   // everywhere else) and an untruncated title, since it has the room.
@@ -141,8 +144,10 @@ export default function VenuePreview({
       </div>
       <CheckInCard venueId={venue.id} />
 
-      {/* Actions */}
-      <div className="mt-4">
+      {/* Actions. Making a plan is a peer of Directions, not something buried
+          behind the More-info expander — it's the surface's social payoff and
+          the only path that produces a shareable link. */}
+      <div className={cn("mt-4 grid gap-2", signedIn ? "grid-cols-2" : "grid-cols-1")}>
         <DirectionsButton
           title={venue.title}
           venueId={venue.id}
@@ -150,7 +155,24 @@ export default function VenuePreview({
           longitude={venue.longitude}
           className="h-11 rounded-xl w-full"
         />
+        {signedIn && (
+          <Button
+            variant="secondary"
+            className="h-11 w-full rounded-xl"
+            onClick={() => setPlanOpen(true)}
+          >
+            <CalendarClock className="h-4 w-4 mr-2" /> Make a plan
+          </Button>
+        )}
       </div>
+      {signedIn && (
+        <CreatePlanSheet
+          open={planOpen}
+          onOpenChange={setPlanOpen}
+          initialVenueId={venue.id}
+          surface="venue"
+        />
+      )}
 
       {/* The deeper layer, in place — this replaced a "View Details" button
           that navigated to /venue/:id and re-rendered most of this component.

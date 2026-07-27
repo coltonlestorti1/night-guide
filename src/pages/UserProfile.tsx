@@ -5,10 +5,11 @@
  * RLS-scoped friends-out-tonight feed — no client-side privacy filtering.
  */
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, UserX } from "lucide-react";
+import { ArrowLeft, GraduationCap, MapPin, UserX } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useFriendsOutTonight, useProfileByUsername } from "@/hooks/useFriends";
 import { timeAgo } from "@/lib/format";
+import { collegeLabel } from "@/data/colleges";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AddButton from "@/components/social/AddButton";
@@ -103,6 +104,12 @@ const UserProfile = () => {
           </h1>
           {profile.display_name && (
             <p className="text-sm text-muted-foreground">@{profile.username}</p>
+          )}
+          {collegeLabel(profile.college_slug, profile.class_year) && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {collegeLabel(profile.college_slug, profile.class_year)}
+            </p>
           )}
           {profile.bio && (
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-foreground/80">{profile.bio}</p>
