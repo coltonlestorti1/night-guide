@@ -16,6 +16,7 @@ import VenueStatTiles from "@/components/VenueStatTiles";
 import CheckInCard from "@/components/CheckInCard";
 import DirectionsButton from "@/components/DirectionsButton";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
+import ActivitySection from "@/components/ActivitySection";
 import FriendsHereRow from "@/components/FriendsHereRow";
 import PlansHereRow from "@/components/PlansHereRow";
 
@@ -93,6 +94,10 @@ export default function VenuePreview({ venue, onClose }: { venue: Venue; onClose
       </div>
 
       <VenueQuickInfo venue={venue} />
+
+      {/* Activity sits above friends/plans: it answers "should I go", which is
+          the question this card exists to settle. */}
+      <ActivitySection venue={venue} />
 
       <FriendsHereRow venueId={venue.id} />
 
