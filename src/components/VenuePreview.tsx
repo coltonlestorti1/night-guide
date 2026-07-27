@@ -4,7 +4,7 @@
  * music, and the primary actions. Self-contained: owns its saved state so the
  * host only supplies the venue and a close handler.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { MapPin, X, ArrowLeft, ChevronDown, Bookmark, Flame, Star } from "lucide-react";
 import { Venue } from "@/data/types";
 import { logEvent } from "@/lib/analytics";
@@ -49,7 +49,9 @@ export default function VenuePreview({
   // The sheet is not remounted when a different venue is selected (same JSX
   // position, no key), so the previous venue's expanded state would otherwise
   // carry over. Reset per venue so defaultExpanded actually governs each one.
-  useEffect(() => {
+  // useLayoutEffect, not useEffect: a passive effect lets one frame paint with
+  // the new venue still expanded before collapsing.
+  useLayoutEffect(() => {
     setExpanded(defaultExpanded);
   }, [venue.id, defaultExpanded]);
 
