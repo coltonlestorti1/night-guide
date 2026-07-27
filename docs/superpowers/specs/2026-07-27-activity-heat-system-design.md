@@ -362,6 +362,23 @@ line is a door state, and the line model treats them very differently.
 cannot be backfilled: deferring collection means the "gets smarter over time"
 story starts from zero on the day it is finally built.
 
+Implemented 2026-07-27 as `scripts/2026-07-27-venue-hour-stats.sql`.
+
+**Caveat for whoever builds the read side.** Until the app has users, every
+sample records zero people, and "nobody was here at 11 PM Tuesday" is
+indistinguishable from "nobody uses the app yet". Both are honest observations;
+only one is evidence about the venue. So the read side needs two gates, not one:
+
+1. A minimum `sample_count` for that venue-hour, and
+2. Proof there was app traffic in that window at all — otherwise a venue-hour
+   with fifty zero-samples looks like fifty confirmations that a bar is dead.
+
+`crowd_samples` is the useful signal here: it only increments when somebody
+actually reported a vibe, so a venue-hour with `crowd_samples = 0` carries no
+information regardless of how many times it was sampled. Prefer it over
+`sample_count` when deciding whether observed data may replace the archetype
+curve.
+
 ## Testing
 
 Pure functions, time injected — no network, no database, no clock.
