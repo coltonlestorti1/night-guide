@@ -20,6 +20,7 @@ import DirectionsButton from "@/components/DirectionsButton";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
 import ActivitySection from "@/components/ActivitySection";
 import VenueMoreInfo from "@/components/VenueMoreInfo";
+import TypicalNightChart from "@/components/TypicalNightChart";
 import FriendsHereRow from "@/components/FriendsHereRow";
 import PlansHereRow from "@/components/PlansHereRow";
 
@@ -178,6 +179,10 @@ export default function VenuePreview({
           surface="venue"
         />
       )}
+
+      {/* Typical night sits above More info and outside it: the shape of the
+          night is a glance question, not reference data. */}
+      <TypicalNightChart venue={venue} />
 
       {/* The deeper layer, in place — this replaced a "View Details" button
           that navigated to /venue/:id and re-rendered most of this component.

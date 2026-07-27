@@ -11,22 +11,15 @@
  * is NOT here — it renders once, in ActivitySection at the top of the card.
  */
 import { Venue } from "@/data/types";
-import { getEnrichment, getSpecials } from "@/data/enrichment";
+import { getSpecials } from "@/data/enrichment";
 import VenueInfoCard from "@/components/VenueInfoCard";
-import PopularTimesChart from "@/components/PopularTimesChart";
 
 export default function VenueMoreInfo({ venue }: { venue: Venue }) {
-  const e = getEnrichment(venue.title);
   const specials = getSpecials(venue.title);
 
   return (
     <div className="space-y-4 pt-3">
       <VenueInfoCard venue={venue} />
-
-      {/* Carried over unchanged — renders for 0/56 venues today (the serpapi
-          popular-times source was never run). Kept, not deleted, pending
-          Colton's direction. */}
-      {e?.popularTimes && <PopularTimesChart data={e.popularTimes} />}
 
       {/* Carried over unchanged — specials.json is currently {} for all
           venues. Kept, not deleted, pending Colton's direction. */}
