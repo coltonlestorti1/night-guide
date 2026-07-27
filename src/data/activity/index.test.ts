@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { getBaseline, getEvents, ALL_BASELINE_IDS, ALL_EVENTS } from "./index";
+import { getBaseline, getEvents, ALL_BASELINE_TITLES, ALL_EVENTS } from "./index";
 
 describe("activity data", () => {
   it("covers all 56 live venues", () => {
-    expect(ALL_BASELINE_IDS.length).toBe(56);
+    expect(ALL_BASELINE_TITLES.length).toBe(56);
   });
 
   it("gives every venue an archetype and a line_pattern", () => {
-    for (const id of ALL_BASELINE_IDS) {
+    for (const id of ALL_BASELINE_TITLES) {
       const b = getBaseline(id)!;
       expect(b.archetype).toBeTruthy();
       expect(["door_pick", "capacity_wait", "occasion", "none"]).toContain(b.line_pattern);
@@ -15,22 +15,22 @@ describe("activity data", () => {
   });
 
   it("returns undefined for an unknown venue", () => {
-    expect(getBaseline("not-a-venue")).toBeUndefined();
+    expect(getBaseline("Not A Venue")).toBeUndefined();
   });
 
   it("returns events for a venue that has them", () => {
-    const events = getEvents("berlin");
+    const events = getEvents("Berlin");
     expect(events.length).toBeGreaterThan(0);
-    expect(events.every((e) => e.venue_id === "berlin")).toBe(true);
+    expect(events.every((e) => e.venue === "Berlin")).toBe(true);
   });
 
   it("returns an empty array for a venue with no events", () => {
-    expect(getEvents("not-a-venue")).toEqual([]);
+    expect(getEvents("Not A Venue")).toEqual([]);
   });
 
   it("only references venues that exist in the baseline", () => {
     for (const e of ALL_EVENTS) {
-      expect(getBaseline(e.venue_id), `event venue ${e.venue_id} missing`).toBeDefined();
+      expect(getBaseline(e.venue), `event venue ${e.venue} missing`).toBeDefined();
     }
   });
 
@@ -43,7 +43,7 @@ describe("activity data", () => {
   });
 
   it("has researched windows for the ten seeded venues", () => {
-    const researched = ALL_BASELINE_IDS.filter(
+    const researched = ALL_BASELINE_TITLES.filter(
       (id) => getBaseline(id)!.source_type === "research_estimate",
     );
     expect(researched.length).toBe(10);

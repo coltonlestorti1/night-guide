@@ -72,9 +72,17 @@ the method be secret.
 
 ### Static — `src/data/activity/`
 
-Keyed by venue **`id`**, not title. `enrichment.json` keys by title and the
-dataset already contains `Niagara`/`Niagara Bar` and `Downtown Social`/`13th Step`
-mismatches waiting to break such a join.
+Keyed by venue **title**, matching `src/data/enrichment`.
+
+Corrected 2026-07-27 after implementation: this originally specified keying on
+`id` to avoid the `Niagara`/`Niagara Bar` name mismatch. That was wrong. Live
+venues come from Supabase where `venues.id` is a **uuid**, while the demo
+dataset in `src/data/venues.ts` uses slugs — different id spaces, so an `id`
+join misses every venue in production and the whole map renders Quiet. The
+observed name mismatches are between the research seed table and the app, not
+between Supabase and the app; all 35 live venues match the app by name. Title
+is the only key both sources share. `getBaseline()` warns in dev on a miss so a
+future rename cannot break this silently.
 
 | File | Contents |
 |---|---|

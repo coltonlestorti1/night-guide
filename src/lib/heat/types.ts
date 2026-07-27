@@ -49,7 +49,8 @@ export type VenueBaseline = {
 };
 
 export type WeeklyEvent = {
-  venue_id: string;
+  /** Venue title — the same key the enrichment layer uses. */
+  venue: string;
   /** 0 = Sunday … 6 = Saturday */
   day: number;
   name: string;

@@ -1,33 +1,33 @@
 {
-  "the-grafton": {
+  "The Grafton": {
     "archetype": "pub",
     "line_pattern": "occasion",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "standings": {
+  "Standings": {
     "archetype": "pub",
     "line_pattern": "occasion",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "international-bar": {
+  "International Bar": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "coyote-ugly-saloon": {
+  "Coyote Ugly Saloon": {
     "archetype": "party_bar",
     "line_pattern": "door_pick",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "niagara-bar": {
+  "Niagara Bar": {
     "archetype": "dive",
     "line_pattern": "none",
     "busy_start": 1290,
@@ -42,14 +42,14 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "lucys-bar": {
+  "Lucy's Bar": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "doc-hollidays": {
+  "Doc Holliday's": {
     "archetype": "dive",
     "line_pattern": "none",
     "busy_start": 1230,
@@ -65,7 +65,7 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "the-library": {
+  "The Library": {
     "archetype": "dive",
     "line_pattern": "none",
     "busy_start": 1290,
@@ -80,238 +80,238 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "death-and-co": {
+  "Death & Co": {
     "archetype": "cocktail_room",
     "line_pattern": "capacity_wait",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "the-summit-bar": {
+  "The Summit Bar": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "alphabet-city-beer-co": {
+  "Alphabet City Beer Co": {
     "archetype": "pub",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "kgb-bar": {
+  "KGB Bar": {
     "archetype": "music_venue",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "mcsorleys-old-ale-house": {
+  "McSorley's Old Ale House": {
     "archetype": "pub",
     "line_pattern": "occasion",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "beauty-bar": {
+  "Beauty Bar": {
     "archetype": "party_bar",
     "line_pattern": "door_pick",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "please-don-t-tell": {
+  "Please Don't Tell": {
     "archetype": "cocktail_room",
     "line_pattern": "capacity_wait",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "the-wayland": {
+  "The Wayland": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "d-b-a": {
+  "d.b.a.": {
     "archetype": "pub",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "juke-bar": {
+  "Juke Bar": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "holiday-cocktail-lounge": {
+  "Holiday Cocktail Lounge": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "ten-degrees": {
+  "Ten Degrees": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "the-headless-widow": {
+  "The Headless Widow": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "wonderland-bar": {
+  "Wonderland Bar": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "bua": {
+  "Bua": {
     "archetype": "pub",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "superbueno": {
+  "Superbueno": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "sweet-linda": {
+  "Sweet Linda": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "motel-no-tell": {
+  "Motel No Tell": {
     "archetype": "party_bar",
     "line_pattern": "door_pick",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "solas": {
+  "Solas": {
     "archetype": "dance_club",
     "line_pattern": "door_pick",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "paradise-lost": {
+  "Paradise Lost": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "goodnight-sonny": {
+  "Goodnight Sonny": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "deluxx-fluxx": {
+  "Deluxx Fluxx": {
     "archetype": "dance_club",
     "line_pattern": "door_pick",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "lucky": {
+  "Lucky": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "mona-s": {
+  "Mona's": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "the-york": {
+  "The York": {
     "archetype": "pub",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "the-spotted-owl-tavern": {
+  "The Spotted Owl Tavern": {
     "archetype": "pub",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "accidental-bar": {
+  "Accidental Bar": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "berlin": {
+  "Berlin": {
     "archetype": "dance_club",
     "line_pattern": "door_pick",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "little-rebel": {
+  "Little Rebel": {
     "archetype": "pub",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "romeos": {
+  "Romeos": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "club-cumming": {
+  "Club Cumming": {
     "archetype": "music_venue",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "big-bar": {
+  "Big Bar": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "two-perrys": {
+  "Two Perrys": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "wiggle-room": {
+  "Wiggle Room": {
     "archetype": "dance_club",
     "line_pattern": "door_pick",
     "busy_start": 1320,
@@ -327,56 +327,56 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "96-tears": {
+  "96 Tears": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "double-down-saloon": {
+  "Double Down Saloon": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "lovers-of-today": {
+  "Lovers of Today": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "banshee": {
+  "Banshee": {
     "archetype": "pub",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "sake-bar-decibel": {
+  "Sake Bar Decibel": {
     "archetype": "cocktail_room",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "barcade": {
+  "Barcade": {
     "archetype": "activity_bar",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "blue-gold-tavern": {
+  "Blue & Gold Tavern": {
     "archetype": "dive",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "downtown-social": {
+  "Downtown Social": {
     "archetype": "party_bar",
     "line_pattern": "door_pick",
     "busy_start": 1260,
@@ -392,14 +392,14 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "otto-s-shrunken-head": {
+  "Otto's Shrunken Head": {
     "archetype": "music_venue",
     "line_pattern": "none",
     "confidence_base": "low",
     "source_type": "archetype_default",
     "last_reviewed": "2026-07-27"
   },
-  "phebes-tavern": {
+  "Phebe's Tavern": {
     "archetype": "party_bar",
     "line_pattern": "door_pick",
     "busy_start": 1230,
@@ -415,7 +415,7 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "joyface": {
+  "Joyface": {
     "archetype": "dance_club",
     "line_pattern": "door_pick",
     "busy_start": 1260,
@@ -431,7 +431,7 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "st-dymphnas": {
+  "St. Dymphna's": {
     "archetype": "pub",
     "line_pattern": "none",
     "busy_start": 1110,
@@ -447,7 +447,7 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "nublu-151": {
+  "Nublu 151": {
     "archetype": "music_venue",
     "line_pattern": "none",
     "busy_start": 1200,
@@ -462,7 +462,7 @@
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27"
   },
-  "the-ready-rooftop": {
+  "The Ready Rooftop": {
     "archetype": "rooftop",
     "line_pattern": "none",
     "busy_start": 1020,

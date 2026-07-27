@@ -69,7 +69,7 @@ describe("golden: Nowhere is busy on a Monday because of programming", () => {
   it("reaches Busy or better at 10 PM Monday", () => {
     const r = computeHeat({
       baseline: base({ archetype: "dive", line_pattern: "none" }),
-      events: [{ venue_id: "nowhere", day: 1, name: "Macho Monday", start_min: 22 * 60, source_url: "https://example.com" }],
+      events: [{ venue: "Nowhere", day: 1, name: "Macho Monday", start_min: 22 * 60, source_url: "https://example.com" }],
       signals: EMPTY_SIGNALS,
       now: new Date(2026, 6, 27, 22, 0), hours: OPEN_ALWAYS,
     });

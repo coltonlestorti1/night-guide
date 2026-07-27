@@ -16,6 +16,8 @@ import { pinGlyph } from "@/lib/venueTraits";
 import { circlePolygon, EMPTY_FC } from "@/lib/geo";
 import { toast } from "sonner";
 import LocationDeniedDialog from "@/components/LocationDeniedDialog";
+import { HeatResult } from "@/lib/heat/types";
+import { heatTier } from "@/lib/heat/tier";
 
 export type PinFriend = { id: string; name: string; avatarUrl: string | null };
 
@@ -24,8 +26,10 @@ export type MapProps = {
   selectedId?: string;
   onSelect?: (id: string) => void;
   onViewportChanged?: (bbox: BBox) => void;
-  /** venueId -> active check-in count; drives pin tiers and badges */
+  /** venueId -> active check-in count; drives the headcount badge */
   activity?: Record<string, number>;
+  /** venueId -> computed heat; drives pin tiers. Absent means every pin reads quiet. */
+  heat?: Record<string, HeatResult>;
   /** venueIds with an ACTIVE happy hour; pins get the amber ring */
   happyHour?: Set<string>;
   /** venueId -> visible friends checked in there; renders avatar faces on the pin */
@@ -135,7 +139,7 @@ function friendCluster(friends: { name: string; avatarUrl: string | null }[]): H
   return cluster;
 }
 
-const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged, activity, happyHour, friendsByVenue, plansByVenue }) => {
+const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChanged, activity, heat, happyHour, friendsByVenue, plansByVenue }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -173,20 +177,24 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
       const isSelected = v.id === selectedId;
       const count = activity?.[v.id] ?? 0;
       const hh = happyHour?.has(v.id) ?? false;
-      // Activity tiers: 0-2 = category ring, 3-5 = trending (orange), 6+ = hot (pink).
-      const trending = count >= 3 && count < 6;
-      const hot = count >= 6;
-      const scale = count >= 3 ? 1.1 : 1;
+      // Tiers come from the heat engine: researched/archetype baseline blended
+      // with live check-ins, so a venue reads busy when it usually is — not
+      // only once somebody has checked in. See src/lib/heat/tier.ts.
+      const tier = heatTier(heat?.[v.id], isSelected);
+      const trending = tier === "trending";
+      const hot = tier === "hot";
+      const scale = hot || trending ? 1.1 : 1;
       // Ring priority: selection > hot > trending > quiet. Active states get a
       // color; quiet venues stay neutral gray.
-      const active = isSelected || hot || trending;
-      const ring = isSelected
-        ? SELECTED_RING
-        : hot
-        ? HOT_RING
-        : trending
-        ? TRENDING_RING
-        : NORMAL_RING;
+      const active = tier !== "quiet";
+      const ring =
+        tier === "selected"
+          ? SELECTED_RING
+          : tier === "hot"
+          ? HOT_RING
+          : tier === "trending"
+          ? TRENDING_RING
+          : NORMAL_RING;
 
       const wrapper = document.createElement("div");
       wrapper.className = "endz-marker";
@@ -334,7 +342,7 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     // markers rebuild only when ring or friend membership actually changes —
     // not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venues, selectedId, onSelect, clearMarkers, activity, happyHourKey, friendsKey, plansKey]);
+  }, [venues, selectedId, onSelect, clearMarkers, activity, heat, happyHourKey, friendsKey, plansKey]);
 
   useEffect(() => {
     if (!mapContainer.current) return;

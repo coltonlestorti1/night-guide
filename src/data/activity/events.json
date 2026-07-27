@@ -1,17 +1,107 @@
 [
-  { "venue_id": "berlin", "day": 5, "name": "Berlin Dance Party", "start_min": 1380, "source_url": "https://www.berlinundera.com/" },
-  { "venue_id": "berlin", "day": 6, "name": "Berlin Dance Party", "start_min": 1380, "source_url": "https://www.berlinundera.com/" },
-  { "venue_id": "club-cumming", "day": 1, "name": "Mondays in the Club with Lance", "start_min": 1290, "source_url": "https://www.clubcummingnyc.com/events" },
-  { "venue_id": "club-cumming", "day": 0, "name": "Burlesque Open Stage", "start_min": 1290, "source_url": "https://www.clubcummingnyc.com/events" },
-  { "venue_id": "club-cumming", "day": 2, "name": "Make It with Brini Maxwell", "start_min": 1080, "source_url": "https://www.clubcummingnyc.com/events" },
-  { "venue_id": "club-cumming", "day": 0, "name": "The Anatomy Lesson: Drink & Draw", "start_min": 1020, "source_url": "https://www.clubcummingnyc.com/events" },
-  { "venue_id": "the-wayland", "day": 3, "name": "Live Music", "start_min": 1260, "source_url": "https://www.thewaylandnyc.com/" },
-  { "venue_id": "beauty-bar", "day": 0, "name": "Secret Sauce comedy", "start_min": 1200, "source_url": "https://beautybar.com/nyc" },
-  { "venue_id": "motel-no-tell", "day": 1, "name": "Trivia", "start_min": 1140, "source_url": "https://www.motelnotell.com/" },
-  { "venue_id": "motel-no-tell", "day": 2, "name": "Mixtape Bingo", "start_min": 1140, "source_url": "https://www.motelnotell.com/" },
-  { "venue_id": "motel-no-tell", "day": 3, "name": "Live Music", "start_min": 1140, "source_url": "https://www.motelnotell.com/" },
-  { "venue_id": "solas", "day": 0, "name": "Tango", "start_min": null, "source_url": "https://www.solasbar.com/events" },
-  { "venue_id": "solas", "day": 2, "name": "Zouk", "start_min": null, "source_url": "https://www.solasbar.com/events" },
-  { "venue_id": "solas", "day": 3, "name": "Salsa", "start_min": null, "source_url": "https://www.solasbar.com/events" },
-  { "venue_id": "solas", "day": 4, "name": "Bachata", "start_min": null, "source_url": "https://www.solasbar.com/events" }
+  {
+    "venue": "Berlin",
+    "day": 5,
+    "name": "Berlin Dance Party",
+    "start_min": 1380,
+    "source_url": "https://www.berlinundera.com/"
+  },
+  {
+    "venue": "Berlin",
+    "day": 6,
+    "name": "Berlin Dance Party",
+    "start_min": 1380,
+    "source_url": "https://www.berlinundera.com/"
+  },
+  {
+    "venue": "Club Cumming",
+    "day": 1,
+    "name": "Mondays in the Club with Lance",
+    "start_min": 1290,
+    "source_url": "https://www.clubcummingnyc.com/events"
+  },
+  {
+    "venue": "Club Cumming",
+    "day": 0,
+    "name": "Burlesque Open Stage",
+    "start_min": 1290,
+    "source_url": "https://www.clubcummingnyc.com/events"
+  },
+  {
+    "venue": "Club Cumming",
+    "day": 2,
+    "name": "Make It with Brini Maxwell",
+    "start_min": 1080,
+    "source_url": "https://www.clubcummingnyc.com/events"
+  },
+  {
+    "venue": "Club Cumming",
+    "day": 0,
+    "name": "The Anatomy Lesson: Drink & Draw",
+    "start_min": 1020,
+    "source_url": "https://www.clubcummingnyc.com/events"
+  },
+  {
+    "venue": "The Wayland",
+    "day": 3,
+    "name": "Live Music",
+    "start_min": 1260,
+    "source_url": "https://www.thewaylandnyc.com/"
+  },
+  {
+    "venue": "Beauty Bar",
+    "day": 0,
+    "name": "Secret Sauce comedy",
+    "start_min": 1200,
+    "source_url": "https://beautybar.com/nyc"
+  },
+  {
+    "venue": "Motel No Tell",
+    "day": 1,
+    "name": "Trivia",
+    "start_min": 1140,
+    "source_url": "https://www.motelnotell.com/"
+  },
+  {
+    "venue": "Motel No Tell",
+    "day": 2,
+    "name": "Mixtape Bingo",
+    "start_min": 1140,
+    "source_url": "https://www.motelnotell.com/"
+  },
+  {
+    "venue": "Motel No Tell",
+    "day": 3,
+    "name": "Live Music",
+    "start_min": 1140,
+    "source_url": "https://www.motelnotell.com/"
+  },
+  {
+    "venue": "Solas",
+    "day": 0,
+    "name": "Tango",
+    "start_min": null,
+    "source_url": "https://www.solasbar.com/events"
+  },
+  {
+    "venue": "Solas",
+    "day": 2,
+    "name": "Zouk",
+    "start_min": null,
+    "source_url": "https://www.solasbar.com/events"
+  },
+  {
+    "venue": "Solas",
+    "day": 3,
+    "name": "Salsa",
+    "start_min": null,
+    "source_url": "https://www.solasbar.com/events"
+  },
+  {
+    "venue": "Solas",
+    "day": 4,
+    "name": "Bachata",
+    "start_min": null,
+    "source_url": "https://www.solasbar.com/events"
+  }
 ]

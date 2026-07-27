@@ -38,7 +38,7 @@ describe("baselineScore", () => {
 
   it("an event bump can make a Monday busy", () => {
     const event: WeeklyEvent = {
-      venue_id: "x", day: 1, name: "Macho Monday",
+      venue: "x", day: 1, name: "Macho Monday",
       start_min: 22 * 60, source_url: "https://example.com",
     };
     const without = baselineScore(dive, [], MON_10PM);
@@ -50,7 +50,7 @@ describe("baselineScore", () => {
 
   it("ignores an event on a different day", () => {
     const event: WeeklyEvent = {
-      venue_id: "x", day: 6, name: "Saturday thing",
+      venue: "x", day: 6, name: "Saturday thing",
       start_min: 22 * 60, source_url: "https://example.com",
     };
     expect(baselineScore(dive, [event], MON_10PM)).toBe(baselineScore(dive, [], MON_10PM));
@@ -58,7 +58,7 @@ describe("baselineScore", () => {
 
   it("ignores an event with no posted time", () => {
     const event: WeeklyEvent = {
-      venue_id: "x", day: 1, name: "Untimed",
+      venue: "x", day: 1, name: "Untimed",
       start_min: null, source_url: "https://example.com",
     };
     expect(baselineScore(dive, [event], MON_10PM)).toBe(baselineScore(dive, [], MON_10PM));

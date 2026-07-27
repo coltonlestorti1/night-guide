@@ -4,33 +4,20 @@
  * aggregate — headroom, closed handling, and line restraint.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { computeHeat } from "./index";
-import { getBaseline, getEvents, ALL_BASELINE_IDS } from "@/data/activity";
+import { getBaseline, getEvents, ALL_BASELINE_TITLES } from "@/data/activity";
 import { getEnrichment } from "@/data/enrichment";
 import { EMPTY_SIGNALS } from "./types";
 
-const titleById: Record<string, string> = {};
-{
-  const src = readFileSync("src/data/venues.ts", "utf8");
-  for (const b of src.split(/\n {2}\{\n/).slice(1)) {
-    const id = b.match(/id: "([^"]+)"/)?.[1];
-    const title = b.match(/title: "([^"]+)"/)?.[1];
-    if (id && title) titleById[id] = title;
-  }
-}
-
 function sweep(now: Date) {
-  return ALL_BASELINE_IDS.map((id) => {
-    const baseline = getBaseline(id)!;
-    const title = titleById[id] ?? id;
+  return ALL_BASELINE_TITLES.map((title) => {
+    const baseline = getBaseline(title)!;
     return {
-      id,
       title,
       pattern: baseline.line_pattern,
       ...computeHeat({
         baseline,
-        events: getEvents(id),
+        events: getEvents(title),
         signals: EMPTY_SIGNALS,
         now,
         hours: getEnrichment(title)?.hours,

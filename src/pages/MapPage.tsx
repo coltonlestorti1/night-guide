@@ -5,7 +5,8 @@
  */
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useFilterStore, activeFilterCount, HOT_MIN_ACTIVITY } from "@/store/filters";
+import { useFilterStore, activeFilterCount } from "@/store/filters";
+import { useVenueHeat } from "@/hooks/useVenueHeat";
 import { useSavedStore } from "@/store/saved";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
@@ -309,15 +310,36 @@ const MapPage = () => {
   // venues. Both stack (AND) and are client-side (saved ids live on-device).
   const { data: activityData } = useVenueActivity();
 
-  // Hot = real check-in activity. The old chip compared against venue_stats,
-  // which nothing populates, so it filtered every venue out and blanked the map.
+  // Friends checked in, grouped by venue — feeds avatar faces onto pins, and
+  // weights their venues' heat (a friend counts for more than a stranger).
+  // useFriendsOutTonight is already RLS-filtered (ghost mode, visibility,
+  // non-friends excluded), so this exposes nothing the venue sheet doesn't.
+  const { data: friendsOut } = useFriendsOutTonight();
+  const friendsByVenue = useMemo(() => {
+    if (!friendsOut || friendsOut.length === 0) return undefined;
+    const map: Record<string, PinFriend[]> = {};
+    for (const f of friendsOut) {
+      (map[f.venueId] ??= []).push({
+        id: f.profile.id,
+        name: f.profile.display_name || f.profile.username,
+        avatarUrl: f.profile.avatar_url,
+      });
+    }
+    return map;
+  }, [friendsOut]);
+
+  // Heat drives pin tiers; activityData still drives the headcount badge.
+  const venueHeat = useVenueHeat(venues, friendsByVenue);
+
+  // Hot now means the heat engine says so, not a bare check-in count — which
+  // never fired before there were users, leaving the chip permanently hidden.
   const hotIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const [venueId, a] of Object.entries(activityData ?? {})) {
-      if (a.count >= HOT_MIN_ACTIVITY) ids.add(venueId);
+    for (const [venueId, h] of Object.entries(venueHeat)) {
+      if (h.label === "Hot Now") ids.add(venueId);
     }
     return ids;
-  }, [activityData]);
+  }, [venueHeat]);
   // Hidden entirely when nothing is hot — never offer a filter that empties the map.
   const showHot = hotIds.size > 0;
 
@@ -342,23 +364,6 @@ const MapPage = () => {
         : undefined,
     [activityData]
   );
-
-  // Friends checked in, grouped by venue — feeds avatar faces onto pins.
-  // useFriendsOutTonight is already RLS-filtered (ghost mode, visibility,
-  // non-friends excluded), so this exposes nothing the venue sheet doesn't.
-  const { data: friendsOut } = useFriendsOutTonight();
-  const friendsByVenue = useMemo(() => {
-    if (!friendsOut || friendsOut.length === 0) return undefined;
-    const map: Record<string, PinFriend[]> = {};
-    for (const f of friendsOut) {
-      (map[f.venueId] ??= []).push({
-        id: f.profile.id,
-        name: f.profile.display_name || f.profile.username,
-        avatarUrl: f.profile.avatar_url,
-      });
-    }
-    return map;
-  }, [friendsOut]);
 
   // Opted-in plans (mine + friends'), grouped by venue → the distinct planning
   // badge. plans_on_map is RLS/ghost-filtered server-side; count = plans here,
@@ -438,6 +443,7 @@ const MapPage = () => {
           <Map
             venues={displayVenues}
             activity={activityCounts}
+            heat={venueHeat}
             happyHour={hhActiveIds}
             friendsByVenue={friendsByVenue}
             plansByVenue={plansByVenue}
