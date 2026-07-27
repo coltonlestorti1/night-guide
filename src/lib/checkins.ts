@@ -9,12 +9,27 @@
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 
-export type Vibe = "chill" | "building" | "packed";
+/**
+ * `building` keeps its stored value and displays as "Good crowd" — that gives
+ * all five options with zero data migration on the existing rows.
+ * Order matters: this is the order the buttons render in, dead -> line outside.
+ */
+export type Vibe = "dead" | "chill" | "building" | "packed" | "line_outside";
 
 export const VIBE_LABELS: Record<Vibe, string> = {
+  dead: "💤 Dead",
   chill: "😌 Chill",
-  building: "📈 Building",
+  building: "👌 Good crowd",
   packed: "🔥 Packed",
+  line_outside: "🚧 Line outside",
+};
+
+export type Recommend = "yes" | "maybe" | "no";
+
+export const RECOMMEND_LABELS: Record<Recommend, string> = {
+  yes: "Yes",
+  maybe: "Maybe",
+  no: "No",
 };
 
 export type CheckinVisibility = "everyone" | "friends" | "nobody";
@@ -99,4 +114,19 @@ export function subscribeActivity(onChanged: () => void): () => void {
 
 export function pokeActivity(): void {
   channel?.send({ type: "broadcast", event: "changed", payload: {} });
+}
+
+/**
+ * "Would you send friends here right now?" — recommendation quality, kept
+ * deliberately separate from crowd level. A packed room is not automatically
+ * a good recommendation.
+ */
+export async function setRecommend(checkInId: string, value: Recommend): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Backend not configured");
+  const { error } = await supabase
+    .from("check_ins")
+    .update({ would_recommend: value })
+    .eq("id", checkInId);
+  if (error) throw error;
 }
