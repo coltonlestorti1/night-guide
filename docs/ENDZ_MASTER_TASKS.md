@@ -882,9 +882,12 @@ disclose the new fields.
 discovery ("people from your school"), alum filtering, and any
 college → `venues.is_college_scene` matching or recommendation logic.
 
-**Open loose end:** "my school isn't listed" capture was proposed and not
-built — an unlisted student currently has no way to signal demand. Decide
-whether to add it.
+**Loose end CLOSED 2026-07-27:** "my school isn't listed" is built. The empty
+search state offers it, firing a `college_missing` event with the typed term
+(deliberate tap only, trimmed, capped at 60 chars to keep analytics props
+low-cardinality and PII-free). Rides the existing `events` table — no new DDL.
+Grow the list from it:
+`select props->>'query', count(*) from events where event_name = 'college_missing' group by 1 order by 2 desc;`
 
 ---
 
