@@ -6,7 +6,9 @@ import {
   axisHours,
   typicalNight,
   venuePeak,
+  dateFor,
 } from "./typicalNight";
+import { baselineScore } from "./baseline";
 import { VenueBaseline, WeeklyEvent } from "./types";
 import { WeeklyPeriod } from "@/data/enrichment/types";
 
@@ -188,6 +190,32 @@ describe("typicalNight copy tiers", () => {
 
   it("has no peak band without a researched window", () => {
     expect(typicalNight(base(), [], undefined, "weekend").peakBand).toBeNull();
+  });
+});
+
+describe("typicalNight busy-window reshape", () => {
+  it("rises strictly from 5 PM to 9 PM instead of plateauing at the outside-window ceiling", () => {
+    const r = typicalNight(niagara, [], undefined, "weekend");
+    const at = (hour: number) => r.bars.find((b) => b.hour === hour)!.value;
+    const fivePmToNinePm = [17, 18, 19, 20, 21].map(at);
+    for (let i = 1; i < fivePmToNinePm.length; i++) {
+      expect(fivePmToNinePm[i]).toBeGreaterThan(fivePmToNinePm[i - 1]);
+    }
+  });
+
+  it("never reshapes a bar above what baselineScore returns for the same moment", () => {
+    const r = typicalNight(niagara, [], undefined, "weekend");
+    for (const bar of r.bars) {
+      expect(bar.value).toBeLessThanOrEqual(baselineScore(niagara, [], dateFor(r.day, bar.hour)));
+    }
+  });
+
+  it("leaves a venue with no busy window untouched — bars equal baselineScore exactly", () => {
+    const noBusyWindow = base();
+    const r = typicalNight(noBusyWindow, [], undefined, "weekend");
+    for (const bar of r.bars) {
+      expect(bar.value).toBe(baselineScore(noBusyWindow, [], dateFor(r.day, bar.hour)));
+    }
   });
 });
 

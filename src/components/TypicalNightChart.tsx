@@ -63,6 +63,10 @@ export default function TypicalNightChart({ venue }: { venue: Venue }) {
   // tab's own maximum — otherwise a dead Tuesday fills the chart exactly
   // like a packed Saturday.
   const max = Math.max(1, venuePeak(baseline, events, hours));
+  // Labels anchor to the first bar, not to hour % 3 — the axis starts at 5 PM
+  // (hour 17), and 17 % 3 !== 0, so an absolute-hour test would silently
+  // start the labels at 6p instead of the 5 PM open the chart promises.
+  const firstHour = data.bars[0].hour;
 
   return (
     <section className="mt-3 rounded-2xl bg-secondary/60 p-3" aria-label="Typical night">
@@ -120,7 +124,7 @@ export default function TypicalNightChart({ venue }: { venue: Venue }) {
       <div className="flex gap-0.5 mt-1">
         {data.bars.map((b) => (
           <span key={b.hour} className="flex-1 text-center text-[9px] text-muted-foreground/70">
-            {b.hour % 3 === 0 ? hourLabel(b.hour) : ""}
+            {(b.hour - firstHour) % 3 === 0 ? hourLabel(b.hour) : ""}
           </span>
         ))}
       </div>

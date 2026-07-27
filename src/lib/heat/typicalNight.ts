@@ -16,7 +16,7 @@
  */
 import { WeeklyPeriod } from "@/data/enrichment/types";
 import { baselineScore } from "@/lib/heat/baseline";
-import { nightlifeDay } from "@/lib/heat/curves";
+import { curveValue, nightlifeDay } from "@/lib/heat/curves";
 import { displayTime } from "@/lib/heat/copy";
 import { VenueBaseline, WeeklyEvent } from "@/lib/heat/types";
 
@@ -148,6 +148,61 @@ function softLineFor(bars: { hour: number; value: number }[]): string | null {
   return `Usually picks up around ${displayTime(hit.hour * 60)}`;
 }
 
+/**
+ * Matches the `Math.min(score, 25)` clamp in `baseline.ts` for any hour
+ * outside a researched busy window. Kept in sync deliberately, not imported:
+ * `baseline.ts` clamps the *live* "right now" score and must not change, but
+ * that flat 25-point ceiling reads as a data artifact once five bars in a
+ * row hit it. This constant is that same ceiling, redistributed below.
+ */
+const OUTSIDE_CEILING = 25;
+
+/**
+ * A bar's hour is "outside" the researched busy window when the moment
+ * typicalNight() built its Date for (hour, minute 0) falls outside
+ * [busy_start, busy_end) — the same point `baselineScore` tested via
+ * `inWindow`.
+ */
+function isOutsideBusyWindow(hour: number, busyStart: number, busyEnd: number): boolean {
+  const min = hour * 60;
+  return !(min >= busyStart && min < busyEnd);
+}
+
+/**
+ * Chart-only reshaping. `baselineScore` flattens every hour outside a
+ * researched busy window to the same 25-point ceiling (see OUTSIDE_CEILING
+ * above), which makes early-evening bars on researched venues read as
+ * identical placeholders rather than a rising night. This redistributes that
+ * ceiling across the archetype curve's own shape among the outside-window
+ * bars, so the bars still rise toward the window instead of plateauing.
+ *
+ * `Math.min(originalValue, scaled)` is load-bearing: reshaping may only
+ * lower a bar, never raise it above what baselineScore actually returned —
+ * the chart must never invent busyness beyond the live score.
+ */
+function reshapeOutsideBusyWindow(
+  baseline: VenueBaseline,
+  bars: { hour: number; value: number }[],
+): { hour: number; value: number }[] {
+  const { busy_start, busy_end } = baseline;
+  if (busy_start == null || busy_end == null) return bars;
+
+  const outside = (hour: number) => isOutsideBusyWindow(hour, busy_start, busy_end);
+  const maxCurveAmongOutsideBars = Math.max(
+    0,
+    ...bars.filter((b) => outside(b.hour)).map((b) => curveValue(baseline.archetype, b.hour)),
+  );
+  if (maxCurveAmongOutsideBars === 0) return bars;
+
+  return bars.map((b) => {
+    if (!outside(b.hour)) return b;
+    const scaled = Math.round(
+      (OUTSIDE_CEILING * curveValue(baseline.archetype, b.hour)) / maxCurveAmongOutsideBars,
+    );
+    return { hour: b.hour, value: Math.min(b.value, scaled) };
+  });
+}
+
 /** Absolute-hour band covering every bar that overlaps the researched window. */
 function peakBandFor(baseline: VenueBaseline): { startHour: number; endHour: number } | null {
   const { peak_start, peak_end } = baseline;
@@ -197,10 +252,11 @@ export function typicalNight(
   tab: TypicalNightTab,
 ): TypicalNight {
   const day = representativeDay(baseline, events, tab);
-  const bars = axisHours(hours, day).map((hour) => ({
+  const rawBars = axisHours(hours, day).map((hour) => ({
     hour,
     value: baselineScore(baseline, events, dateFor(day, hour)),
   }));
+  const bars = reshapeOutsideBusyWindow(baseline, rawBars);
 
   // Researched and archetype tiers are mutually exclusive: a venue with a
   // researched peak states its times, everything else states the shape. The
