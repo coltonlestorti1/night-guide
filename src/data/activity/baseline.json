@@ -1,0 +1,482 @@
+{
+  "the-grafton": {
+    "archetype": "pub",
+    "line_pattern": "occasion",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "standings": {
+    "archetype": "pub",
+    "line_pattern": "occasion",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "international-bar": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "coyote-ugly-saloon": {
+    "archetype": "party_bar",
+    "line_pattern": "door_pick",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "niagara-bar": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "busy_start": 1290,
+    "busy_end": 1590,
+    "peak_start": 1410,
+    "peak_end": 1530,
+    "best_nights": [
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "lucys-bar": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "doc-hollidays": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "busy_start": 1230,
+    "busy_end": 1560,
+    "peak_start": 1350,
+    "peak_end": 1500,
+    "best_nights": [
+      4,
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "the-library": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "busy_start": 1290,
+    "busy_end": 1590,
+    "peak_start": 1410,
+    "peak_end": 1530,
+    "best_nights": [
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "death-and-co": {
+    "archetype": "cocktail_room",
+    "line_pattern": "capacity_wait",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "the-summit-bar": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "alphabet-city-beer-co": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "kgb-bar": {
+    "archetype": "music_venue",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "mcsorleys-old-ale-house": {
+    "archetype": "pub",
+    "line_pattern": "occasion",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "beauty-bar": {
+    "archetype": "party_bar",
+    "line_pattern": "door_pick",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "please-don-t-tell": {
+    "archetype": "cocktail_room",
+    "line_pattern": "capacity_wait",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "the-wayland": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "d-b-a": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "juke-bar": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "holiday-cocktail-lounge": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "ten-degrees": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "the-headless-widow": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "wonderland-bar": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "bua": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "superbueno": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "sweet-linda": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "motel-no-tell": {
+    "archetype": "party_bar",
+    "line_pattern": "door_pick",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "solas": {
+    "archetype": "dance_club",
+    "line_pattern": "door_pick",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "paradise-lost": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "goodnight-sonny": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "deluxx-fluxx": {
+    "archetype": "dance_club",
+    "line_pattern": "door_pick",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "lucky": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "mona-s": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "the-york": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "the-spotted-owl-tavern": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "accidental-bar": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "berlin": {
+    "archetype": "dance_club",
+    "line_pattern": "door_pick",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "little-rebel": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "romeos": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "club-cumming": {
+    "archetype": "music_venue",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "big-bar": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "two-perrys": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "wiggle-room": {
+    "archetype": "dance_club",
+    "line_pattern": "door_pick",
+    "busy_start": 1320,
+    "busy_end": 1620,
+    "peak_start": 1410,
+    "peak_end": 1560,
+    "best_nights": [
+      4,
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "96-tears": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "double-down-saloon": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "lovers-of-today": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "banshee": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "sake-bar-decibel": {
+    "archetype": "cocktail_room",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "barcade": {
+    "archetype": "activity_bar",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "blue-gold-tavern": {
+    "archetype": "dive",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "downtown-social": {
+    "archetype": "party_bar",
+    "line_pattern": "door_pick",
+    "busy_start": 1260,
+    "busy_end": 1590,
+    "peak_start": 1380,
+    "peak_end": 1530,
+    "best_nights": [
+      4,
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "otto-s-shrunken-head": {
+    "archetype": "music_venue",
+    "line_pattern": "none",
+    "confidence_base": "low",
+    "source_type": "archetype_default",
+    "last_reviewed": "2026-07-27"
+  },
+  "phebes-tavern": {
+    "archetype": "party_bar",
+    "line_pattern": "door_pick",
+    "busy_start": 1230,
+    "busy_end": 1560,
+    "peak_start": 1350,
+    "peak_end": 1500,
+    "best_nights": [
+      4,
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "joyface": {
+    "archetype": "dance_club",
+    "line_pattern": "door_pick",
+    "busy_start": 1260,
+    "busy_end": 1560,
+    "peak_start": 1380,
+    "peak_end": 1530,
+    "best_nights": [
+      4,
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "st-dymphnas": {
+    "archetype": "pub",
+    "line_pattern": "none",
+    "busy_start": 1110,
+    "busy_end": 1470,
+    "peak_start": 1230,
+    "peak_end": 1380,
+    "best_nights": [
+      4,
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "nublu-151": {
+    "archetype": "music_venue",
+    "line_pattern": "none",
+    "busy_start": 1200,
+    "busy_end": 1560,
+    "peak_start": 1320,
+    "peak_end": 1500,
+    "best_nights": [
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  },
+  "the-ready-rooftop": {
+    "archetype": "rooftop",
+    "line_pattern": "none",
+    "busy_start": 1020,
+    "busy_end": 1410,
+    "peak_start": 1140,
+    "peak_end": 1320,
+    "best_nights": [
+      0,
+      4,
+      5,
+      6
+    ],
+    "confidence_base": "medium",
+    "source_type": "research_estimate",
+    "last_reviewed": "2026-07-27"
+  }
+}
