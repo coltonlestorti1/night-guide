@@ -500,11 +500,26 @@ const MapPage = () => {
       {/* Venue preview — bottom sheet on mobile, right-side panel on tablet/desktop */}
       {isMobile ? (
         <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-          <DrawerContent className="bg-card border-border">
+          {/* max-h + an inner scroll region: DrawerContent is h-auto with no
+              overflow, so an expanded card would otherwise clip off the top of
+              the screen with no way to reach it. svh (not vh) so mobile browser
+              chrome doesn't eat the bottom action row. The grabber handle lives
+              in DrawerContent above this div, so it stays pinned while the body
+              scrolls — and keeps its single meaning, drag down to dismiss. */}
+          {/* [&>div:first-child]:shrink-0 pins the grabber handle. DrawerContent
+              is a flex column, so once max-h binds, the negative free space is
+              shared across BOTH children — min-h-0 lets the body shrink but
+              does nothing for the handle, which thinned 8px -> 4.5px the moment
+              a user expanded the card, degrading the only visible dismiss
+              affordance exactly when the sheet is tallest. */}
+          <DrawerContent className="bg-card border-border max-h-[85svh] [&>div:first-child]:shrink-0">
             <DrawerTitle className="sr-only">{selected?.title ?? "Venue details"}</DrawerTitle>
             <DrawerDescription className="sr-only">Venue activity, hours, and actions.</DrawerDescription>
             {selected && (
-              <div className="max-w-lg mx-auto w-full">
+              <div className="max-w-lg mx-auto w-full min-h-0 overflow-y-auto">
+                {/* Deliberately NOT defaultExpanded — the mobile sheet opens
+                    collapsed so tapping a pin stays a glance. Only the desktop
+                    panel and the standalone page open expanded. */}
                 <VenuePreview venue={selected} onClose={() => setSelected(null)} />
               </div>
             )}
@@ -520,7 +535,7 @@ const MapPage = () => {
             <SheetDescription className="sr-only">Venue activity, hours, and actions.</SheetDescription>
             {selected && (
               <div className="pt-4">
-                <VenuePreview venue={selected} onClose={() => setSelected(null)} />
+                <VenuePreview venue={selected} onClose={() => setSelected(null)} defaultExpanded />
               </div>
             )}
           </SheetContent>
