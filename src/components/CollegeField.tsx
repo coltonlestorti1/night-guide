@@ -31,7 +31,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { logEvent } from "@/lib/analytics";
 import { classYearOptions, getCollege, searchColleges } from "@/data/colleges";
 
 export default function CollegeField({
@@ -52,6 +54,23 @@ export default function CollegeField({
   const selected = getCollege(collegeSlug);
   const years = useMemo(() => classYearOptions(), []);
   const results = useMemo(() => searchColleges(query), [query]);
+
+  /**
+   * Demand signal for schools we don't carry, so the curated list can grow
+   * from evidence instead of guesswork. Read it in Supabase:
+   *   select props->>'query', count(*) from events
+   *   where event_name = 'college_missing' group by 1 order by 2 desc;
+   *
+   * Fires only on a deliberate tap, never per keystroke, and the term is
+   * capped — analytics props must stay low-cardinality and PII-free, and this
+   * is a free-text box someone could type anything into.
+   */
+  const reportMissingSchool = () => {
+    const term = query.trim().slice(0, 60);
+    if (term) logEvent("college_missing", { query: term });
+    toast.success("Thanks — we'll look at adding it.");
+    setOpen(false);
+  };
 
   return (
     <div className="space-y-2">
@@ -96,8 +115,16 @@ export default function CollegeField({
                 onValueChange={setQuery}
               />
               <CommandList>
-                <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-                  No school by that name.
+                <CommandEmpty className="px-3 py-6 text-center">
+                  <p className="text-sm text-muted-foreground">No school by that name.</p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-3 h-9 rounded-lg text-xs"
+                    onClick={reportMissingSchool}
+                  >
+                    My school isn't listed
+                  </Button>
                 </CommandEmpty>
                 <CommandGroup>
                   {results.map((c) => (
