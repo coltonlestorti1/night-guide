@@ -39,6 +39,10 @@ export default function VenuePreview({
   const signedIn = useAuthStore((s) => s.status) === "signedIn";
   const [expanded, setExpanded] = useState(defaultExpanded);
   const showMore = hasMoreInfo(venue, signedIn);
+  // The back glyph is currently synonymous with the standalone page — the two
+  // sheet containers both close. Page gets top-left back (the app's convention
+  // everywhere else) and an untruncated title, since it has the room.
+  const isPage = closeIcon === "back";
 
   // One venue_open per venue surfaced — the single choke point for every open
   // path (map pin, search, list, Find-the-move pick, Social spotlight).
@@ -73,16 +77,20 @@ export default function VenuePreview({
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none" />
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 h-9 w-9 rounded-full bg-black/45 backdrop-blur flex items-center justify-center hover:bg-black/65 transition-colors"
-          aria-label={closeIcon === "back" ? "Back" : "Close"}
+          className={cn(
+            "absolute top-2 h-9 w-9 rounded-full bg-black/45 backdrop-blur flex items-center justify-center hover:bg-black/65 transition-colors",
+            isPage ? "left-2" : "right-2",
+          )}
+          aria-label={isPage ? "Back" : "Close"}
         >
-          {closeIcon === "back" ? (
+          {isPage ? (
             <ArrowLeft className="h-4 w-4 text-white" />
           ) : (
             <X className="h-4 w-4 text-white" />
           )}
         </button>
-        <div className="absolute top-2 left-2 flex gap-1.5">
+        {/* Badges shift clear of the back button when it takes the left slot. */}
+        <div className={cn("absolute top-2 flex gap-1.5", isPage ? "left-14" : "left-2")}>
           {venue.hot_tonight && (
             <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[hsl(var(--hot))] text-white shadow-sm">
               <Flame className="h-3 w-3" /> Hot Tonight
@@ -99,7 +107,7 @@ export default function VenuePreview({
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0">
-          <h2 className="text-xl font-display font-bold leading-tight truncate">{venue.title}</h2>
+          <h2 className={cn("text-xl font-display font-bold leading-tight", !isPage && "truncate")}>{venue.title}</h2>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className={cn(
               "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide text-white",
