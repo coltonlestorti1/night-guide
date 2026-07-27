@@ -44,7 +44,11 @@ const CommandInput = React.forwardRef<
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+        // text-base until md, matching Input and Textarea: iOS Safari
+        // force-zooms any focused field under 16px. Here that zoom fires the
+        // moment the school picker opens (this input autofocuses), shunting the
+        // anchored popover off-screen mid-type — it reads as "search is broken".
+        "flex h-11 w-full rounded-md bg-transparent py-3 text-base md:text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
