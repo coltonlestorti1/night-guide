@@ -32,6 +32,9 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
   const [error, setError] = useState("");
   const [visibility, setVisibility] = useState<Visibility>(getStoredVisibility);
   const [recommend, setRecommendState] = useState<Recommend | null>(null);
+  // The saved answer wins until the user taps: otherwise a reload silently
+  // loses the selection even though the row still holds it.
+  const shownRecommend = recommend ?? mine?.would_recommend ?? null;
 
   const changeVisibility = (v: Visibility) => {
     setVisibility(v);
@@ -58,6 +61,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
       id: "optimistic",
       venue_id: venueId,
       vibe: null,
+      would_recommend: null,
       expires_at: new Date(Date.now() + 3 * 3600_000).toISOString(),
     });
     try {
@@ -180,10 +184,10 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
                   <button
                     key={r}
                     onClick={() => doRecommend(r)}
-                    aria-pressed={recommend === r}
+                    aria-pressed={shownRecommend === r}
                     className={cn(
                       "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                      recommend === r
+                      shownRecommend === r
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary hover:bg-accent/30",
                     )}

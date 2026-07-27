@@ -14,7 +14,7 @@ export function useMyCheckIn() {
       if (!supabase || !userId) return null;
       const { data, error } = await supabase
         .from("active_check_ins")
-        .select("id, venue_id, vibe, expires_at")
+        .select("id, venue_id, vibe, would_recommend, expires_at")
         .eq("user_id", userId)
         .maybeSingle();
       if (error) throw error;

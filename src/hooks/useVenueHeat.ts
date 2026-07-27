@@ -7,6 +7,7 @@ import { signalsFromActivity } from "@/lib/heat/signals";
 import { EMPTY_SIGNALS, HeatResult, LiveSignals, VenueBaseline } from "@/lib/heat/types";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
+import { useFriendsOutTonight } from "@/hooks/useFriends";
 
 /**
  * Per-venue heat for the current moment.
@@ -56,14 +57,22 @@ export function useOneVenueHeat(venue: Venue | undefined): {
   signals: LiveSignals;
 } {
   const { data: activity } = useVenueActivity();
+  const { data: friendsOut } = useFriendsOutTonight();
   const tick = useMinuteTick();
   const title = venue?.title;
   const id = venue?.id;
 
+  // Friends must be weighted here exactly as they are on the map. Without this
+  // a pin reads "Hot" from a friend boost while the card it opens says "Busy".
+  const friendCount = useMemo(
+    () => (id ? (friendsOut ?? []).filter((f) => f.venueId === id).length : 0),
+    [friendsOut, id],
+  );
+
   return useMemo(() => {
     if (!title || !id) return { heat: undefined, baseline: undefined, signals: EMPTY_SIGNALS };
     const baseline = getBaseline(title);
-    const signals = signalsFromActivity(activity?.[id], 0);
+    const signals = signalsFromActivity(activity?.[id], friendCount);
     if (!baseline) return { heat: undefined, baseline: undefined, signals };
     return {
       heat: computeHeat({
@@ -78,5 +87,5 @@ export function useOneVenueHeat(venue: Venue | undefined): {
     };
     // `tick` is the clock — see the note on useVenueHeat above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, id, activity, tick]);
+  }, [title, id, activity, friendCount, tick]);
 }

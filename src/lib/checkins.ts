@@ -50,6 +50,7 @@ export type MyCheckIn = {
   id: string;
   venue_id: string;
   vibe: Vibe | null;
+  would_recommend: Recommend | null;
   expires_at: string;
 };
 
