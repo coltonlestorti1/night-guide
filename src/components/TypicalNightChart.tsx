@@ -20,6 +20,7 @@ import {
   defaultTab,
   tabForDay,
   typicalNight,
+  venuePeak,
 } from "@/lib/heat/typicalNight";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
 import { cn } from "@/lib/utils";
@@ -50,13 +51,18 @@ export default function TypicalNightChart({ venue }: { venue: Venue }) {
 
   const now = new Date();
   const activeTab = tab ?? defaultTab(now);
-  const data = typicalNight(baseline, getEvents(venue.title), getEnrichment(venue.title)?.hours, activeTab);
+  const events = getEvents(venue.title);
+  const hours = getEnrichment(venue.title)?.hours;
+  const data = typicalNight(baseline, events, hours, activeTab);
   if (data.bars.length === 0) return null;
 
   // "Now" only means something on the tab covering tonight.
   const isTonight = activeTab === tabForDay(nightlifeDay(now));
   const currentHour = isTonight ? nowHour(now) : null;
-  const max = Math.max(1, ...data.bars.map((b) => b.value));
+  // Scaled against the venue's busiest hour across all four tabs, not this
+  // tab's own maximum — otherwise a dead Tuesday fills the chart exactly
+  // like a packed Saturday.
+  const max = Math.max(1, venuePeak(baseline, events, hours));
 
   return (
     <section className="mt-3 rounded-2xl bg-secondary/60 p-3" aria-label="Typical night">

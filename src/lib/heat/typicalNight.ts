@@ -170,6 +170,26 @@ export type TypicalNight = {
   day: number;
 };
 
+/**
+ * The venue's busiest hour across every night of the week. Bars are scaled
+ * against this rather than the selected night's own maximum, so a quiet
+ * Tuesday renders visibly lower than a packed Saturday instead of both
+ * filling the chart.
+ */
+export function venuePeak(
+  baseline: VenueBaseline,
+  events: WeeklyEvent[],
+  hours: WeeklyPeriod[] | undefined,
+): number {
+  let peak = 0;
+  for (const tab of TAB_ORDER) {
+    for (const bar of typicalNight(baseline, events, hours, tab).bars) {
+      if (bar.value > peak) peak = bar.value;
+    }
+  }
+  return peak;
+}
+
 export function typicalNight(
   baseline: VenueBaseline,
   events: WeeklyEvent[],

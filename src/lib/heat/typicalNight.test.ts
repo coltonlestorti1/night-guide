@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { defaultTab, representativeDay, axisHours, typicalNight } from "./typicalNight";
+import {
+  TAB_ORDER,
+  defaultTab,
+  representativeDay,
+  axisHours,
+  typicalNight,
+  venuePeak,
+} from "./typicalNight";
 import { VenueBaseline, WeeklyEvent } from "./types";
 import { WeeklyPeriod } from "@/data/enrichment/types";
 
@@ -181,5 +188,24 @@ describe("typicalNight copy tiers", () => {
 
   it("has no peak band without a researched window", () => {
     expect(typicalNight(base(), [], undefined, "weekend").peakBand).toBeNull();
+  });
+});
+
+describe("venuePeak", () => {
+  const peakOf = (bars: { value: number }[]) => Math.max(...bars.map((b) => b.value));
+
+  it("equals the weekend tab's own peak and beats the weeknight tab's, for a weekend-best venue", () => {
+    const weekend = typicalNight(niagara, [], undefined, "weekend");
+    const weeknight = typicalNight(niagara, [], undefined, "weeknight");
+    const peak = venuePeak(niagara, [], undefined);
+    expect(peak).toBe(peakOf(weekend.bars));
+    expect(peak).toBeGreaterThan(peakOf(weeknight.bars));
+  });
+
+  it("is never less than any individual tab's own peak", () => {
+    for (const tab of TAB_ORDER) {
+      const bars = typicalNight(niagara, [], undefined, tab).bars;
+      expect(venuePeak(niagara, [], undefined)).toBeGreaterThanOrEqual(peakOf(bars));
+    }
   });
 });
