@@ -23,7 +23,16 @@ export function useMyCheckIn() {
   });
 }
 
-export type VenueActivity = Record<string, { count: number; vibe: Vibe | null }>;
+export type VenueActivity = Record<string, {
+  count: number;
+  vibe: Vibe | null;
+  /** Age buckets. Absent until the slice-4 DDL is applied. */
+  count15?: number;
+  count45?: number;
+  count90?: number;
+  vibeTally?: Partial<Record<Vibe, number>>;
+  recommendTally?: Partial<Record<"yes" | "maybe" | "no", number>>;
+}>;
 
 /** Anonymous per-venue activity counts. Polls as the realtime fallback. */
 export function useVenueActivity() {
@@ -37,9 +46,31 @@ export function useVenueActivity() {
       if (!supabase) return {};
       const { data, error } = await supabase.rpc("venue_activity");
       if (error) throw error;
+      // Read defensively: the bucketed columns only exist once the slice-4 DDL
+      // has been pasted, and this code ships first (see SupabaseDataSource.ts).
       const map: VenueActivity = {};
-      for (const row of data as { venue_id: string; active_count: number; latest_vibe: Vibe | null }[]) {
-        map[row.venue_id] = { count: Number(row.active_count), vibe: row.latest_vibe };
+      type Row = Record<string, unknown>;
+      for (const row of (data ?? []) as Row[]) {
+        const num = (k: string) => (typeof row[k] === "number" ? (row[k] as number) : undefined);
+        const tally: Partial<Record<Vibe, number>> = {};
+        for (const v of ["dead", "chill", "building", "packed", "line_outside"] as Vibe[]) {
+          const n = num(`vibe_${v}`);
+          if (n) tally[v] = n;
+        }
+        const rec: Partial<Record<"yes" | "maybe" | "no", number>> = {};
+        for (const r of ["yes", "maybe", "no"] as const) {
+          const n = num(`rec_${r}`);
+          if (n) rec[r] = n;
+        }
+        map[String(row.venue_id)] = {
+          count: Number(row.active_count ?? 0),
+          vibe: (row.latest_vibe as Vibe) ?? null,
+          count15: num("count_15m"),
+          count45: num("count_45m"),
+          count90: num("count_90m"),
+          vibeTally: Object.keys(tally).length ? tally : undefined,
+          recommendTally: Object.keys(rec).length ? rec : undefined,
+        };
       }
       return map;
     },

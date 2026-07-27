@@ -12,7 +12,16 @@
  */
 import { EMPTY_SIGNALS, LiveSignals, Vibe5 } from "@/lib/heat/types";
 
-export type ActivityEntry = { count: number; vibe: string | null };
+export type ActivityEntry = {
+  count: number;
+  vibe: string | null;
+  /** Age buckets. Present only once the slice-4 DDL has been applied. */
+  count15?: number;
+  count45?: number;
+  count90?: number;
+  vibeTally?: Partial<Record<Vibe5, number>>;
+  recommendTally?: Partial<Record<"yes" | "maybe" | "no", number>>;
+};
 
 const KNOWN_VIBES: Vibe5[] = ["dead", "chill", "building", "packed", "line_outside"];
 
@@ -27,14 +36,17 @@ export function signalsFromActivity(
   if (!entry || entry.count <= 0) return { ...EMPTY_SIGNALS, vibeTally: {}, recommendTally: {} };
 
   const vibe = asVibe(entry.vibe);
+  const hasBuckets = entry.count15 != null || entry.count45 != null || entry.count90 != null;
   return {
-    count15: 0,
-    count45: entry.count,
-    count90: entry.count,
+    // Real buckets once the DDL is applied; otherwise file everything as
+    // mid-age rather than claiming a freshness we cannot know.
+    count15: hasBuckets ? entry.count15 ?? 0 : 0,
+    count45: hasBuckets ? entry.count45 ?? 0 : entry.count,
+    count90: hasBuckets ? entry.count90 ?? 0 : entry.count,
     // A friend cannot be present without being one of the check-ins.
     friendCount: Math.min(friendCount, entry.count),
-    vibeTally: vibe ? { [vibe]: 1 } : {},
-    recommendTally: {},
+    vibeTally: entry.vibeTally ?? (vibe ? { [vibe]: 1 } : {}),
+    recommendTally: entry.recommendTally ?? {},
     minutesSinceLastReport: vibe ? 0 : null,
   };
 }
