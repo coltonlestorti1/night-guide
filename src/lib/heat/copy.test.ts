@@ -193,3 +193,23 @@ describe("never leaks internals", () => {
     }
   });
 });
+
+describe("researched line time", () => {
+  it("prefers the researched line time over the peak start", () => {
+    const c = activityCopy(
+      heat({ label: "Hot Now", lineLikely: true, confidence: 85 }),
+      base({ line_pattern: "door_pick", peak_start: 23 * 60 + 30, line_likely_after: 23 * 60 + 15 }),
+      EMPTY_SIGNALS,
+    );
+    expect(c.lineNote).toBe("Line likely after 11:15 PM");
+  });
+
+  it("falls back to the peak start when no line time was researched", () => {
+    const c = activityCopy(
+      heat({ label: "Hot Now", lineLikely: true, confidence: 85 }),
+      base({ line_pattern: "door_pick", peak_start: 23 * 60 }),
+      EMPTY_SIGNALS,
+    );
+    expect(c.lineNote).toBe("Line likely after 11 PM");
+  });
+});

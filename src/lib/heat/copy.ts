@@ -99,8 +99,9 @@ export function activityCopy(
     if (baseline.line_pattern === "capacity_wait") {
       // The whole point of this pattern: it eases as the night goes on.
       lineNote = "Better later tonight";
-    } else if (exact && baseline.peak_start != null) {
-      lineNote = `Line likely after ${displayTime(baseline.peak_start)}`;
+    } else if (exact && (baseline.line_likely_after ?? baseline.peak_start) != null) {
+      // Researched line time wins; peak start is only the fallback.
+      lineNote = `Line likely after ${displayTime(baseline.line_likely_after ?? baseline.peak_start!)}`;
     } else {
       lineNote = "Line likely";
     }

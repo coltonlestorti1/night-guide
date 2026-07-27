@@ -39,6 +39,9 @@ export type VenueBaseline = {
   busy_end?: number;
   peak_start?: number;
   peak_end?: number;
+  /** Researched: when a wait becomes likely, and when it eases. */
+  line_likely_after?: number;
+  line_eases_after?: number;
   /** 0 = Sunday … 6 = Saturday */
   best_nights?: number[];
   capacity?: number;

@@ -55,3 +55,20 @@ describe("mayStateExactTimes", () => {
     expect(mayStateExactTimes(40)).toBe(false);
   });
 });
+
+describe("calibration", () => {
+  it("lets a researched venue with both windows state exact times", () => {
+    // The 10 seed venues all look like this. If this fails, researched windows
+    // were gathered and then suppressed, which is the worst of both worlds.
+    const b = base({
+      confidence_base: "medium",
+      source_type: "research_estimate",
+      busy_start: 1230, busy_end: 1560, peak_start: 1350, peak_end: 1500,
+    });
+    expect(mayStateExactTimes(confidenceScore(b, EMPTY_SIGNALS))).toBe(true);
+  });
+
+  it("still refuses exact times for an archetype default with no signals", () => {
+    expect(mayStateExactTimes(confidenceScore(base({}), EMPTY_SIGNALS))).toBe(false);
+  });
+});

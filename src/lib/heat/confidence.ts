@@ -10,7 +10,11 @@ import { effectiveCheckIns } from "@/lib/heat/live";
 import { LiveSignals, VenueBaseline } from "@/lib/heat/types";
 
 const BASE_POINTS = { high: 60, medium: 40, low: 20 } as const;
-const SOURCE_POINTS = { first_hand: 20, research_estimate: 10, archetype_default: 0 } as const;
+// Calibrated so a research_estimate venue carrying BOTH a busy and a peak
+// window lands exactly on EXACT_TIME_THRESHOLD (40 + 20 + 5 + 5 = 70). That is
+// the case researched windows exist for; anything stricter researches them and
+// then refuses to show them.
+const SOURCE_POINTS = { first_hand: 30, research_estimate: 20, archetype_default: 0 } as const;
 
 /** Above this, copy may state exact times. */
 export const EXACT_TIME_THRESHOLD = 70;

@@ -29,7 +29,7 @@
   },
   "Niagara Bar": {
     "archetype": "dive",
-    "line_pattern": "none",
+    "line_pattern": "door_pick",
     "busy_start": 1290,
     "busy_end": 1590,
     "peak_start": 1410,
@@ -40,7 +40,9 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_likely_after": 1380,
+    "line_eases_after": 1560
   },
   "Lucy's Bar": {
     "archetype": "dive",
@@ -51,7 +53,7 @@
   },
   "Doc Holliday's": {
     "archetype": "dive",
-    "line_pattern": "none",
+    "line_pattern": "door_pick",
     "busy_start": 1230,
     "busy_end": 1560,
     "peak_start": 1350,
@@ -63,11 +65,12 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_eases_after": 1530
   },
   "The Library": {
     "archetype": "dive",
-    "line_pattern": "none",
+    "line_pattern": "door_pick",
     "busy_start": 1290,
     "busy_end": 1590,
     "peak_start": 1410,
@@ -78,7 +81,8 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_eases_after": 1560
   },
   "Death & Co": {
     "archetype": "cocktail_room",
@@ -325,7 +329,9 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_likely_after": 1395,
+    "line_eases_after": 1575
   },
   "96 Tears": {
     "archetype": "dive",
@@ -390,7 +396,9 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_likely_after": 1365,
+    "line_eases_after": 1560
   },
   "Otto's Shrunken Head": {
     "archetype": "music_venue",
@@ -413,7 +421,9 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_likely_after": 1350,
+    "line_eases_after": 1530
   },
   "Joyface": {
     "archetype": "dance_club",
@@ -429,7 +439,9 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_likely_after": 1350,
+    "line_eases_after": 1545
   },
   "St. Dymphna's": {
     "archetype": "pub",
@@ -445,11 +457,12 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_eases_after": 1440
   },
   "Nublu 151": {
     "archetype": "music_venue",
-    "line_pattern": "none",
+    "line_pattern": "occasion",
     "busy_start": 1200,
     "busy_end": 1560,
     "peak_start": 1320,
@@ -460,11 +473,12 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_eases_after": 1530
   },
   "The Ready Rooftop": {
     "archetype": "rooftop",
-    "line_pattern": "none",
+    "line_pattern": "capacity_wait",
     "busy_start": 1020,
     "busy_end": 1410,
     "peak_start": 1140,
@@ -477,6 +491,8 @@
     ],
     "confidence_base": "medium",
     "source_type": "research_estimate",
-    "last_reviewed": "2026-07-27"
+    "last_reviewed": "2026-07-27",
+    "line_likely_after": 1170,
+    "line_eases_after": 1350
   }
 }
