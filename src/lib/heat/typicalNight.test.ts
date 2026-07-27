@@ -105,7 +105,9 @@ describe("representativeDay", () => {
 describe("typicalNight bars", () => {
   it("builds one bar per axis hour, in night order", () => {
     const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
-    expect(r.bars.map((b) => b.hour)).toEqual(axisHours([period(6, 4, 1)], r.day));
+    // representativeDay picks day 5 (Friday) when both 5 and 6 are best nights (tiebreak: earliest)
+    expect(r.day).toBe(5);
+    expect(r.bars.map((b) => b.hour)).toEqual(axisHours([period(6, 4, 1)], 5));
   });
 
   it("scores the weekend above the weeknight for the same venue", () => {
@@ -118,11 +120,12 @@ describe("typicalNight bars", () => {
 
   it("agrees with baselineScore — bars are not drawn from the raw curve", async () => {
     const { baselineScore } = await import("./baseline");
-    const { dateFor } = await import("./typicalNight");
     const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
+    // representativeDay picks day 5 when both 5 and 6 are best nights (tiebreak: earliest)
+    expect(r.day).toBe(5);
     const bar = r.bars.find((b) => b.hour === 23)!;
-    // The bar at hour 23 represents the picked day at 11 PM
-    expect(bar.value).toBe(baselineScore(niagara, [], dateFor(r.day, 23)));
+    // Day 5 (Friday) in the reference week is 2026-07-31. Bar value must match baselineScore for that date.
+    expect(bar.value).toBe(baselineScore(niagara, [], new Date(2026, 6, 31, 23, 0)));
   });
 
   it("lifts the bars on the day an event lands", () => {
