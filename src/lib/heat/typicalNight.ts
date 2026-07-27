@@ -17,6 +17,7 @@
 import { WeeklyPeriod } from "@/data/enrichment/types";
 import { baselineScore } from "@/lib/heat/baseline";
 import { nightlifeDay } from "@/lib/heat/curves";
+import { displayTime } from "@/lib/heat/copy";
 import { VenueBaseline, WeeklyEvent } from "@/lib/heat/types";
 
 export type TypicalNightTab = "weeknight" | "thursday" | "weekend" | "sunday";
@@ -104,6 +105,9 @@ export function axisHours(hours: WeeklyPeriod[] | undefined, day: number): numbe
 /** Probe range for comparing days — fixed, so close times can't skew the pick. */
 const PROBE_HOURS = Array.from({ length: 11 }, (_, i) => AXIS_START_HOUR + i); // 17–27
 
+/** A bar this close to the day's maximum is where the night "picks up". */
+const PICKS_UP_RATIO = 0.7;
+
 /**
  * Which single day a tab renders. A tab spans up to three days, and
  * best_nights and events are per-day, so a Tuesday-residency venue must show
@@ -131,6 +135,29 @@ export function representativeDay(
   return best;
 }
 
+/**
+ * The hour a venue starts mattering: the first bar reaching 70% of the day's
+ * own maximum. Derived from the rendered bars, so it can never disagree with
+ * the chart it sits under.
+ */
+function softLineFor(bars: { hour: number; value: number }[]): string | null {
+  const max = Math.max(0, ...bars.map((b) => b.value));
+  if (max === 0) return null;
+  const hit = bars.find((b) => b.value >= max * PICKS_UP_RATIO);
+  if (!hit) return null;
+  return `Usually picks up around ${displayTime(hit.hour * 60)}`;
+}
+
+/** Absolute-hour band covering every bar that overlaps the researched window. */
+function peakBandFor(baseline: VenueBaseline): { startHour: number; endHour: number } | null {
+  const { peak_start, peak_end } = baseline;
+  if (peak_start == null || peak_end == null) return null;
+  return {
+    startHour: Math.floor(peak_start / 60),
+    endHour: Math.ceil(peak_end / 60),
+  };
+}
+
 export type TypicalNight = {
   /** Absolute night hours with their 0–100 baseline score. */
   bars: { hour: number; value: number }[];
@@ -155,5 +182,26 @@ export function typicalNight(
     value: baselineScore(baseline, events, dateFor(day, hour)),
   }));
 
-  return { bars, peakBand: null, busiestLine: null, crowdedLine: null, softLine: null, day };
+  // Researched and archetype tiers are mutually exclusive: a venue with a
+  // researched peak states its times, everything else states the shape. The
+  // tier itself is NEVER named in the UI — only its copy differs.
+  const researched = baseline.peak_start != null && baseline.peak_end != null;
+
+  const busiestLine = researched
+    ? `Busiest ${displayTime(baseline.peak_start!)} – ${displayTime(baseline.peak_end!)}`
+    : null;
+
+  const crowdedLine =
+    researched && baseline.busy_start != null && baseline.busy_end != null
+      ? `Crowded ${displayTime(baseline.busy_start)} – ${displayTime(baseline.busy_end)}`
+      : null;
+
+  return {
+    bars,
+    peakBand: peakBandFor(baseline),
+    busiestLine,
+    crowdedLine,
+    softLine: researched ? null : softLineFor(bars),
+    day,
+  };
 }

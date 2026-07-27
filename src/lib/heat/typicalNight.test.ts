@@ -139,3 +139,47 @@ describe("typicalNight bars", () => {
     expect(at10(withEvent)).toBeGreaterThan(at10(without));
   });
 });
+
+describe("typicalNight copy tiers", () => {
+  it("gives a researched venue exact-time lines and no soft line", () => {
+    const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
+    expect(r.busiestLine).toBe("Busiest 11:30 PM – 1:30 AM");
+    expect(r.crowdedLine).toBe("Crowded 9:30 PM – 2:30 AM");
+    expect(r.softLine).toBeNull();
+  });
+
+  it("gives an archetype-only venue a soft line and no exact times", () => {
+    const r = typicalNight(base(), [], [period(6, 4, 1)], "weekend");
+    expect(r.busiestLine).toBeNull();
+    expect(r.crowdedLine).toBeNull();
+    expect(r.softLine).toMatch(/^Usually picks up around \d{1,2}(:\d{2})? (AM|PM)$/);
+  });
+
+  it("never hedges in the soft line", () => {
+    const r = typicalNight(base({ archetype: "cocktail_room" }), [], undefined, "weeknight");
+    expect(r.softLine).not.toMatch(/probably|approximately|estimate|about|roughly/i);
+  });
+
+  it("names the hour the shape actually rises, not the peak", () => {
+    // Weekend dive: bars peak at 11 PM (80), so 70% = 56, first crossed at 9 PM.
+    const r = typicalNight(base({ archetype: "dive" }), [], [period(6, 4, 1)], "weekend");
+    expect(r.softLine).toBe("Usually picks up around 9 PM");
+  });
+
+  it("names a later hour for a venue that starts later", () => {
+    // A dance club's shape is flat until late, so it must not claim 9 PM.
+    const club = typicalNight(base({ archetype: "dance_club" }), [], [period(6, 4, 1)], "weekend");
+    const dive = typicalNight(base({ archetype: "dive" }), [], [period(6, 4, 1)], "weekend");
+    expect(club.softLine).not.toBe(dive.softLine);
+  });
+
+  it("marks a peak band covering the researched window", () => {
+    const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
+    // 1410 min = 11:30 PM, 1530 min = 1:30 AM.
+    expect(r.peakBand).toEqual({ startHour: 23, endHour: 26 });
+  });
+
+  it("has no peak band without a researched window", () => {
+    expect(typicalNight(base(), [], undefined, "weekend").peakBand).toBeNull();
+  });
+});

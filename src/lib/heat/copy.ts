@@ -34,7 +34,7 @@ const LIVE_DOMINANT = 0.4;
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /** Minutes-from-night-midnight to a display time. Wraps past midnight. */
-function displayTime(min: number): string {
+export function displayTime(min: number): string {
   const total = ((min % 1440) + 1440) % 1440;
   const hour = Math.floor(total / 60);
   const minute = total % 60;
