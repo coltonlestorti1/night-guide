@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
-import { ChevronDown, Flag, Ghost, LogOut, MapPin, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Flag, Ghost, GraduationCap, LogOut, MapPin, Pencil, Trash2 } from "lucide-react";
+import { collegeLabel } from "@/data/colleges";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -175,6 +176,16 @@ const Profile = () => {
                 <div className="font-display text-xl font-bold truncate">{displayName || "You"}</div>
                 {profile?.username && (
                   <div className="text-sm text-muted-foreground truncate">@{profile.username}</div>
+                )}
+                {/* Mirrors the public /u/:username card, so you can see what
+                    others see without leaving settings. Edit Profile changes it. */}
+                {collegeLabel(profile?.college_slug, profile?.class_year) && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">
+                      {collegeLabel(profile?.college_slug, profile?.class_year)}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>

@@ -23,7 +23,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -95,16 +99,30 @@ export default function CollegeField({
               className="h-11 min-w-0 flex-1 justify-between rounded-xl px-3 font-normal"
             >
               <span className="flex min-w-0 items-center gap-2">
-                <GraduationCap className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span className={cn("truncate", !selected && "text-muted-foreground")}>
+                <GraduationCap
+                  className="h-4 w-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span
+                  className={cn(
+                    "truncate",
+                    !selected && "text-muted-foreground",
+                  )}
+                >
                   {selected ? selected.name : "Add your school"}
                 </span>
               </span>
-              <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <ChevronsUpDown
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
             </Button>
           </PopoverTrigger>
           {/* Width tracks the trigger so the list never overflows a phone. */}
-          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <PopoverContent
+            className="w-[var(--radix-popover-trigger-width)] p-0"
+            align="start"
+          >
             {/* shouldFilter={false}: cmdk's built-in scoring re-sorts and
                 re-selects the list, which buried the launch campus at the
                 bottom. Filtering here keeps searchColleges' ordering exactly. */}
@@ -116,7 +134,9 @@ export default function CollegeField({
               />
               <CommandList>
                 <CommandEmpty className="px-3 py-6 text-center">
-                  <p className="text-sm text-muted-foreground">No school by that name.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No school by that name.
+                  </p>
                   <Button
                     type="button"
                     variant="secondary"
@@ -175,24 +195,42 @@ export default function CollegeField({
       </div>
 
       {/* Year only matters once a school is set, and it's what separates an
-          alum from a current student. */}
+          alum from a current student. Its own clear, so you can drop the year
+          and keep the school — Radix Select has no empty option of its own. */}
       {selected && (
-        <Select
-          value={classYear ? String(classYear) : ""}
-          onValueChange={(v) => onClassYearChange(v ? Number(v) : null)}
-          disabled={disabled}
-        >
-          <SelectTrigger className="h-11 rounded-xl" aria-label="Class year">
-            <SelectValue placeholder="Class year (optional)" />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map((y) => (
-              <SelectItem key={y} value={String(y)}>
-                Class of {y}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select
+            value={classYear ? String(classYear) : ""}
+            onValueChange={(v) => onClassYearChange(v ? Number(v) : null)}
+            disabled={disabled}
+          >
+            <SelectTrigger
+              className="h-11 min-w-0 flex-1 rounded-xl"
+              aria-label="Class year"
+            >
+              <SelectValue placeholder="Class year (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>
+                  Class of {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {classYear !== null && !disabled && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Clear class year"
+              className="h-11 w-11 shrink-0 rounded-xl text-muted-foreground"
+              onClick={() => onClassYearChange(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
