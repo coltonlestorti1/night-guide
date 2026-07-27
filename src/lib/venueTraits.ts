@@ -92,9 +92,12 @@ export function pinGlyph(v: Venue): string {
  * getEnrichment() returns undefined for expired (>30d) records, so a venue
  * whose data has gone stale loses the expander rather than showing an empty
  * shell — the same "go quiet rather than assert" rule as hasOutdoorSeating.
+ *
+ * `v.description` is deliberately NOT a qualifier: the About section that used
+ * to render it here is gone (the blurb shows once, in ActivitySection), so a
+ * venue whose only asset is a description now has an empty panel behind the
+ * expander.
  */
 export function hasMoreInfo(v: Venue): boolean {
-  return Boolean(
-    v.description || getEnrichment(v.title) || getSpecials(v.title).length > 0,
-  );
+  return Boolean(getEnrichment(v.title) || getSpecials(v.title).length > 0);
 }

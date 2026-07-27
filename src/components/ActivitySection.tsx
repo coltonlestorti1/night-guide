@@ -8,6 +8,7 @@
  */
 import { Flame, Clock, CalendarDays, Users } from "lucide-react";
 import { Venue } from "@/data/types";
+import { getEnrichment } from "@/data/enrichment";
 import { activityCopy } from "@/lib/heat/copy";
 import { useOneVenueHeat } from "@/hooks/useVenueHeat";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,12 @@ import { cn } from "@/lib/utils";
 export default function ActivitySection({ venue }: { venue: Venue }) {
   const { heat, baseline, signals } = useOneVenueHeat(venue);
   if (!heat || !baseline) return null;
+
+  // The venue blurb lives here and nowhere else. It used to render a second
+  // time under "More info" > About; that section is gone, so the Google
+  // fallback and its required attribution moved here with it.
+  const enrichment = getEnrichment(venue.title);
+  const about = venue.description ?? enrichment?.editorialSummary;
 
   const copy = activityCopy(heat, baseline, signals);
   const hot = heat.label === "Hot Now";
@@ -51,13 +58,18 @@ export default function ActivitySection({ venue }: { venue: Venue }) {
         </p>
       )}
 
-      {(copy.momentNote || venue.description) && (
-        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-          {/* The moment clause shifts with the night; the venue description is
-              fixed and describes its character. Together they read as one line. */}
-          {copy.momentNote && <span className="text-foreground/80">{copy.momentNote} </span>}
-          {venue.description}
-        </p>
+      {(copy.momentNote || about) && (
+        <>
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+            {/* The moment clause shifts with the night; the venue description is
+                fixed and describes its character. Together they read as one line. */}
+            {copy.momentNote && <span className="text-foreground/80">{copy.momentNote} </span>}
+            {about}
+          </p>
+          {about && !venue.description && (
+            <p className="text-[10px] text-muted-foreground/70 mt-1">Description: Google</p>
+          )}
+        </>
       )}
     </section>
   );
