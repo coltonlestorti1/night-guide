@@ -100,6 +100,11 @@ begin
 end $$;
 
 -- Not callable from the client. Only the scheduler runs it.
+-- PUBLIC first and non-optionally: Postgres grants EXECUTE to PUBLIC by
+-- default on a new function, so revoking from anon/authenticated alone leaves
+-- the hole open. Verified 2026-07-27 — the anon key could call this and pad
+-- sample_count with junk, poisoning the data the table exists to collect.
+revoke all on function record_venue_hour_samples() from public;
 revoke all on function record_venue_hour_samples() from anon, authenticated;
 
 -- ---------------------------------------------------------------------------
