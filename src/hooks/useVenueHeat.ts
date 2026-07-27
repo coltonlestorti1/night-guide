@@ -4,7 +4,7 @@ import { getBaseline, getEvents } from "@/data/activity";
 import { getEnrichment } from "@/data/enrichment";
 import { computeHeat } from "@/lib/heat";
 import { signalsFromActivity } from "@/lib/heat/signals";
-import { HeatResult } from "@/lib/heat/types";
+import { EMPTY_SIGNALS, HeatResult, LiveSignals, VenueBaseline } from "@/lib/heat/types";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { useMinuteTick } from "@/hooks/useMinuteTick";
 
@@ -47,4 +47,36 @@ export function useVenueHeat(
     // in for `venues` deliberately — see the note above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueKey, activity, friendsByVenue, tick]);
+}
+
+/** Heat for one venue, with the baseline and live signals that produced it. */
+export function useOneVenueHeat(venue: Venue | undefined): {
+  heat: HeatResult | undefined;
+  baseline: VenueBaseline | undefined;
+  signals: LiveSignals;
+} {
+  const { data: activity } = useVenueActivity();
+  const tick = useMinuteTick();
+  const title = venue?.title;
+  const id = venue?.id;
+
+  return useMemo(() => {
+    if (!title || !id) return { heat: undefined, baseline: undefined, signals: EMPTY_SIGNALS };
+    const baseline = getBaseline(title);
+    const signals = signalsFromActivity(activity?.[id], 0);
+    if (!baseline) return { heat: undefined, baseline: undefined, signals };
+    return {
+      heat: computeHeat({
+        baseline,
+        events: getEvents(title),
+        signals,
+        now: new Date(),
+        hours: getEnrichment(title)?.hours,
+      }),
+      baseline,
+      signals,
+    };
+    // `tick` is the clock — see the note on useVenueHeat above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, id, activity, tick]);
 }
