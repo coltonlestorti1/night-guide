@@ -84,15 +84,16 @@ export function pinGlyph(v: Venue): string {
  * §27 applies to filter chips: never offer an affordance that opens onto
  * nothing.
  *
- * Signed-in users always have "Plan a night here", so the section always has
- * at least one row for them.
+ * No longer takes signedIn: "Make a plan" was the one row a signed-in user was
+ * guaranteed here, and it has moved up to the primary action row. Without it
+ * the old `if (signedIn) return true` shortcut would open the expander onto an
+ * empty panel for any venue lacking description/enrichment.
  *
  * getEnrichment() returns undefined for expired (>30d) records, so a venue
  * whose data has gone stale loses the expander rather than showing an empty
  * shell — the same "go quiet rather than assert" rule as hasOutdoorSeating.
  */
-export function hasMoreInfo(v: Venue, signedIn: boolean): boolean {
-  if (signedIn) return true;
+export function hasMoreInfo(v: Venue): boolean {
   return Boolean(
     v.description || getEnrichment(v.title) || getSpecials(v.title).length > 0,
   );
