@@ -171,6 +171,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "kgb-bar",
     title: "KGB Bar",
+    music_type: "Live",
     description: "Soviet-themed dive, literary events, real underground feel.",
     latitude: 40.7248,
     longitude: -73.9887,
@@ -197,6 +198,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "beauty-bar",
     title: "Beauty Bar",
+    is_college_scene: true,
     description: "Former beauty salon turned dance bar. Fun, campy, good DJ.",
     latitude: 40.7330,
     longitude: -73.9830,
@@ -211,6 +213,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "please-don-t-tell",
     title: "Please Don't Tell",
+    age_range_min: 24,
+    age_range_max: 35,
+    description: "You get in through a phone booth inside the hot dog shop next door. Cocktails are the point and the room is small and dark — a date spot, not a group one. Reserve ahead; walk-ins wait.",
     latitude: 40.7271371,
     longitude: -73.98374110000002,
     serves_alcohol: true,
@@ -220,6 +225,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "the-wayland",
     title: "The Wayland",
+    age_range_min: 24,
+    age_range_max: 34,
+    music_type: "Live",
+    description: "Cocktails that take themselves seriously in a room that doesn't. Live music on Wednesdays. Outdoor seating makes it easier with a few people.",
     latitude: 40.7251329,
     longitude: -73.9778508,
     serves_alcohol: true,
@@ -229,6 +238,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "d-b-a",
     title: "d.b.a.",
+    age_range_min: 25,
+    age_range_max: 38,
+    description: "A beer and bourbon list built for people who care, without the lecture. Happy hour runs noon to 9, so timing barely matters. Outdoor seating too.",
     latitude: 40.72432690000001,
     longitude: -73.987991,
     serves_alcohol: true,
@@ -238,6 +250,11 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "juke-bar",
     title: "Juke Bar",
+    is_college_scene: true,
+    age_range_min: 22,
+    age_range_max: 30,
+    music_type: "Live",
+    description: "Southern-leaning bar with cocktails and craft beer. A live band plays Sundays. Open until 4, so it works early or late.",
     latitude: 40.731088,
     longitude: -73.985612,
     serves_alcohol: true,
@@ -247,6 +264,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "holiday-cocktail-lounge",
     title: "Holiday Cocktail Lounge",
+    age_range_min: 24,
+    age_range_max: 35,
+    description: "An old St. Marks dive that got completely redone — same address, much better drinks. There's food too. Closes at 2, earlier than the rest of the block, so it's a first stop rather than a last one.",
     latitude: 40.727955,
     longitude: -73.985732,
     serves_alcohol: true,
@@ -256,6 +276,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "ten-degrees",
     title: "Ten Degrees",
+    is_college_scene: true,
+    age_range_min: 22,
+    age_range_max: 30,
+    description: "A small St. Marks wine bar with plates to match. The room doesn't hold many, so it's better as a date or a pair of friends than a group.",
     latitude: 40.7269497,
     longitude: -73.98348,
     serves_alcohol: true,
@@ -265,6 +289,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "the-headless-widow",
     title: "The Headless Widow",
+    age_range_min: 24,
+    age_range_max: 35,
+    description: "Cocktails and craft beer with oysters and a kitchen that goes past bar snacks. Works for a date, or a small group that wants to actually eat.",
     latitude: 40.7266088,
     longitude: -73.9863556,
     serves_alcohol: true,
@@ -274,6 +301,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "wonderland-bar",
     title: "Wonderland Bar",
+    age_range_min: 22,
+    age_range_max: 32,
     latitude: 40.7270204,
     longitude: -73.9884895,
     serves_alcohol: true,
@@ -282,6 +311,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "bua",
     title: "Bua",
+    is_college_scene: true,
+    age_range_min: 22,
+    age_range_max: 32,
+    description: "St. Marks pub with a patio that fills up in daylight. The happy hour is real, not nominal. Good with a group, especially early.",
     latitude: 40.7268537,
     longitude: -73.9838067,
     serves_alcohol: true,
@@ -291,6 +324,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "superbueno",
     title: "Superbueno",
+    age_range_min: 24,
+    age_range_max: 35,
     latitude: 40.7234473,
     longitude: -73.9885737,
     serves_alcohol: true,
@@ -300,6 +335,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "sweet-linda",
     title: "Sweet Linda",
+    age_range_min: 23,
+    age_range_max: 33,
+    music_type: "DJ",
     latitude: 40.724694799999995,
     longitude: -73.9908769,
     serves_alcohol: true,
@@ -308,6 +346,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "motel-no-tell",
     title: "Motel No Tell",
+    is_college_scene: true,
+    age_range_min: 21,
+    age_range_max: 29,
+    music_type: "DJ",
     latitude: 40.729735399999996,
     longitude: -73.9806069,
     serves_alcohol: true,
@@ -317,6 +359,11 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "solas",
     title: "Solas",
+    is_college_scene: true,
+    age_range_min: 21,
+    age_range_max: 30,
+    music_type: "Latin / DJ",
+    description: "Bar on the ground floor, darker lounge upstairs where a DJ keeps it going. Partner-dance nights run midweek — salsa Wednesday, bachata Thursday — with DJs Friday and Saturday. Built for groups that want to dance without a club door.",
     latitude: 40.7293818,
     longitude: -73.9880826,
     serves_alcohol: true,
@@ -326,6 +373,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "paradise-lost",
     title: "Paradise Lost",
+    age_range_min: 24,
+    age_range_max: 35,
     latitude: 40.727116699999996,
     longitude: -73.9883517,
     serves_alcohol: true,
@@ -334,6 +383,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "goodnight-sonny",
     title: "Goodnight Sonny",
+    age_range_min: 24,
+    age_range_max: 34,
+    description: "From the same team as The Wayland, with a raw bar and sandwiches alongside the cocktails. Good for a date, or dinner that turns into drinks.",
     latitude: 40.7276202,
     longitude: -73.985094,
     serves_alcohol: true,
@@ -343,6 +395,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "deluxx-fluxx",
     title: "Deluxx Fluxx",
+    is_college_scene: true,
+    age_range_min: 21,
+    age_range_max: 29,
+    music_type: "DJ",
     latitude: 40.7317422,
     longitude: -73.989086,
     serves_alcohol: true,
@@ -351,6 +407,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "lucky",
     title: "Lucky",
+    age_range_min: 23,
+    age_range_max: 35,
+    music_type: "Live / Jukebox",
+    description: "Small bar with a backyard beer garden and a community-space streak — it hosts events as often as it just opens. Cheap and unfussy, and the garden makes it easy with a group.",
     latitude: 40.727255,
     longitude: -73.9798419,
     serves_alcohol: true,
@@ -360,6 +420,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "mona-s",
     title: "Mona's",
+    age_range_min: 24,
+    age_range_max: 38,
+    music_type: "Jazz / Jukebox",
+    description: "Pool table, Skee-Ball and a jukebox in a brick-walled room. The long-running Tuesday jazz session is the real draw, and seats go early. Good with a group the rest of the week.",
     latitude: 40.729179599999995,
     longitude: -73.978372,
     serves_alcohol: true,
@@ -369,6 +433,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "the-york",
     title: "The York",
+    age_range_min: 24,
+    age_range_max: 34,
     latitude: 40.7278642,
     longitude: -73.97941030000001,
     serves_alcohol: true,
@@ -377,6 +443,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "the-spotted-owl-tavern",
     title: "The Spotted Owl Tavern",
+    age_range_min: 24,
+    age_range_max: 35,
+    description: "Vintage-leaning tavern that does real food rather than bar snacks. Cocktails and beer on tap, plus outdoor seating. Solid for a group that wants to sit down.",
     latitude: 40.729892,
     longitude: -73.9809747,
     serves_alcohol: true,
@@ -386,6 +455,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "accidental-bar",
     title: "Accidental Bar",
+    age_range_min: 24,
+    age_range_max: 35,
     latitude: 40.7237441,
     longitude: -73.9788339,
     serves_alcohol: true,
@@ -394,6 +465,11 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "berlin",
     title: "Berlin",
+    is_college_scene: true,
+    age_range_min: 21,
+    age_range_max: 30,
+    music_type: "DJ / Live",
+    description: "A small, dark basement room underneath 2A. DJs and live bands most nights, with the dance party Friday and Saturday from 11. Go for the music, not for talking.",
     latitude: 40.7229989,
     longitude: -73.9860427,
     serves_alcohol: true,
@@ -403,6 +479,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "little-rebel",
     title: "Little Rebel",
+    age_range_min: 23,
+    age_range_max: 33,
     latitude: 40.7320414,
     longitude: -73.9854656,
     serves_alcohol: true,
@@ -412,6 +490,9 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "romeos",
     title: "Romeos",
+    is_college_scene: true,
+    age_range_min: 22,
+    age_range_max: 30,
     latitude: 40.7268969,
     longitude: -73.98408189999999,
     serves_alcohol: true,
@@ -420,6 +501,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "club-cumming",
     title: "Club Cumming",
+    age_range_min: 24,
+    age_range_max: 38,
+    music_type: "Live / DJ",
+    description: "Drag, cabaret and a rotating cast of whatever else is booked. Something is on most nights, each with its own regulars. Best when you pick a show rather than just turning up.",
     latitude: 40.7253991,
     longitude: -73.9833833,
     serves_alcohol: true,
@@ -428,6 +513,10 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "big-bar",
     title: "Big Bar",
+    age_range_min: 25,
+    age_range_max: 38,
+    music_type: "Soul",
+    description: "Tiny red-lit room, quiet by design. A place to talk rather than somewhere to end up on a big night. Cheap for the block.",
     latitude: 40.727486899999995,
     longitude: -73.9864037,
     serves_alcohol: true,
@@ -437,6 +526,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "two-perrys",
     title: "Two Perrys",
+    age_range_min: 23,
+    age_range_max: 34,
     latitude: 40.7248799,
     longitude: -73.9785271,
     serves_alcohol: true,
@@ -458,6 +549,8 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "96-tears",
     title: "96 Tears",
+    is_college_scene: true,
+    music_type: "Rock",
     description: "Small, buzzy wine-and-cocktail spot with cool-kid energy.",
     neighborhood: "Avenue A",
     latitude: 40.7258393,
@@ -521,6 +614,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "barcade",
     title: "Barcade",
+    is_college_scene: true,
     description: "Craft beer plus a wall of vintage arcade games.",
     neighborhood: "St. Marks Place",
     latitude: 40.72911560000001,
@@ -534,6 +628,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "blue-gold-tavern",
     title: "Blue & Gold Tavern",
+    music_type: "Jukebox",
     description: "Old-school dive, cheap pours, been there forever.",
     neighborhood: "St. Marks Place",
     latitude: 40.727325,
@@ -547,6 +642,7 @@ export const EAST_VILLAGE_VENUES: Venue[] = [
   {
     id: "downtown-social",
     title: "Downtown Social",
+    music_type: "DJ",
     description: "Big multi-room bar — darts, games, easy for groups.",
     neighborhood: "2nd Avenue",
     latitude: 40.729528300000005,
