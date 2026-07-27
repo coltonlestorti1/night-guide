@@ -8,7 +8,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
 import { useMyCheckIn, useVenueActivity } from "@/hooks/useCheckIns";
 import {
-  checkIn, checkOut, setVibe, pokeActivity, Vibe, VIBE_LABELS,
+  checkIn, checkOut, setVibe, setRecommend, pokeActivity, Vibe, VIBE_LABELS,
+  Recommend, RECOMMEND_LABELS,
   CheckinVisibility as Visibility, getStoredVisibility, storeVisibility,
 } from "@/lib/checkins";
 import CheckInVisibility from "@/components/CheckInVisibility";
@@ -30,6 +31,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [visibility, setVisibility] = useState<Visibility>(getStoredVisibility);
+  const [recommend, setRecommendState] = useState<Recommend | null>(null);
 
   const changeVisibility = (v: Visibility) => {
     setVisibility(v);
@@ -105,6 +107,23 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     }
   };
 
+  /**
+   * "Would you send friends here right now?" — recommendation quality, kept
+   * separate from crowd level on purpose. A packed room is not automatically
+   * a good recommendation.
+   */
+  const doRecommend = async (value: Recommend) => {
+    if (!mine || mine.id === "optimistic") return;
+    setRecommendState(value);
+    try {
+      await setRecommend(mine.id, value);
+      logEvent("recommend_set", { venue_id: venueId, value });
+    } catch {
+      setRecommendState(null);
+      setError("That didn't save — try again.");
+    }
+  };
+
   const untilLabel = mine?.expires_at
     ? new Date(mine.expires_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
     : "";
@@ -133,13 +152,14 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
               Check out
             </button>
           </div>
-          <div className="flex gap-2 mt-2">
+          <p className="text-xs text-muted-foreground mt-3 mb-1.5">How is it right now?</p>
+          <div className="flex flex-wrap gap-2">
             {VIBES.map((v) => (
               <button
                 key={v.value}
                 onClick={() => doVibe(v.value)}
                 className={cn(
-                  "flex-1 text-xs px-2 py-2 rounded-xl border transition-colors",
+                  "flex-1 min-w-[92px] text-xs px-2 py-2 rounded-xl border transition-colors",
                   mine?.vibe === v.value
                     ? "bg-primary text-primary-foreground border-transparent"
                     : "bg-secondary/60 border-border hover:bg-secondary"
@@ -149,6 +169,31 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
               </button>
             ))}
           </div>
+
+          {mine?.vibe && (
+            <div className="mt-3 animate-fade-in">
+              <p className="text-xs text-muted-foreground mb-1.5">
+                Would you send friends here right now?
+              </p>
+              <div className="flex gap-2">
+                {(Object.keys(RECOMMEND_LABELS) as Recommend[]).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => doRecommend(r)}
+                    aria-pressed={recommend === r}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                      recommend === r
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary hover:bg-accent/30",
+                    )}
+                  >
+                    {RECOMMEND_LABELS[r]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div>
