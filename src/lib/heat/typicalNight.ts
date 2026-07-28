@@ -105,9 +105,6 @@ export function axisHours(hours: WeeklyPeriod[] | undefined, day: number): numbe
 /** Probe range for comparing days — fixed, so close times can't skew the pick. */
 const PROBE_HOURS = Array.from({ length: 11 }, (_, i) => AXIS_START_HOUR + i); // 17–27
 
-/** A bar this close to the day's maximum is where the night "picks up". */
-const PICKS_UP_RATIO = 0.7;
-
 /**
  * The days in a tab's group the venue is actually open.
  *
@@ -158,16 +155,22 @@ export function representativeDay(
 }
 
 /**
- * The hour a venue starts mattering: the first bar reaching 70% of the day's
- * own maximum. Derived from the rendered bars, so it can never disagree with
- * the chart it sits under.
+ * The archetype tier's one line: when the night peaks.
+ *
+ * Deliberately mirrors the researched tier's "Busiest 11:30 PM – 1:30 AM" so
+ * the two tiers read as one system. It replaced a "picks up around" line keyed
+ * to the first bar reaching 70% of the day's max, which put 29 of 46 venues at
+ * 6 PM — technically true of the curve, useless to someone deciding when to go.
+ *
+ * Derived from the rendered bars, so it can never disagree with the chart it
+ * sits under. Ties go to the earliest hour, which keeps it deterministic.
  */
 function softLineFor(bars: { hour: number; value: number }[]): string | null {
-  const max = Math.max(0, ...bars.map((b) => b.value));
-  if (max === 0) return null;
-  const hit = bars.find((b) => b.value >= max * PICKS_UP_RATIO);
-  if (!hit) return null;
-  return `Usually picks up around ${displayTime(hit.hour * 60)}`;
+  if (bars.length === 0) return null;
+  let peak = bars[0];
+  for (const b of bars) if (b.value > peak.value) peak = b;
+  if (peak.value === 0) return null;
+  return `Usually busiest around ${displayTime(peak.hour * 60)}`;
 }
 
 /**

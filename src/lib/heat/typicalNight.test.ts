@@ -163,7 +163,7 @@ describe("typicalNight copy tiers", () => {
     const r = typicalNight(base(), [], [period(6, 4, 1)], "weekend");
     expect(r.busiestLine).toBeNull();
     expect(r.crowdedLine).toBeNull();
-    expect(r.softLine).toMatch(/^Usually picks up around \d{1,2}(:\d{2})? (AM|PM)$/);
+    expect(r.softLine).toMatch(/^Usually busiest around \d{1,2}(:\d{2})? (AM|PM)$/);
   });
 
   it("never hedges in the soft line", () => {
@@ -171,14 +171,14 @@ describe("typicalNight copy tiers", () => {
     expect(r.softLine).not.toMatch(/probably|approximately|estimate|about|roughly/i);
   });
 
-  it("names the hour the shape actually rises, not the peak", () => {
-    // Weekend dive: bars peak at 11 PM (80), so 70% = 56, first crossed at 9 PM.
+  it("names the peak hour, mirroring the researched tier's vocabulary", () => {
+    // Weekend dive: the curve maxes at 80 on hour 23.
     const r = typicalNight(base({ archetype: "dive" }), [], [period(6, 4, 1)], "weekend");
-    expect(r.softLine).toBe("Usually picks up around 9 PM");
+    expect(r.softLine).toBe("Usually busiest around 11 PM");
   });
 
   it("names a later hour for a venue that starts later", () => {
-    // A dance club's shape is flat until late, so it must not claim 9 PM.
+    // A dance club peaks after close of business for a dive — 1 AM vs 11 PM.
     const club = typicalNight(base({ archetype: "dance_club" }), [], [period(6, 4, 1)], "weekend");
     const dive = typicalNight(base({ archetype: "dive" }), [], [period(6, 4, 1)], "weekend");
     expect(club.softLine).not.toBe(dive.softLine);
