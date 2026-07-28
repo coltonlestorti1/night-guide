@@ -13,15 +13,36 @@ import { activityCopy } from "@/lib/heat/copy";
 import { useOneVenueHeat } from "@/hooks/useVenueHeat";
 import { cn } from "@/lib/utils";
 
+/** The blurb plus its Google attribution, in the typography both paths share. */
+function Blurb({ venue, about }: { venue: Venue; about: string }) {
+  return (
+    <>
+      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{about}</p>
+      {!venue.description && (
+        <p className="text-[10px] text-muted-foreground/70 mt-1">Description: Google</p>
+      )}
+    </>
+  );
+}
+
 export default function ActivitySection({ venue }: { venue: Venue }) {
   const { heat, baseline, signals } = useOneVenueHeat(venue);
-  if (!heat || !baseline) return null;
 
   // The venue blurb lives here and nowhere else. It used to render a second
   // time under "More info" > About; that section is gone, so the Google
   // fallback and its required attribution moved here with it.
   const enrichment = getEnrichment(venue.title);
   const about = venue.description ?? enrichment?.editorialSummary;
+
+  // No activity record — but the blurb still has to reach the user, because
+  // this component is now its only home. Venues arrive from Supabase carrying
+  // a description while baselines are local JSON, so a venue added there has
+  // no baseline and would otherwise lose its description on every surface.
+  // Rendered bare: no Activity panel, no heading, no status — there is no
+  // activity to report.
+  if (!heat || !baseline) {
+    return about ? <Blurb venue={venue} about={about} /> : null;
+  }
 
   const copy = activityCopy(heat, baseline, signals);
   const hot = heat.label === "Hot Now";

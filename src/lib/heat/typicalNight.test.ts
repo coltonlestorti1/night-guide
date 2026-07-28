@@ -114,9 +114,10 @@ describe("representativeDay", () => {
 describe("typicalNight bars", () => {
   it("builds one bar per axis hour, in night order", () => {
     const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
-    // representativeDay picks day 5 (Friday) when both 5 and 6 are best nights (tiebreak: earliest)
-    expect(r.day).toBe(5);
-    expect(r.bars.map((b) => b.hour)).toEqual(axisHours([period(6, 4, 1)], 5));
+    // These hours list Saturday only, so day 6 is the sole OPEN candidate —
+    // the earliest-day tie-break never gets to prefer Friday.
+    expect(r.day).toBe(6);
+    expect(r.bars.map((b) => b.hour)).toEqual(axisHours([period(6, 4, 1)], 6));
   });
 
   it("scores the weekend above the weeknight for the same venue", () => {
@@ -130,11 +131,12 @@ describe("typicalNight bars", () => {
   it("agrees with baselineScore — bars are not drawn from the raw curve", async () => {
     const { baselineScore } = await import("./baseline");
     const r = typicalNight(niagara, [], [period(6, 4, 1)], "weekend");
-    // representativeDay picks day 5 when both 5 and 6 are best nights (tiebreak: earliest)
-    expect(r.day).toBe(5);
+    // These hours list Saturday only, so day 6 is the sole OPEN candidate.
+    expect(r.day).toBe(6);
     const bar = r.bars.find((b) => b.hour === 23)!;
-    // Day 5 (Friday) in the reference week is 2026-07-31. Bar value must match baselineScore for that date.
-    expect(bar.value).toBe(baselineScore(niagara, [], new Date(2026, 6, 31, 23, 0)));
+    // Day 6 (Saturday) in the reference week is 2026-08-01. Bar value must
+    // match baselineScore for that date, built independently of dateFor().
+    expect(bar.value).toBe(baselineScore(niagara, [], new Date(2026, 7, 1, 23, 0)));
   });
 
   it("lifts the bars on the day an event lands", () => {
@@ -235,5 +237,61 @@ describe("venuePeak", () => {
       const bars = typicalNight(niagara, [], undefined, tab).bars;
       expect(venuePeak(niagara, [], undefined)).toBeGreaterThanOrEqual(peakOf(bars));
     }
+  });
+});
+
+describe("closed nights", () => {
+  // Wiggle Room's real hours: open Friday and Saturday only.
+  const friSatOnly = [period(5, 4, 1), period(6, 4, 1)];
+
+  it("marks a tab closed when the venue opens on no day in its group", () => {
+    for (const tab of ["weeknight", "thursday", "sunday"] as const) {
+      const r = typicalNight(niagara, [], friSatOnly, tab);
+      expect(r.closed, tab).toBe(true);
+      expect(r.bars, tab).toEqual([]);
+      expect(r.busiestLine, tab).toBeNull();
+      expect(r.crowdedLine, tab).toBeNull();
+      expect(r.softLine, tab).toBeNull();
+      expect(r.peakBand, tab).toBeNull();
+    }
+  });
+
+  it("still renders the group the venue IS open for", () => {
+    const r = typicalNight(niagara, [], friSatOnly, "weekend");
+    expect(r.closed).toBe(false);
+    expect(r.bars.length).toBeGreaterThan(0);
+  });
+
+  it("treats undefined hours as unknown, not closed", () => {
+    // computeOpenState reads undefined hours as "open"; so must the chart.
+    for (const tab of TAB_ORDER) {
+      const r = typicalNight(niagara, [], undefined, tab);
+      expect(r.closed, tab).toBe(false);
+      expect(r.bars.length, tab).toBeGreaterThan(0);
+    }
+  });
+
+  it("picks an OPEN day rather than the earliest day in the group", () => {
+    // Sake Bar Decibel's shape: closed Monday, open Tue-Sat. The weeknight
+    // tie-break would otherwise land on Monday — the one night it is dark.
+    const closedMonday = [period(2, 2, 1), period(3, 2, 1), period(4, 2, 1)];
+    const r = typicalNight(base(), [], closedMonday, "weeknight");
+    expect(r.closed).toBe(false);
+    expect(r.day).toBe(2);
+  });
+});
+
+describe("event bumps survive the reshape", () => {
+  it("leaves an outside-window bar lifted by an event at its original value", () => {
+    // 7 PM Wednesday event, outside niagara's 9:30 PM busy window.
+    const events: WeeklyEvent[] = [
+      { venue: "X", day: 3, name: "Residency", start_min: 1140, source_url: "https://example.com" },
+    ];
+    const r = typicalNight(niagara, events, undefined, "weeknight");
+    expect(r.day).toBe(3);
+    const bar = r.bars.find((b) => b.hour === 19)!;
+    expect(bar.value).toBe(baselineScore(niagara, events, dateFor(3, 19)));
+    // And it must still be visibly above the reshaped ramp around it.
+    expect(bar.value).toBeGreaterThan(25);
   });
 });

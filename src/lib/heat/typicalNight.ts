@@ -109,17 +109,39 @@ const PROBE_HOURS = Array.from({ length: 11 }, (_, i) => AXIS_START_HOUR + i); /
 const PICKS_UP_RATIO = 0.7;
 
 /**
+ * The days in a tab's group the venue is actually open.
+ *
+ * Undefined `hours` means "unknown", NOT "closed" — the same reading
+ * computeOpenState() uses — so an unknown-hours venue keeps every day.
+ */
+export function openDaysIn(
+  hours: WeeklyPeriod[] | undefined,
+  tab: TypicalNightTab,
+): number[] {
+  const days = TAB_DAYS[tab];
+  if (!hours) return days;
+  return days.filter((day) => hours.some((p) => p.day === day));
+}
+
+/**
  * Which single day a tab renders. A tab spans up to three days, and
  * best_nights and events are per-day, so a Tuesday-residency venue must show
  * its Tuesday rather than a dead Monday. Ties go to the earliest day, which
  * keeps the choice deterministic.
+ *
+ * Only days the venue is OPEN are candidates. Without that filter the
+ * earliest-day tie-break lands on Monday, which is precisely the night the
+ * venues most likely to be dark are dark — and the chart would draw them a
+ * full night anyway.
  */
 export function representativeDay(
   baseline: VenueBaseline,
   events: WeeklyEvent[],
   tab: TypicalNightTab,
+  hours?: WeeklyPeriod[] | undefined,
 ): number {
-  const days = TAB_DAYS[tab];
+  const open = openDaysIn(hours, tab);
+  const days = open.length > 0 ? open : TAB_DAYS[tab];
   let best = days[0];
   let bestTotal = -1;
   for (const day of days) {
@@ -196,6 +218,11 @@ function reshapeOutsideBusyWindow(
 
   return bars.map((b) => {
     if (!outside(b.hour)) return b;
+    // A bar already above the ceiling was lifted by an EVENT_BUMP: `baseline.ts`
+    // pins every clamped outside-window bar at exactly the ceiling, and only the
+    // event lift is applied afterwards. Reshaping it would delete the event —
+    // and representativeDay may have chosen this very day because of it.
+    if (b.value > OUTSIDE_CEILING) return b;
     const scaled = Math.round(
       (OUTSIDE_CEILING * curveValue(baseline.archetype, b.hour)) / maxCurveAmongOutsideBars,
     );
@@ -223,6 +250,11 @@ export type TypicalNight = {
   softLine: string | null;
   /** The day the bars were computed for — the component labels nothing with it. */
   day: number;
+  /**
+   * The venue has known hours and is open on NO day of this tab's group. The
+   * chart must say so rather than draw a night that does not happen.
+   */
+  closed: boolean;
 };
 
 /**
@@ -251,7 +283,24 @@ export function typicalNight(
   hours: WeeklyPeriod[] | undefined,
   tab: TypicalNightTab,
 ): TypicalNight {
-  const day = representativeDay(baseline, events, tab);
+  const day = representativeDay(baseline, events, tab, hours);
+
+  // Known hours with no period anywhere in this group: the venue does not open
+  // on this kind of night at all. Drawing the archetype curve here would invent
+  // a night — Wiggle Room is open Fri/Sat only, and three of its four tabs
+  // would otherwise show a full evening under a researched peak caption.
+  if (hours && openDaysIn(hours, tab).length === 0) {
+    return {
+      bars: [],
+      peakBand: null,
+      busiestLine: null,
+      crowdedLine: null,
+      softLine: null,
+      day,
+      closed: true,
+    };
+  }
+
   const rawBars = axisHours(hours, day).map((hour) => ({
     hour,
     value: baselineScore(baseline, events, dateFor(day, hour)),
@@ -279,5 +328,6 @@ export function typicalNight(
     crowdedLine,
     softLine: researched ? null : softLineFor(bars),
     day,
+    closed: false,
   };
 }

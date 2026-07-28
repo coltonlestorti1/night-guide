@@ -54,7 +54,7 @@ export default function TypicalNightChart({ venue }: { venue: Venue }) {
   const events = getEvents(venue.title);
   const hours = getEnrichment(venue.title)?.hours;
   const data = typicalNight(baseline, events, hours, activeTab);
-  if (data.bars.length === 0) return null;
+  if (data.bars.length === 0 && !data.closed) return null;
 
   // "Now" only means something on the tab covering tonight.
   const isTonight = activeTab === tabForDay(nightlifeDay(now));
@@ -66,7 +66,8 @@ export default function TypicalNightChart({ venue }: { venue: Venue }) {
   // Labels anchor to the first bar, not to hour % 3 — the axis starts at 5 PM
   // (hour 17), and 17 % 3 !== 0, so an absolute-hour test would silently
   // start the labels at 6p instead of the 5 PM open the chart promises.
-  const firstHour = data.bars[0].hour;
+  // Undefined on a closed tab, which renders no bars and no axis.
+  const firstHour = data.bars[0]?.hour;
 
   return (
     <section className="mt-3 rounded-2xl bg-secondary/60 p-3" aria-label="Typical night">
@@ -93,6 +94,13 @@ export default function TypicalNightChart({ venue }: { venue: Venue }) {
         ))}
       </div>
 
+      {/* A tab whose every night the venue is shut. The tabs stay above so the
+          user can switch to one that happens; everything else goes away rather
+          than drawing a night from the archetype curve. */}
+      {data.closed ? (
+        <p className="text-xs text-muted-foreground">Usually closed</p>
+      ) : (
+      <>
       <div
         className="flex items-end gap-0.5 h-20"
         role="img"
@@ -134,6 +142,8 @@ export default function TypicalNightChart({ venue }: { venue: Venue }) {
       )}
       {data.crowdedLine && (
         <p className="text-xs text-muted-foreground">{data.crowdedLine}</p>
+      )}
+      </>
       )}
     </section>
   );

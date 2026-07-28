@@ -77,4 +77,17 @@ describe("activity data", () => {
       expect(derived || b.source_type === "research_estimate", `${t}`).toBe(true);
     }
   });
+
+  it("keeps every peak window inside its busy window", () => {
+    // typicalNight's chart reshaping tests only the BUSY window, so a peak
+    // authored outside it would be clamped to the outside-window ceiling —
+    // the peak would vanish from the bars while peakBand still highlighted it.
+    for (const t of ALL_BASELINE_TITLES) {
+      const b = getBaseline(t)!;
+      if (b.peak_start == null || b.peak_end == null) continue;
+      if (b.busy_start == null || b.busy_end == null) continue;
+      expect(b.busy_start, `${t} peak starts before its busy window`).toBeLessThanOrEqual(b.peak_start);
+      expect(b.busy_end, `${t} peak ends after its busy window`).toBeGreaterThanOrEqual(b.peak_end);
+    }
+  });
 });
