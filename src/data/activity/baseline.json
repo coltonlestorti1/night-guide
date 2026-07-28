@@ -89,6 +89,12 @@
   "Death & Co": {
     "archetype": "cocktail_room",
     "line_pattern": "capacity_wait",
+    "busy_start": 1080,
+    "busy_end": 1440,
+    "peak_start": 1080,
+    "peak_end": 1260,
+    "line_eases_after": 1320,
+    "capacity": 50,
     "confidence_base": "medium",
     "source_type": "research_estimate",
     "last_reviewed": "2026-07-27",

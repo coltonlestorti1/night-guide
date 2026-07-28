@@ -42,9 +42,12 @@ describe("activity data", () => {
     }
   });
 
-  it("has researched windows for the ten seeded venues", () => {
+  it("has researched windows for the eleven seeded venues", () => {
+    // Death & Co is the eleventh: its "2-hour wait from opening" evidence used
+    // to live only in the research doc, carried implicitly by the cocktail_room
+    // curve sitting high at 8 PM. Re-centering that curve on 11 PM exposed it.
     const windowed = ALL_BASELINE_TITLES.filter((t) => getBaseline(t)!.busy_start != null);
-    expect(windowed.length).toBe(10);
+    expect(windowed.length).toBe(11);
     for (const t of windowed) {
       const b = getBaseline(t)!;
       expect(b.peak_start).toBeTypeOf("number");
