@@ -65,6 +65,10 @@ const SOURCE_LABEL: Record<string, string> = {
 const AdminQuality = () => {
   const [sort, setSort] = useState<SortKey>("score");
   const [onlyGuessed, setOnlyGuessed] = useState(false);
+  // Default to active only. Dormant rows are not user-facing, and one of them
+  // (Cienfuegos) is a permanently-closed tombstone kept so it can be flipped
+  // back — scoring it as if its blank fields were work to do is just noise.
+  const [activeOnly, setActiveOnly] = useState(true);
   const configured = Boolean(getSupabase());
 
   const { data, isLoading, error } = useQuery({
@@ -73,10 +77,17 @@ const AdminQuality = () => {
     enabled: configured,
   });
 
+  // Scored once, then filtered — so the summary cards and the table always
+  // describe the same set of venues.
+  const scored = useMemo(
+    () =>
+      (data ?? [])
+        .filter((v) => !activeOnly || v.is_active)
+        .map((v) => scoreVenue(v, ENRICHMENT[v.name], BASELINES[v.name])),
+    [data, activeOnly],
+  );
+
   const rows = useMemo(() => {
-    const scored = (data ?? []).map((v) =>
-      scoreVenue(v, ENRICHMENT[v.name], BASELINES[v.name]),
-    );
     const filtered = onlyGuessed
       ? scored.filter((r) => r.baseline.sourceType === "archetype_default")
       : scored;
@@ -85,15 +96,11 @@ const AdminQuality = () => {
       if (sort === "baseline") return a.baseline.hasWindow === b.baseline.hasWindow ? a.score - b.score : a.baseline.hasWindow ? 1 : -1;
       return a.score - b.score; // worst first — this is a worklist
     });
-  }, [data, sort, onlyGuessed]);
+  }, [scored, sort, onlyGuessed]);
 
-  const summary = useMemo(
-    () =>
-      summarize(
-        (data ?? []).map((v) => scoreVenue(v, ENRICHMENT[v.name], BASELINES[v.name])),
-      ),
-    [data],
-  );
+  const summary = useMemo(() => summarize(scored), [scored]);
+
+  const dormantCount = (data ?? []).filter((v) => !v.is_active).length;
 
   return (
     <>
@@ -157,6 +164,18 @@ const AdminQuality = () => {
             description="Click through to Venues to fix the DB columns. Baselines are hand-edited in src/data/activity/baseline.json."
             actions={
               <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={activeOnly ? "default" : "outline"}
+                  onClick={() => setActiveOnly((v) => !v)}
+                >
+                  Active only
+                  {dormantCount > 0 && (
+                    <span className="ml-1.5 opacity-70">
+                      {activeOnly ? `+${dormantCount}` : dormantCount}
+                    </span>
+                  )}
+                </Button>
                 <Button
                   size="sm"
                   variant={onlyGuessed ? "default" : "outline"}
