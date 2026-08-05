@@ -38,6 +38,20 @@ export default function Privacy() {
           add friends, we store those connections.
         </li>
         <li>
+          <strong>Your check-in history.</strong> Check-ins are kept after they
+          end, so ENDZ can learn which places are actually busy when. Your
+          friends only ever see where you are <strong>right now</strong> — once a
+          check-in ends it's visible to you alone. Deleting your account deletes
+          the whole history.
+        </li>
+        <li>
+          <strong>Saved spots.</strong> Venues you bookmark are stored on our
+          servers so they follow you between devices. Depending on your setting,
+          your friends may see that you saved a place. You control this under
+          Profile → Privacy → "Who sees your saves", and setting it to Nobody
+          applies to spots you already saved, not just new ones.
+        </li>
+        <li>
           <strong>Location — only on your device.</strong> If you turn on location,
           your coordinates are used <strong>on your device</strong> to show distance
           and sort nearby spots. <strong>Your coordinates are never sent to our
@@ -93,10 +107,21 @@ export default function Privacy() {
       <h3>Your choices and rights</h3>
       <ul>
         <li>
-          <strong>See or delete your data.</strong> Email us at{" "}
-          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> to request a
-          copy of your data or to delete your account. Deleting your account removes
-          your profile, check-ins, and friendships.
+          <strong>Delete your account, in the app.</strong> Profile → Account
+          &amp; support → <strong>Delete my account</strong>. It happens
+          immediately and can't be undone: it removes your profile, every
+          check-in including your history, your saved spots, your friends and
+          pending requests, and plans you created along with your RSVPs.
+        </li>
+        <li>
+          <strong>Get a copy of your data.</strong> Email us at{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> and we'll send
+          you what we hold.
+        </li>
+        <li>
+          <strong>Report someone.</strong> Open their profile and tap{" "}
+          <strong>Report</strong>. We review every report within 24 hours, and you
+          can block them at the same time.
         </li>
         <li>
           <strong>Location.</strong> You can revoke location access any time in your
