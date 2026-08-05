@@ -87,6 +87,29 @@ async function resolve() {
   console.log(`\nWrote ${PLACE_IDS_PATH}.\nREVIEW THE MAPPING ABOVE — wrong-place matches are the main failure mode.`);
 }
 
+/**
+ * Fields worth protecting from a partial Google response.
+ *
+ * Observed 2026-08-05: a refresh returned Downtown Social with no rating and
+ * no userRatingCount, then an immediate re-fetch of the same place ID returned
+ * both. Google intermittently omits fields it does hold. Because refresh()
+ * rebuilds enrichment.json wholesale, one flaky response silently overwrote
+ * good data with null and the venue lost its star rating in the app.
+ */
+const PROTECTED_FIELDS = [
+  "rating", "userRatingCount", "priceRange", "editorialSummary",
+  "websiteUri", "phone", "outdoorSeating", "hours", "happyHour",
+];
+
+const isPresent = (v) =>
+  v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0);
+
+/** Fields that `prev` had and `rec` lost. Empty when prev is undefined. */
+function regressedFields(prev, rec) {
+  if (!prev) return [];
+  return PROTECTED_FIELDS.filter((f) => isPresent(prev[f]) && !isPresent(rec[f]));
+}
+
 async function refresh() {
   const key = requireApiKey();
   if (!existsSync(PLACE_IDS_PATH)) { console.error("scripts/place-ids.json missing — run resolve first."); process.exit(1); }
@@ -98,14 +121,37 @@ async function refresh() {
   const out = {};
   for (const [title, entry] of entries) {
     if (!entry) { console.log(`  ${title}: skipped (no place match)`); continue; }
-    const place = await googleFetch(`https://places.googleapis.com/v1/places/${entry.placeId}`, {
-      headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": FIELD_MASK },
-    });
-    const rec = transformPlace(place, fetchedAt);
+    const fetchPlace = () =>
+      googleFetch(`https://places.googleapis.com/v1/places/${entry.placeId}`, {
+        headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": FIELD_MASK },
+      });
+
+    let rec = transformPlace(await fetchPlace(), fetchedAt);
     const prev = existing[title];
+
+    // A field that was present and is now gone gets exactly one confirming
+    // re-fetch. Transient omissions recover; genuine removals repeat and are
+    // then accepted, so this never pins stale data (Google ToS) — it only
+    // refuses to trust a single flaky response.
+    let lost = regressedFields(prev, rec);
+    if (lost.length) {
+      await sleep(400);
+      const retry = transformPlace(await fetchPlace(), fetchedAt);
+      const stillLost = regressedFields(prev, retry);
+      const recovered = lost.filter((f) => !stillLost.includes(f));
+      if (recovered.length) {
+        console.log(`  ${title}: RECOVERED on re-fetch -> ${recovered.join(", ")} (Google sent a partial response)`);
+        rec = retry;
+      }
+      lost = stillLost;
+      if (lost.length) {
+        console.log(`  ${title}: confirmed gone from Google -> ${lost.join(", ")}`);
+      }
+    }
+
     if (prev?.popularTimes) { rec.popularTimes = prev.popularTimes; rec.popularTimesSource = prev.popularTimesSource; }
     out[title] = rec;
-    console.log(`  ${title}: ok${rec.happyHour ? " (happy hour!)" : ""}`);
+    if (!lost.length) console.log(`  ${title}: ok${rec.happyHour ? " (happy hour!)" : ""}`);
     await sleep(200);
   }
   if (process.argv.includes("--popular-times")) {
