@@ -81,9 +81,9 @@ const PickUsername = () => {
     }
     claimedRef.current = true;
     await refreshProfile(); // flips status to signedIn
-    // New users get the location step next, then the map. The redirect effect
+    // New users go About → Spots → location, then the map. The redirect effect
     // is suppressed by claimedRef so it can't beat us to "/".
-    navigate("/welcome/location", { replace: true });
+    navigate("/welcome/about", { replace: true });
   };
 
   const hint =
