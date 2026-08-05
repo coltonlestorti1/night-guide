@@ -54,6 +54,30 @@ export type MyCheckIn = {
   expires_at: string;
 };
 
+/**
+ * Ending a check-in = expiring it, NOT deleting it (changed 2026-08-05).
+ *
+ * Every check-in is now kept: history is the only way to ever know that
+ * someone is a regular somewhere, and it cannot be backfilled — a row deleted
+ * tonight is gone for good. `active_check_ins` filters on expires_at, so the
+ * live map, pin counts and venue_activity() see no difference.
+ *
+ * Zero rows matched is a legitimate no-op here (nothing was active), so unlike
+ * setVibe this deliberately does not treat an empty result as a failure.
+ */
+async function endActiveCheckIns(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+  userId: string
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("check_ins")
+    .update({ expires_at: now, ended_at: now })
+    .eq("user_id", userId)
+    .gt("expires_at", now);
+  if (error) throw error;
+}
+
 /** One place at a time: end any active check-in, then create the new one. */
 export async function checkIn(
   userId: string,
@@ -62,12 +86,7 @@ export async function checkIn(
 ): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { error: endError } = await supabase
-    .from("check_ins")
-    .delete()
-    .eq("user_id", userId)
-    .gt("expires_at", new Date().toISOString());
-  if (endError) throw endError;
+  await endActiveCheckIns(supabase, userId);
   const { error } = await supabase
     .from("check_ins")
     .insert({ user_id: userId, venue_id: venueId, visibility });
@@ -77,12 +96,7 @@ export async function checkIn(
 export async function checkOut(userId: string): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { error } = await supabase
-    .from("check_ins")
-    .delete()
-    .eq("user_id", userId)
-    .gt("expires_at", new Date().toISOString());
-  if (error) throw error;
+  await endActiveCheckIns(supabase, userId);
 }
 
 /**

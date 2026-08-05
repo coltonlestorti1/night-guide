@@ -7,7 +7,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useFilterStore, activeFilterCount } from "@/store/filters";
 import { useVenueHeat } from "@/hooks/useVenueHeat";
-import { useSavedStore } from "@/store/saved";
+import { useSaves } from "@/hooks/useSaves";
 import { useVenues } from "@/hooks/useVenues";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { useFriendsOutTonight } from "@/hooks/useFriends";
@@ -257,7 +257,7 @@ const MapPage = () => {
   const [view, setView] = useState<"map" | "list">("map");
   const [vibeOpen, setVibeOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const savedIds = useSavedStore((s) => s.ids);
+  const savedIds = useSaves().ids;
 
   const filterCount = activeFilterCount(filters);
 
