@@ -38,6 +38,7 @@ Decision Log as they're made.
 | 27 | Filter system redesign (chips -> Filters sheet) | **SHIPPED 2026-07-26** (gate passed, built, merged, pushed). Found + fixed 2 live bugs: Hot Tonight emptied the map; Music kept venues with no music. | The map filter row is at **11 chips** (Find the move · All · Saved · Happy hour · Rooftop · Outdoor · Bars · Clubs · Lounges · Hot Tonight · Music) in a horizontal scroller where only ~4 are visible on a phone — so Rooftop/Outdoor, the newest ones, are off-screen by default, and **Rooftop matches exactly 1 venue** while holding a permanent slot. It only grows: §20 wants occasion filters, and price/age are obvious next. Proposal: keep 3-4 hot chips inline (All · Saved · Happy hour · Open now) and move the rest behind a **"Filters" button with a count badge** (category, outdoor, rooftop, music, price, age). Alternative considered: drop the Rooftop chip since Find the Move already asks "Outside?" — simpler, loses one-tap access. Relates to §20. → §27 |
 | 28 | Crowd-sourced venue data (age / music / amenities from check-ins) | NOT DISCUSSED (added 2026-07-26, Colton) | **The only path to the field consistency Colton wants.** Coverage today across 56 venues: age **52%**, music **32%**, price 93% (after the Google-range fallback), rating/hours 100%. Google supplies rating, hours, price range and outdoor seating — it does **not** supply crowd age or music genre, and no third party does, because only the people in the room know. Matches ENDZ's founding thesis (liveness comes from our own users, not APIs). Proposed MVP: after a check-in **commits**, ask **one** rotating micro-question ("Crowd age tonight?" / "Music?" / "Cover charge?" / "Outdoor seating?"), one tap, skippable; aggregate; surface only at **N>=3**, labelled crowd-sourced, never stated as fact. Hook already exists — `CheckInCard` asks for a vibe post-check-in (`doVibe`). **Hard guard: the north star is unprompted check-ins, so nothing may add friction BEFORE the check-in commits; if it dents check-in rate it comes out.** Needs a DB table + touches the protected check-in loop. Would also settle the St. Dymphna's backyard question. Relates to §11, §20, §26. → §28 |
 | 30 | Admin dashboard (private operator tool) | **GATE PASSED + BUILT 2026-07-28** (`feat/admin-dashboard`, NOT merged, DDL NOT pasted) | Desktop-first `/admin/*` behind a `profiles.role` gate. v1 = venue management (edit every editable `venues` column for all 57 rows without touching code or SQL), **data quality/verification** (joins live venues against Google enrichment + heat baselines: 41/57 heat curves are `archetype_default` guesses, only 11 have a researched busy window), and a deliberately thin overview fed only by real `events`/`check_ins`/`plans`/`waitlist` counts. **No DAU/WAU/retention charts** — sign-in is still OAuth-testing-mode, so those would be flat zeros. Deferred with stub nav slots: moderation, bar events, happy hours as records, feature flags, users, full 5-role RBAC (each blocked on a missing table, missing users, or both). DDL staged in `scripts/2026-07-28-admin-ddl.sql` — includes a **privilege-escalation fix**: the existing "users update own profile" policy has no column-level WITH CHECK, so once `role` exists any signed-in user could self-promote; a trigger closes it. Spec: `docs/superpowers/specs/2026-07-28-admin-dashboard-design.md`. Relates to §26, §28. → §30 |
+| 31 | iOS App Store release (Capacitor wrap) | **IN DISCUSSION 2026-08-05** — Colton: "I want to be in app store", iOS only, no dev account yet | Audit found **4 hard rejection blockers** and a practical 5th (reviewer sees an empty map from Cupertino). Nothing native exists: no Capacitor dep, full Xcode not installed (`xcode-select -p` → CommandLineTools). → §31 |
 
 ---
 
@@ -942,3 +943,100 @@ _Append decisions here as features clear the discussion gate: date, feature, dec
 - 2026-07-28 — **Typical night follow-ups SHIPPED + PUSHED to production (12 commits, `main` in sync with origin).** Closes the soft-line item left open by the entry above. (a) **The archetype tier now names the peak** — "Usually busiest around 11 PM" — instead of "Usually picks up around 6 PM", which the 70% threshold produced on 29 of 46 archetype-only venues. Naming the peak mirrors the researched tier's "Busiest …" so both tiers read as one system, and it removes a tunable threshold in favour of a fact about the curve. (b) **Naming the peak made the claim falsifiable, and it failed.** The `cocktail_room` (18 venues), `pub` (11) and `activity_bar` (1) curves peaked at **9 PM** and were already declining by 11 — the shape backwards across 30 of 56 venues. Re-centered on 11 PM against [Union POS data](https://getunion.com/onprem-insights/saturday-night-bar-sales/) (11 PM is peak hour by tabs opened; 10 PM–1 AM the busiest window; 7–10 PM only ~20% of Saturday sales) and the [8–11 PM / 60%-of-traffic industry figure](https://gitnux.org/bar-industry-statistics/). `dive` (11 PM), `dance_club` (1 AM), `party_bar`/`music_venue`/`karaoke` (10 PM) and `rooftop` (7 PM) already matched the evidence and were left alone. Small-hours values moved with the peak: a room busiest at 11 PM cannot be a third full an hour later. **This changes map pin colours, not just the chart** — the 30 affected venues read cooler at 9 PM and hotter at 11 PM. (c) **The curve change broke a golden test and that was the point:** Death & Co stopped showing "Better later tonight" at 8 PM Friday, and investigating found it had **no busy or peak window stored at all**. Its "2-hour wait 15 min after opening" lived only in `docs/research/`, and the test had been passing purely because the old `cocktail_room` curve happened to sit high at 8 PM — the best-evidenced venue in the dataset was riding on a coincidence. Its evidence now lives in its own record (busy 6 PM–midnight, peak 6–9 PM, `line_eases_after` 10 PM, `capacity` 50), making it the **eleventh** venue with researched windows and the deliberate counter-example to its own archetype: a cocktail room that peaks *early*. **178 tests**, tsc + eslint clean, verified in-browser. **Honest epistemic status, stated plainly to Colton: this is a better prior, not accuracy.** The evidence is aggregate US bar data, not East Village; nine curves cover 56 venues; the archetype assignments for ~41 of them are my judgment, not researched; and the day factors (1.0/0.8/0.6/0.5) have never been validated against anything. What keeps it defensible is that the UI does not overclaim — no numbers, no percentages, and venues without evidence may not state specific times.
 
 - 2026-07-28 — **CORRECTION to the 2026-07-27 entry: `scripts/2026-07-27-venue-hour-stats.sql` was NOT pending.** It had been pasted on the 27th; the `venue_hour_stats` table already held samples from two manual runs at noon Monday. Only the **cron schedule** was outstanding, because it needed pg_cron enabled first. That is now done: `cron.job` shows `venue-hour-sampler`, `*/20 * * * *`, `active = true`, exactly one row. **The sampler is live and banking history every 20 minutes.** Verified end-to-end — a 1:26 AM Tuesday run recorded as `dow = 1` (Monday night), which is the nightlife-day rollover working in SQL as well as in TS; the 56 → 55 venue delta between the noon and 1 AM rows is the Club Cumming soft-hide, not a bug. **Note for whoever builds the read side:** with `SIGNUP_LIVE=false` every sample is currently a legitimate zero, so the read gate must use `crowd_samples`, not `sample_count` — otherwise "nobody was here" is indistinguishable from "nobody was using the app". **Still genuinely pending: `scripts/2026-07-27-trait-ingest.sql`**, with one unpushed commit depending on it.
+
+
+---
+
+## §31 — iOS App Store release (Capacitor wrap)
+
+**Opened 2026-08-05.** Colton's call: iOS only, goal is App Store presence.
+Enrollment not started. Superseded the "wrap unlocks push" assumption in
+`~/Documents/endz/CLAUDE.md` — **push has not needed Capacitor since iOS 16.4**,
+which supports Web Push for Home-Screen PWAs. The manifest, icons and a
+registered `public/sw.js` already exist; only VAPID + a push handler are missing.
+That leaves **background geolocation** as the sole capability that genuinely
+requires native, and it is only needed for auto check-in (see line 416).
+
+### Hard rejection blockers — audited against the code, 2026-08-05
+
+1. **Sign in with Apple (Guideline 4.8) — MISSING.** `src/store/auth.ts:140` is
+   `signInWithOAuth({ provider: "google" })` and nothing else. Offering a
+   third-party login obliges an equivalent privacy-preserving option.
+   *Blocked on enrollment* — needs a Service ID + signing key from the developer
+   account, so this is the item that makes enrollment the critical path.
+
+2. **In-app account deletion (5.1.1(v)) — MISSING.** `src/pages/Profile.tsx:262`
+   is a `mailto:` to SUPPORT_EMAIL. Apple requires deletion to be *initiated in
+   the app*; an email link is specifically called out as insufficient. Needs a
+   Supabase Edge Function with the service role key (deleting an auth user
+   cannot be done from the client). Already flagged as an unbuilt gap on
+   2026-07-15. **Not blocked on Apple — buildable today.**
+
+3. **Reviewer cannot sign in (2.1) — BLOCKED.** `SIGNUP_LIVE = false`
+   (`src/lib/constants.ts:10`) and Google OAuth is still unpublished. An App
+   Review account that cannot create an account or log in is an automatic
+   rejection. Needs OAuth published **and** a demo account whose credentials go
+   in the App Review notes.
+
+4. **Report flow for user content (1.2) — MISSING.** `useBlockUser` exists, but
+   `grep` finds no report affordance anywhere in `src/pages` or
+   `src/components/social`. ENDZ carries user-generated content — usernames,
+   display names, bios, avatars, plan notes, vibes — so Apple requires a way to
+   report objectionable content *and* block the user, with a stated commitment
+   to act on reports within 24 hours. **Not blocked on Apple — buildable today.**
+
+5. **The empty-map problem (2.1, practical).** A reviewer in Cupertino opens a
+   live nightlife map for the East Village and sees nothing: no venues nearby,
+   no check-ins, no friends. This reads as a broken or incomplete app, which is
+   the most likely rejection after the four above. Needs review notes that
+   explain the geography, and probably a seeded demo account that renders a
+   populated map regardless of location. Worth designing deliberately rather
+   than discovering at rejection.
+
+### Native config (applies when the wrap happens)
+
+- **Bundle the web assets — do not point a webview at `night-guide.vercel.app`.**
+  A wrapper that loads a remote URL is the textbook Guideline 4.2 rejection.
+- `Info.plist` purpose strings: `NSLocationWhenInUseUsageDescription` now, and
+  `NSLocationAlwaysAndWhenInUseUsageDescription` only if auto check-in ships.
+- Export compliance: `ITSAppUsesNonExemptEncryption = false` (HTTPS is exempt).
+- App Tracking Transparency is likely **not** required — analytics is
+  first-party and nothing is shared with data brokers. Confirm before filing.
+
+### App Store Connect assets still to produce
+
+- **1024×1024 app icon** — `public/` has 192 and 512 only.
+- Screenshots for the current required iPhone sizes.
+- Name, subtitle, description, keywords, promo text.
+- Support URL and Privacy Policy URL. `/privacy` (127 lines) and `/terms` (75)
+  exist and are routed in `src/App.tsx:59-60`; both need a read-through against
+  what the app now collects, including the 2026-08-05 check-in **history**
+  retention and server-side saves.
+- App Privacy nutrition label: precise location, user ID, name, photos, usage
+  data — must match reality, including retained check-in history.
+- Age rating — alcohol/nightlife context, expect 17+.
+- Demo account credentials + review notes (see blocker 3 and 5).
+
+### Prerequisites owned by Colton
+
+1. Apple Developer Program — **Individual** (Organization needs a D-U-N-S
+   number, days-to-weeks; Individual clears in ~24–48h), $99/yr, Apple ID with
+   2FA. Fastest path is the Apple Developer iPhone app, which verifies by ID.
+2. Install full **Xcode** from the Mac App Store (10GB+).
+3. Publish Google OAuth (already the standing launch gate).
+
+### Sequencing note
+
+Blockers 2 and 4 — account deletion and reporting — depend on nothing from
+Apple and are needed whether or not the wrap ever happens. They are the
+highest-value work while enrollment is pending.
+
+### Costs beyond the $99
+
+- The reliable background-geolocation Capacitor plugin is **commercially
+  licensed** (free `@capacitor/geolocation` does not do dependable background
+  geofencing). Verify current pricing before committing — it cuts against the
+  free-tier-default instinct. Only relevant if auto check-in ships.
+- iOS periodically re-asks users to confirm "Always" location and shows them a
+  map of where they were tracked; users routinely downgrade to "While Using",
+  so auto check-in reliability decays outside our control.
