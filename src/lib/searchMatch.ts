@@ -5,6 +5,7 @@
  */
 import { Venue } from "@/data/types";
 import { normalize } from "@/lib/normalize";
+import { areaTerms } from "@/lib/neighborhoodAreas";
 import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 
 export { normalize };
@@ -19,8 +20,10 @@ export function venueMatches(v: Venue, query: string): boolean {
     hasOutdoorSeating(v) ? "outdoor outside backyard patio" : "",
     v.is_college_scene ? "college" : "",
   ].join(" ");
+  // Area names ("alphabet city") are searchable but deliberately not rendered —
+  // the card shows the street. See src/lib/neighborhoodAreas.ts.
   const hay = normalize(
-    `${v.title} ${v.neighborhood ?? ""} ${v.music_type ?? ""} ${v.category} ${amenities}`,
+    `${v.title} ${v.neighborhood ?? ""} ${areaTerms(v.neighborhood)} ${v.music_type ?? ""} ${v.category} ${amenities}`,
   );
   return hay.includes(q);
 }

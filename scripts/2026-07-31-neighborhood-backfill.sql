@@ -1,4 +1,10 @@
 -- ============================================================================
+-- ⚠️ SUPERSEDED 2026-08-05 — DO NOT RUN. Never executed.
+-- Replaced by scripts/2026-08-05-neighborhood-rule.sql, which uses the agreed
+-- street-only vocabulary (this file still writes 'Avenue B / Alphabet City')
+-- and resolves all 7 venues left undecided below. Kept for provenance only.
+-- ============================================================================
+--
 -- 2026-07-31 — neighborhood backfill (20 venues)
 --
 -- GAP-ONLY. Every statement is guarded `where neighborhood is null`, so this
