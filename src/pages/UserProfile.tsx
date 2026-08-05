@@ -13,6 +13,7 @@ import { collegeLabel } from "@/data/colleges";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AddButton from "@/components/social/AddButton";
+import ReportDialog from "@/components/social/ReportDialog";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 
 const UserProfile = () => {
@@ -118,8 +119,11 @@ const UserProfile = () => {
               fetch errored (signedIn but profile null → myUsername undefined),
               the redirect is skipped, so never offer to friend yourself. */}
           {myId !== profile.id && (
-            <div className="mt-4">
+            <div className="mt-4 flex flex-col items-center gap-3">
               <AddButton profile={profile} />
+              {/* Guideline 1.2: reporting has to be reachable from the content
+                  itself, not buried in a settings screen. */}
+              <ReportDialog profile={profile} />
             </div>
           )}
         </div>

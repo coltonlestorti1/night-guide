@@ -38,7 +38,7 @@ Decision Log as they're made.
 | 27 | Filter system redesign (chips -> Filters sheet) | **SHIPPED 2026-07-26** (gate passed, built, merged, pushed). Found + fixed 2 live bugs: Hot Tonight emptied the map; Music kept venues with no music. | The map filter row is at **11 chips** (Find the move · All · Saved · Happy hour · Rooftop · Outdoor · Bars · Clubs · Lounges · Hot Tonight · Music) in a horizontal scroller where only ~4 are visible on a phone — so Rooftop/Outdoor, the newest ones, are off-screen by default, and **Rooftop matches exactly 1 venue** while holding a permanent slot. It only grows: §20 wants occasion filters, and price/age are obvious next. Proposal: keep 3-4 hot chips inline (All · Saved · Happy hour · Open now) and move the rest behind a **"Filters" button with a count badge** (category, outdoor, rooftop, music, price, age). Alternative considered: drop the Rooftop chip since Find the Move already asks "Outside?" — simpler, loses one-tap access. Relates to §20. → §27 |
 | 28 | Crowd-sourced venue data (age / music / amenities from check-ins) | NOT DISCUSSED (added 2026-07-26, Colton) | **The only path to the field consistency Colton wants.** Coverage today across 56 venues: age **52%**, music **32%**, price 93% (after the Google-range fallback), rating/hours 100%. Google supplies rating, hours, price range and outdoor seating — it does **not** supply crowd age or music genre, and no third party does, because only the people in the room know. Matches ENDZ's founding thesis (liveness comes from our own users, not APIs). Proposed MVP: after a check-in **commits**, ask **one** rotating micro-question ("Crowd age tonight?" / "Music?" / "Cover charge?" / "Outdoor seating?"), one tap, skippable; aggregate; surface only at **N>=3**, labelled crowd-sourced, never stated as fact. Hook already exists — `CheckInCard` asks for a vibe post-check-in (`doVibe`). **Hard guard: the north star is unprompted check-ins, so nothing may add friction BEFORE the check-in commits; if it dents check-in rate it comes out.** Needs a DB table + touches the protected check-in loop. Would also settle the St. Dymphna's backyard question. Relates to §11, §20, §26. → §28 |
 | 30 | Admin dashboard (private operator tool) | **GATE PASSED + BUILT 2026-07-28** (`feat/admin-dashboard`, NOT merged, DDL NOT pasted) | Desktop-first `/admin/*` behind a `profiles.role` gate. v1 = venue management (edit every editable `venues` column for all 57 rows without touching code or SQL), **data quality/verification** (joins live venues against Google enrichment + heat baselines: 41/57 heat curves are `archetype_default` guesses, only 11 have a researched busy window), and a deliberately thin overview fed only by real `events`/`check_ins`/`plans`/`waitlist` counts. **No DAU/WAU/retention charts** — sign-in is still OAuth-testing-mode, so those would be flat zeros. Deferred with stub nav slots: moderation, bar events, happy hours as records, feature flags, users, full 5-role RBAC (each blocked on a missing table, missing users, or both). DDL staged in `scripts/2026-07-28-admin-ddl.sql` — includes a **privilege-escalation fix**: the existing "users update own profile" policy has no column-level WITH CHECK, so once `role` exists any signed-in user could self-promote; a trigger closes it. Spec: `docs/superpowers/specs/2026-07-28-admin-dashboard-design.md`. Relates to §26, §28. → §30 |
-| 31 | iOS App Store release (Capacitor wrap) | **IN DISCUSSION 2026-08-05** — Colton: "I want to be in app store", iOS only, no dev account yet | Audit found **4 hard rejection blockers** and a practical 5th (reviewer sees an empty map from Cupertino). Nothing native exists: no Capacitor dep, full Xcode not installed (`xcode-select -p` → CommandLineTools). → §31 |
+| 31 | iOS App Store release (Capacitor wrap) | **IN PROGRESS 2026-08-05** — 2 of 5 rejection blockers SHIPPED + merged + live-verified; 3 remain, all gated on Colton | Blockers 2 (in-app account deletion) and 4 (report flow) are done and on main. Remaining: **Sign in with Apple** (blocked on enrollment), **reviewer sign-in** (OAuth unpublished + SIGNUP_LIVE=false), **empty-map-for-reviewer** (undecided, needs Colton). Enrollment not started; full Xcode not installed. → §31 |
 
 ---
 
@@ -1024,6 +1024,52 @@ requires native, and it is only needed for auto check-in (see line 416).
    2FA. Fastest path is the Apple Developer iPhone app, which verifies by ID.
 2. Install full **Xcode** from the Mac App Store (10GB+).
 3. Publish Google OAuth (already the standing launch gate).
+
+### STATUS UPDATE — 2026-08-05 (end of session)
+
+**Shipped, merged to main, pushed (main @ 7d39f33), and live-verified against
+production Supabase:**
+
+- **Blocker 2 — in-app account deletion.** `delete_own_account()` SECURITY
+  DEFINER rpc + `DeleteAccountDialog` (type-your-username confirm). Chosen over
+  an Edge Function because there is no deploy path here — only the anon key is
+  local — and this stays in the clipboard→SQL-editor workflow. **Verified: anon
+  calling the rpc gets 42501 permission denied**, i.e. the `revoke execute ...
+  from public` works. That revoke is the whole ballgame; Postgres grants EXECUTE
+  to PUBLIC by default, the same trap already caught once on
+  `record_venue_hour_samples()`.
+- **Blocker 4 — report flow.** `reports` table + `ReportDialog`, offering block
+  in the same flow and stating the 24-hour commitment in the UI. **Verified:
+  anon SELECT returns `[]`, anon INSERT refused by RLS.**
+- **Privacy policy corrected** for retained check-in history, server-side saves
+  and in-app deletion. It has to match the App Store privacy label.
+- **1024 App Store icon** — `assets/appstore-icon-1024.png`, generated by
+  `scripts/make-app-icon.mjs`. Colton's call: stick to the E for now. A `sips`
+  upscale of the 512 was soft with a smeared shadow, so the generator draws the
+  mark directly (axis-aligned rects over a sampled 3-stop gradient, exact at any
+  size, no alpha — App Store rejects icons carrying an alpha channel).
+
+DDL for both blockers: `scripts/2026-08-05-appstore-compliance-ddl.sql`, pasted
+and verified. A defect was caught in it *before* pasting: the report dedupe was
+a table-level UNIQUE over a nullable `context_id`, and Postgres treats NULLs as
+distinct — so for profile reports, where `context_id` is ALWAYS null, it would
+have looked correct and enforced nothing. Now two partial unique indexes.
+
+**NOT verified end-to-end: the deletion flow itself.** Running it destroys an
+account and `SIGNUP_LIVE=false` blocks creating a throwaway. First real
+execution should be a deliberate test user right after Google OAuth publishes.
+
+**Open items carried forward:**
+
+1. Apple Developer enrollment — not started. Individual, $99/yr, 2FA, via the
+   Apple Developer iPhone app. Gates Sign in with Apple, which gates submission.
+2. Full Xcode — not installed (`xcode-select -p` → CommandLineTools).
+3. Publish Google OAuth — gates blocker 3 *and* the deletion test *and* launch.
+4. Empty-map-for-a-reviewer — decision owed by Colton. Recommendation: a seeded
+   demo account that renders a populated map regardless of location.
+5. `public/icon-192.png` and `icon-512.png` still carry the old drop shadow and
+   off-centre placement, so they no longer match the store icon. One line each:
+   `node scripts/make-app-icon.mjs 512 public/icon-512.png`.
 
 ### Sequencing note
 

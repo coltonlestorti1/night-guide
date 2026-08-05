@@ -2,12 +2,14 @@
 export const SUPPORT_EMAIL = "clsneaks01@gmail.com";
 
 /**
- * Whether real account sign-up is live. Gated on Google OAuth leaving testing
- * mode — until then only whitelisted users can complete sign-in, so signup
- * CTAs route to the waitlist (`/join`) instead. Flip to `true` once OAuth is
- * published to graduate those CTAs to the real `signInWithGoogle()` flow.
+ * Whether real account sign-up is live. Was gated on Google OAuth leaving
+ * testing mode, where only whitelisted users could complete sign-in, so signup
+ * CTAs routed to the waitlist (`/join`) instead.
+ *
+ * Flipped true 2026-08-05: Colton confirmed the OAuth consent screen reads
+ * "In production". Signup CTAs now call the real `signInWithGoogle()` flow.
  */
-export const SIGNUP_LIVE = false;
+export const SIGNUP_LIVE = true;
 
 /**
  * Canonical public origin, used for links that LEAVE the app — plan invites,
