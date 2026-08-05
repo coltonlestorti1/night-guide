@@ -11,23 +11,23 @@ Capture three things at signup that the app cannot infer later:
 
 1. **Birthday** — powers the age-band personalization that already exists.
 2. **Gender** — collected as standard profile data at Colton's direction.
-3. **Favourite venues, plus bars ENDZ does not carry yet** — the first is a
+3. **Favorite venues, plus bars ENDZ does not carry yet** — the first is a
    cold-start fix, the second is an expansion signal and a future re-engagement
    hook.
 
-The favourites are the point. A brand-new user currently lands on an empty
-social layer: no saves, no friend facepile, nothing personalised. Five taps at
+The favorites are the point. A brand-new user currently lands on an empty
+social layer: no saves, no friend facepile, nothing personalized. Five taps at
 signup makes the features that shipped 2026-08-05 non-empty on day one.
 
 ## Decisions taken (2026-08-05)
 
 | Question | Decision |
 |---|---|
-| Primary job | Personalisation + instant friend-facing data; notifications are a later re-engagement layer |
+| Primary job | Personalization + instant friend-facing data; notifications are a later re-engagement layer |
 | Gender | **In.** Colton wants standard sign-up demographics (Instagram/Snap/Beli shape) |
 | Age format | **Birthday**, not a band — band is derived in code |
 | Screens | **Two**, not one |
-| Favourites framing | "Which of these are your spots?" — likes *or* wants-to-try |
+| Favorites framing | "Which of these are your spots?" — likes *or* wants-to-try |
 | Minimum picks | **None.** A forced minimum produces random taps and poisons the signal |
 | Off-menu bars | **Real Google search**, not free text — an exact place ID is what makes the future notification matchable |
 | Age gate | **None for alcohol.** ENDZ is informational; it does not serve drinks |
@@ -53,7 +53,7 @@ removed, it is one constant.
 ```
 /welcome            username + school        (existing)
 /welcome/about      birthday + gender        (NEW)
-/welcome/spots      favourites + requests    (NEW)
+/welcome/spots      favorites + requests    (NEW)
 /welcome/location   location primer          (existing)
 /                   map
 ```
@@ -66,7 +66,7 @@ user who abandons at the location prompt has still given us everything else.
 - **Birthday**: required. Native date input; no scroll-wheel picker.
 - **Gender**: optional. `Woman / Man / Non-binary / Prefer not to say`.
 - No self-describe free-text field in v1 — it is a moderation surface with no
-  personalisation payoff. Revisit if users ask.
+  personalization payoff. Revisit if users ask.
 - Under-13 birthday → inline message, no account data written.
 
 ### Screen B — Your spots
@@ -74,7 +74,7 @@ user who abandons at the location prompt has still given us everything else.
 - "Which of these are your spots?" — grid of the 55 active venues, tap to
   toggle. No minimum, no maximum, soft nudge at three.
 - Framing is deliberately present/aspirational, not past-tense. The autumn
-  beachhead is HWS students new to the East Village; "pick your favourites"
+  beachhead is HWS students new to the East Village; "pick your favorites"
   would collect nothing from exactly the users worth hooking.
 - Second section: "Somewhere we're missing?" — Google-backed search, add as
   many as they like.
@@ -82,11 +82,28 @@ user who abandons at the location prompt has still given us everything else.
 
 ## Data
 
+Birthday and gender go in their own table, NOT in `profiles`. The existing
+policy makes every `profiles` column readable by any signed-in user, and RLS is
+row-level — there is no clean way to exempt two columns. Column GRANTs would
+also block the owner from reading their own values. A sibling table with its
+own policy is the standard shape and is obviously correct on inspection.
+
 ```sql
-alter table profiles
-  add column if not exists birthday date,
-  add column if not exists gender   text
-    check (gender in ('woman','man','nonbinary','prefer_not_to_say'));
+create table if not exists profile_private (
+  id       uuid primary key references profiles (id) on delete cascade,
+  birthday date not null,
+  gender   text check (gender in ('woman','man','nonbinary','prefer_not_to_say'))
+);
+
+alter table profile_private enable row level security;
+
+create policy "own private profile readable"
+  on profile_private for select using (auth.uid() = id);
+create policy "own private profile insert"
+  on profile_private for insert with check (auth.uid() = id);
+create policy "own private profile update"
+  on profile_private for update using (auth.uid() = id)
+                              with check (auth.uid() = id);
 
 -- Makes a future "we added your bar" match exact instead of fuzzy string work.
 -- Backfill from scripts/place-ids.json, which already holds all 56.
@@ -107,11 +124,16 @@ create table if not exists venue_requests (
 
 ### Privacy posture
 
-**`birthday` and `gender` are self-only.** This is a departure from the other
-profile columns, which are readable by any signed-in user (that is how
-`class_year` behaves today). Neither field is rendered anywhere, so exposing
-them buys nothing and costs a real privacy surface. Enforced with a restricted
-column-level read path rather than the blanket profiles SELECT policy.
+**`birthday` and `gender` are self-only**, enforced by the `profile_private`
+policies above. This is a departure from the other profile columns, which are
+readable by any signed-in user (that is how `class_year` behaves today).
+Neither field is rendered anywhere, so exposing them buys nothing and costs a
+real privacy surface.
+
+The derived age band, not the raw birthday, is what personalization consumes —
+`agePref.ts` never needs the date itself. Anything that later wants the band
+server-side should read it through a `SECURITY DEFINER` function returning the
+band only, so the date of birth never leaves `profile_private`.
 
 `venue_requests`: users insert and read their own rows; admins read all through
 the existing `is_admin()`. No update, no delete from the client.
@@ -119,7 +141,7 @@ the existing `is_admin()`. No update, no delete from the client.
 Venue picks are written through `src/lib/saves.ts` into `venue_saves` and
 inherit `profiles.save_visibility`, which defaults to `friends`. Onboarding
 picks are therefore visible to accepted friends, not to the whole app. That is
-the intended cold-start behaviour and needs no new control.
+the intended cold-start behavior and needs no new control.
 
 ## Places search proxy
 
@@ -137,7 +159,7 @@ the intended cold-start behaviour and needs no new control.
 
 Nothing on these screens may trap a user mid-signup.
 
-| Failure | Behaviour |
+| Failure | Behavior |
 |---|---|
 | Places proxy unreachable | Search section disables with "Search unavailable — you can add spots later". Rest of the screen still submits. |
 | Save batch fails | Onboarding completes. Picks retry on next app open; they are not a signup blocker. |
@@ -171,11 +193,11 @@ Vitest, alongside the existing 215:
 
 **The notification itself.** There is no delivery channel: `public/sw.js` is
 cache-only with no push handler, there is no email service, and `profiles` has
-no email column. This design makes "a new favourite bar has been added"
+no email column. This design makes "a new favorite bar has been added"
 *buildable* by capturing matchable data. Sending it is a separate project,
 most likely gated behind the Capacitor path (see the mobile-app-path note),
 since iOS PWA push is severely limited.
 
 Also out of scope: self-describe gender text, gender-based venue ranking (the
 tracker's own rule is that demographics are preference/context, not identity
-labelling), and any age-based access restriction.
+labeling), and any age-based access restriction.
