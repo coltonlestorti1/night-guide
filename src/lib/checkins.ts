@@ -17,11 +17,11 @@ import { getSupabase } from "@/lib/supabase";
 export type Vibe = "dead" | "chill" | "building" | "packed" | "line_outside";
 
 export const VIBE_LABELS: Record<Vibe, string> = {
-  dead: "💤 Dead",
-  chill: "😌 Chill",
-  building: "👌 Good crowd",
-  packed: "🔥 Packed",
-  line_outside: "🚧 Line outside",
+  dead: "Dead",
+  chill: "Chill",
+  building: "Good crowd",
+  packed: "Packed",
+  line_outside: "Line outside",
 };
 
 export type Recommend = "yes" | "maybe" | "no";
@@ -54,6 +54,30 @@ export type MyCheckIn = {
   expires_at: string;
 };
 
+/**
+ * Ending a check-in = expiring it, NOT deleting it (changed 2026-08-05).
+ *
+ * Every check-in is now kept: history is the only way to ever know that
+ * someone is a regular somewhere, and it cannot be backfilled — a row deleted
+ * tonight is gone for good. `active_check_ins` filters on expires_at, so the
+ * live map, pin counts and venue_activity() see no difference.
+ *
+ * Zero rows matched is a legitimate no-op here (nothing was active), so unlike
+ * setVibe this deliberately does not treat an empty result as a failure.
+ */
+async function endActiveCheckIns(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+  userId: string
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("check_ins")
+    .update({ expires_at: now, ended_at: now })
+    .eq("user_id", userId)
+    .gt("expires_at", now);
+  if (error) throw error;
+}
+
 /** One place at a time: end any active check-in, then create the new one. */
 export async function checkIn(
   userId: string,
@@ -62,12 +86,7 @@ export async function checkIn(
 ): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { error: endError } = await supabase
-    .from("check_ins")
-    .delete()
-    .eq("user_id", userId)
-    .gt("expires_at", new Date().toISOString());
-  if (endError) throw endError;
+  await endActiveCheckIns(supabase, userId);
   const { error } = await supabase
     .from("check_ins")
     .insert({ user_id: userId, venue_id: venueId, visibility });
@@ -77,19 +96,26 @@ export async function checkIn(
 export async function checkOut(userId: string): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { error } = await supabase
-    .from("check_ins")
-    .delete()
-    .eq("user_id", userId)
-    .gt("expires_at", new Date().toISOString());
-  if (error) throw error;
+  await endActiveCheckIns(supabase, userId);
 }
 
+/**
+ * `.select()` is load-bearing, not decoration: a bare `.update()` that matches
+ * zero rows (RLS blocked it, the row expired) returns NO error, so a silent
+ * drop is indistinguishable from a save. Reading the row back means a vibe that
+ * didn't land throws, and the caller can revert instead of showing a lie.
+ * `vibe_at` is set by a database trigger — never written here (see endz-schema.sql).
+ */
 export async function setVibe(checkInId: string, vibe: Vibe): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { error } = await supabase.from("check_ins").update({ vibe }).eq("id", checkInId);
+  const { data, error } = await supabase
+    .from("check_ins")
+    .update({ vibe })
+    .eq("id", checkInId)
+    .select("id");
   if (error) throw error;
+  if (!data?.length) throw new Error("Vibe update matched no check-in");
 }
 
 /**
@@ -125,9 +151,11 @@ export function pokeActivity(): void {
 export async function setRecommend(checkInId: string, value: Recommend): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("check_ins")
     .update({ would_recommend: value })
-    .eq("id", checkInId);
+    .eq("id", checkInId)
+    .select("id"); // same zero-row silence as setVibe — read it back
   if (error) throw error;
+  if (!data?.length) throw new Error("Recommend update matched no check-in");
 }

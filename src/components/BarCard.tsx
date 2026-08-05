@@ -1,7 +1,8 @@
 import { ChevronRight, Bookmark, Flame, Star, Building2, Trees } from "lucide-react";
 import { hasOutdoorSeating, hasRooftop, outdoorKind } from "@/lib/venueTraits";
 import { Venue } from "@/data/types";
-import { useSavedStore } from "@/store/saved";
+import { useSaves, useFriendSaves } from "@/hooks/useSaves";
+import FriendSavesRow from "@/components/FriendSavesRow";
 import { useVenueActivity } from "@/hooks/useCheckIns";
 import { getEnrichment, computeOpenState } from "@/data/enrichment";
 import { useLocationStore } from "@/store/location";
@@ -14,8 +15,9 @@ const crowdDot: Record<string, string> = { low: "bg-emerald-400", medium: "bg-am
 
 export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: () => void }) {
   const imgSrc = venueImageSrc(venue);
-  const { ids, toggle } = useSavedStore();
+  const { ids, toggle } = useSaves();
   const saved = ids.includes(venue.id);
+  const { data: friendSaves } = useFriendSaves();
   const { data: activity } = useVenueActivity();
   const hereCount = activity?.[venue.id]?.count ?? 0;
   const enrichment = getEnrichment(venue.title);
@@ -97,6 +99,7 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
               </span>
             )}
           </div>
+          <FriendSavesRow friends={friendSaves?.[venue.id]} />
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); toggle(venue.id); }}

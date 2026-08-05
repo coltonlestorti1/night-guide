@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Bookmark, ChevronRight } from "lucide-react";
 import { useVenues } from "@/hooks/useVenues";
-import { useSavedStore } from "@/store/saved";
+import { useSaves } from "@/hooks/useSaves";
 import { venueImageSrc } from "@/lib/venueImages";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -20,7 +20,7 @@ const EmptyState = () => (
 /** Profile section body: the venues you've bookmarked, in save order. */
 const SavedSpotsList = () => {
   const navigate = useNavigate();
-  const ids = useSavedStore((s) => s.ids);
+  const ids = useSaves().ids;
   const { data: venues, isLoading, isError } = useVenues({});
 
   if (ids.length === 0) return <EmptyState />;

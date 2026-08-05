@@ -8,7 +8,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { MapPin, X, ArrowLeft, ChevronDown, Bookmark, Flame, Star, CalendarClock } from "lucide-react";
 import { Venue } from "@/data/types";
 import { logEvent } from "@/lib/analytics";
-import { useSavedStore } from "@/store/saved";
+import { useSaves } from "@/hooks/useSaves";
 import { useAuthStore } from "@/store/auth";
 import { hasMoreInfo } from "@/lib/venueTraits";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export default function VenuePreview({
   /** The page reuses onClose as "go back", so the glyph has to follow. */
   closeIcon?: "close" | "back";
 }) {
-  const { ids: savedIds, toggle: toggleSaved } = useSavedStore();
+  const { ids: savedIds, toggle: toggleSaved } = useSaves();
   const saved = savedIds.includes(venue.id);
   const signedIn = useAuthStore((s) => s.status) === "signedIn";
   const [expanded, setExpanded] = useState(defaultExpanded);

@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/auth";
 import { AGE_BANDS, AgeBand, getStoredAgeBand, storeAgeBand } from "@/lib/agePref";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import SavedSpotsList from "@/components/SavedSpotsList";
+import SaveVisibilityRow from "@/components/SaveVisibilityRow";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -245,6 +246,8 @@ const Profile = () => {
               className="mt-1.5"
             />
           </div>
+
+          <SaveVisibilityRow />
 
           <SectionLabel>Account &amp; support</SectionLabel>
           <div className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">

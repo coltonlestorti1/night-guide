@@ -32,9 +32,13 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
   const [error, setError] = useState("");
   const [visibility, setVisibility] = useState<Visibility>(getStoredVisibility);
   const [recommend, setRecommendState] = useState<Recommend | null>(null);
+  const [vibePick, setVibePick] = useState<Vibe | null>(null);
   // The saved answer wins until the user taps: otherwise a reload silently
   // loses the selection even though the row still holds it.
   const shownRecommend = recommend ?? mine?.would_recommend ?? null;
+  // Same rule for vibe, and it's what makes the tap feel instant: the local
+  // pick paints immediately, the server value takes over once it lands.
+  const shownVibe = vibePick ?? mine?.vibe ?? null;
 
   const changeVisibility = (v: Visibility) => {
     setVisibility(v);
@@ -55,6 +59,9 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     if (!userId || busy) return;
     setBusy(true);
     setError("");
+    // A new check-in is a new report: don't carry the last venue's answers over.
+    setVibePick(null);
+    setRecommendState(null);
     // Optimistic: flip the cache immediately; snapshot for synchronous revert on failure
     const prev = queryClient.getQueryData(["my-check-in", userId]);
     queryClient.setQueryData(["my-check-in", userId], {
@@ -81,6 +88,8 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     if (!userId || busy) return;
     setBusy(true);
     setError("");
+    setVibePick(null);
+    setRecommendState(null);
     // Optimistic: flip the cache immediately; snapshot for synchronous revert on failure
     const prev = queryClient.getQueryData(["my-check-in", userId]);
     queryClient.setQueryData(["my-check-in", userId], null);
@@ -97,14 +106,22 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
     }
   };
 
+  /**
+   * The single most important write in the app — this is the live data every
+   * other user reads. Paint the selection before the network call so the tap
+   * never feels dead on a bar's wifi, and revert loudly if it doesn't save.
+   */
   const doVibe = async (vibe: Vibe) => {
     if (!mine || mine.id === "optimistic" || busy) return;
+    const prevPick = shownVibe;
+    setVibePick(vibe);
     setError("");
     try {
       await setVibe(mine.id, vibe);
       logEvent("vibe_set", { venue_id: venueId, vibe });
       pokeActivity();
     } catch {
+      setVibePick(prevPick);
       setError("Vibe didn't save — try again.");
     } finally {
       refresh();
@@ -161,10 +178,14 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
             {VIBES.map((v) => (
               <button
                 key={v.value}
+                type="button"
                 onClick={() => doVibe(v.value)}
+                aria-pressed={shownVibe === v.value}
+                disabled={!mine || mine.id === "optimistic"}
                 className={cn(
-                  "flex-1 min-w-[92px] text-xs px-2 py-2 rounded-xl border transition-colors",
-                  mine?.vibe === v.value
+                  "flex-1 min-w-[92px] text-xs font-medium px-2 py-2 rounded-xl border",
+                  "transition-all duration-150 active:scale-[0.97] disabled:opacity-50",
+                  shownVibe === v.value
                     ? "bg-primary text-primary-foreground border-transparent"
                     : "bg-secondary/60 border-border hover:bg-secondary"
                 )}
@@ -174,7 +195,7 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
             ))}
           </div>
 
-          {mine?.vibe && (
+          {shownVibe && (
             <div className="mt-3 animate-fade-in">
               <p className="text-xs text-muted-foreground mb-1.5">
                 Would you send friends here right now?
@@ -183,10 +204,12 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
                 {(Object.keys(RECOMMEND_LABELS) as Recommend[]).map((r) => (
                   <button
                     key={r}
+                    type="button"
                     onClick={() => doRecommend(r)}
                     aria-pressed={shownRecommend === r}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                      "px-3 py-1.5 rounded-lg text-xs font-medium",
+                      "transition-all duration-150 active:scale-[0.97]",
                       shownRecommend === r
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary hover:bg-accent/30",
