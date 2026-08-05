@@ -1040,3 +1040,49 @@ highest-value work while enrollment is pending.
 - iOS periodically re-asks users to confirm "Always" location and shows them a
   map of where they were tracked; users routinely downgrade to "While Using",
   so auto check-in reliability decays outside our control.
+
+---
+
+## §32 — Onboarding taste capture (birthday, gender, favorite spots)
+
+**DISCUSSED AND APPROVED 2026-08-05 (Colton). SPEC + PLAN WRITTEN. NOT BUILT.**
+Closes the rest of §11 (sign-up demographics), which §29 had scoped down to
+school only. Also advances §7 (onboarding) and §6 (favorites / saved venues).
+
+- Spec: `docs/superpowers/specs/2026-08-05-onboarding-taste-capture-design.md`
+- Plan: `docs/superpowers/plans/2026-08-05-onboarding-taste-capture.md` (9 tasks)
+- Branch: `feat/onboarding-taste-capture` (docs only so far)
+
+**Two new screens** between username and the location primer:
+`/welcome/about` (birthday required, gender optional) and `/welcome/spots`
+(pick favorite ENDZ venues, plus search for bars ENDZ does not carry).
+
+**The point is the cold start, not the demographics.** Picks are written as
+real saves, so the friend facepile and Saved Spots shipped 2026-08-05 are
+non-empty on day one instead of showing a new user nothing.
+
+**Decisions taken — do not relitigate:**
+- Gender **is** collected (`woman | man | nonbinary | prefer_not_to_say`, no
+  self-describe). Colton wants standard sign-up demographics; pushback on
+  discrimination, App Store and completion grounds was heard and overruled.
+- **Birthday, not an age band.** The band is derived; under-21s have no band,
+  so scoring uses the exact age against the existing `ageAffinity()`.
+- **No alcohol age gate** — "we aren't serving drinks, just showing where to go."
+- **13+ floor** added as a COPPA data-protection floor, not an alcohol gate.
+  One constant to remove if Colton disagrees.
+- Two screens. No minimum on picks. Off-menu bars via real Google search.
+- Birthday and gender go in a new `profile_private` table, **not** `profiles` —
+  that table's SELECT policy exposes every column to any signed-in user.
+
+**Blocked on Colton at two points:** Task 1 needs the DDL pasted; Task 6 needs
+the `places-search` edge function deployed (with jwt verification, unlike
+`plan-guest`).
+
+**Obligations:** privacy-policy update and an App Store nutrition-label update
+— birthday and gender are new personal data, and the policy was just revised
+2026-08-05 for §31. Plus an admin surface for `venue_requests`.
+
+**Out of scope: the notification itself.** No delivery channel exists (`sw.js`
+is cache-only, no push handler, no email service, no email column). The design
+only makes "a new favorite bar has been added" buildable later — most likely
+behind the Capacitor path in §31.
