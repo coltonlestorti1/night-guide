@@ -1,5 +1,11 @@
 -- ============================================================================
 -- 2026-08-05 — onboarding taste capture
+-- APPLIED 2026-08-05. Kept as the record of what was run.
+-- SUPERSEDED IN PART: the gender check below still lists 'nonbinary', which was
+-- dropped 2026-08-06 — see scripts/2026-08-06-gender-options-ddl.sql for the
+-- current constraint. Re-running this file will not resurrect the old value
+-- (the table already exists, so the create is skipped), but do not copy the
+-- constraint from here.
 -- Additive and idempotent. Safe to run more than once.
 -- Spec: docs/superpowers/specs/2026-08-05-onboarding-taste-capture-design.md
 -- ============================================================================

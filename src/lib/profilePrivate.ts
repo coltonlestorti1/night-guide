@@ -9,19 +9,19 @@
  */
 import { getSupabase } from "@/lib/supabase";
 
-export type Gender = "woman" | "man" | "nonbinary" | "prefer_not_to_say";
+/**
+ * Colton dropped `nonbinary` on 2026-08-06, keeping only these three. The DB
+ * check constraint was tightened to match in
+ * scripts/2026-08-06-gender-options-ddl.sql — changing this list without
+ * changing that constraint (or the reverse) makes the write fail with a 23514.
+ */
+export type Gender = "woman" | "man" | "prefer_not_to_say";
 
-export const GENDERS: readonly Gender[] = [
-  "woman",
-  "man",
-  "nonbinary",
-  "prefer_not_to_say",
-] as const;
+export const GENDERS: readonly Gender[] = ["woman", "man", "prefer_not_to_say"] as const;
 
 export const GENDER_LABELS: Record<Gender, string> = {
   woman: "Woman",
   man: "Man",
-  nonbinary: "Non-binary",
   prefer_not_to_say: "Prefer not to say",
 };
 
