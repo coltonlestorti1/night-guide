@@ -8,6 +8,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    fs: {
+      // CLAUDE.md mandates working in git worktrees under .claude/worktrees/.
+      // A worktree's node_modules resolves to the parent checkout, which is
+      // outside the Vite root, so webfonts 403 and the app silently renders in
+      // fallback typefaces. Allowing the repo root fixes dev only.
+      allow: [".", "../../.."],
+    },
   },
   plugins: [
     react(),
