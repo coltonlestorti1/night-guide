@@ -80,6 +80,9 @@ const AboutYou = () => {
                 aria-pressed={gender === g}
                 className={cn(
                   "h-11 rounded-xl border text-sm transition-colors",
+                  // Odd option count in a 2-col grid — the last chip spans the
+                  // row instead of leaving an empty cell beside it.
+                  GENDERS.length % 2 === 1 && g === GENDERS[GENDERS.length - 1] && "col-span-2",
                   gender === g
                     ? "border-primary bg-primary/10 text-foreground"
                     : "border-border text-muted-foreground"
