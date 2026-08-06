@@ -37,8 +37,8 @@ Decision Log as they're made.
 | 26 | Downtown nightlife dataset + 5-zone expansion (source for rooftops/outdoor/age/hotspot-times) | **GATE PASSED + BUILT 2026-07-25** for the East Village slice (`feat/east-zone-import`, NOT merged, DDL NOT pasted). Zone expansion + PDF backlog still gate-blocked. | Retained reference `docs/ENDZ_NIGHTLIFE_DATASET.md`: 40 verified venues + hand-made PDF backlog, cross-checked, organized into **5 general zones** (East · West · Meatpacking & Chelsea · Flatiron & Midtown · Brooklyn). Enriched per-venue: age display w/ **College scene** rule, drink prices/deals, music, activities, rooftop/outdoor/queer/table flags, happy-hour windows, occasion, 2-sentence descriptions. **Direct source for §20/§11/§18.** Import + College-scene tier + zone expansion all gate-blocked. → §26 |
 | 27 | Filter system redesign (chips -> Filters sheet) | **SHIPPED 2026-07-26** (gate passed, built, merged, pushed). Found + fixed 2 live bugs: Hot Tonight emptied the map; Music kept venues with no music. | The map filter row is at **11 chips** (Find the move · All · Saved · Happy hour · Rooftop · Outdoor · Bars · Clubs · Lounges · Hot Tonight · Music) in a horizontal scroller where only ~4 are visible on a phone — so Rooftop/Outdoor, the newest ones, are off-screen by default, and **Rooftop matches exactly 1 venue** while holding a permanent slot. It only grows: §20 wants occasion filters, and price/age are obvious next. Proposal: keep 3-4 hot chips inline (All · Saved · Happy hour · Open now) and move the rest behind a **"Filters" button with a count badge** (category, outdoor, rooftop, music, price, age). Alternative considered: drop the Rooftop chip since Find the Move already asks "Outside?" — simpler, loses one-tap access. Relates to §20. → §27 |
 | 28 | Crowd-sourced venue data (age / music / amenities from check-ins) | NOT DISCUSSED (added 2026-07-26, Colton) | **The only path to the field consistency Colton wants.** Coverage today across 56 venues: age **52%**, music **32%**, price 93% (after the Google-range fallback), rating/hours 100%. Google supplies rating, hours, price range and outdoor seating — it does **not** supply crowd age or music genre, and no third party does, because only the people in the room know. Matches ENDZ's founding thesis (liveness comes from our own users, not APIs). Proposed MVP: after a check-in **commits**, ask **one** rotating micro-question ("Crowd age tonight?" / "Music?" / "Cover charge?" / "Outdoor seating?"), one tap, skippable; aggregate; surface only at **N>=3**, labelled crowd-sourced, never stated as fact. Hook already exists — `CheckInCard` asks for a vibe post-check-in (`doVibe`). **Hard guard: the north star is unprompted check-ins, so nothing may add friction BEFORE the check-in commits; if it dents check-in rate it comes out.** Needs a DB table + touches the protected check-in loop. Would also settle the St. Dymphna's backyard question. Relates to §11, §20, §26. → §28 |
-| 30 | Admin dashboard (private operator tool) | **GATE PASSED + BUILT 2026-07-28** (`feat/admin-dashboard`, NOT merged, DDL NOT pasted) | Desktop-first `/admin/*` behind a `profiles.role` gate. v1 = venue management (edit every editable `venues` column for all 57 rows without touching code or SQL), **data quality/verification** (joins live venues against Google enrichment + heat baselines: 41/57 heat curves are `archetype_default` guesses, only 11 have a researched busy window), and a deliberately thin overview fed only by real `events`/`check_ins`/`plans`/`waitlist` counts. **No DAU/WAU/retention charts** — sign-in is still OAuth-testing-mode, so those would be flat zeros. Deferred with stub nav slots: moderation, bar events, happy hours as records, feature flags, users, full 5-role RBAC (each blocked on a missing table, missing users, or both). DDL staged in `scripts/2026-07-28-admin-ddl.sql` — includes a **privilege-escalation fix**: the existing "users update own profile" policy has no column-level WITH CHECK, so once `role` exists any signed-in user could self-promote; a trigger closes it. Spec: `docs/superpowers/specs/2026-07-28-admin-dashboard-design.md`. Relates to §26, §28. → §30 |
-| 31 | iOS App Store release (Capacitor wrap) | **IN PROGRESS 2026-08-05** — 2 of 5 rejection blockers SHIPPED + merged + live-verified; 3 remain, all gated on Colton | Blockers 2 (in-app account deletion) and 4 (report flow) are done and on main. Remaining: **Sign in with Apple** (blocked on enrollment), **reviewer sign-in** (OAuth unpublished + SIGNUP_LIVE=false), **empty-map-for-reviewer** (undecided, needs Colton). Enrollment not started; full Xcode not installed. → §31 |
+| 30 | Admin dashboard (private operator tool) | **SHIPPED — LIVE.** Merged, DDL applied, write path verified 2026-08-05. Code-split out of the main bundle 2026-08-06 (it had been shipping to every visitor, admin RPC names included). Open follow-up: a `venue_requests` surface, from §32 | Desktop-first `/admin/*` behind a `profiles.role` gate. v1 = venue management (edit every editable `venues` column for all 57 rows without touching code or SQL), **data quality/verification** (joins live venues against Google enrichment + heat baselines: 41/57 heat curves are `archetype_default` guesses, only 11 have a researched busy window), and a deliberately thin overview fed only by real `events`/`check_ins`/`plans`/`waitlist` counts. **No DAU/WAU/retention charts** — sign-in is still OAuth-testing-mode, so those would be flat zeros. Deferred with stub nav slots: moderation, bar events, happy hours as records, feature flags, users, full 5-role RBAC (each blocked on a missing table, missing users, or both). DDL staged in `scripts/2026-07-28-admin-ddl.sql` — includes a **privilege-escalation fix**: the existing "users update own profile" policy has no column-level WITH CHECK, so once `role` exists any signed-in user could self-promote; a trigger closes it. Spec: `docs/superpowers/specs/2026-07-28-admin-dashboard-design.md`. Relates to §26, §28. → §30 |
+| 31 | iOS App Store release (Capacitor wrap) | **IN PROGRESS — updated 2026-08-06.** 2.5 of 5 rejection blockers done; the critical path is Apple enrollment | Blockers 2 (in-app account deletion) and 4 (report flow) are done and on main. Blocker 3 (reviewer sign-in) is **half done** — OAuth was published 2026-08-05 and `SIGNUP_LIVE` is now `true`, so anyone can sign in, but demo credentials still have to go in the App Review notes. Remaining: **Sign in with Apple** (blocked on enrollment — needs a Service ID + signing key), **empty-map-for-reviewer** (undecided, needs Colton). Also now owed: the privacy nutrition label must declare **date of birth and gender** (from §32). Enrollment not started; full Xcode not installed. → §31 |
 
 ---
 
@@ -1096,7 +1096,12 @@ highest-value work while enrollment is pending.
 
 ## §32 — Onboarding taste capture (birthday, gender, favorite spots)
 
-**DISCUSSED AND APPROVED 2026-08-05 (Colton). SPEC + PLAN WRITTEN. NOT BUILT.**
+**SHIPPED 2026-08-06 — all 9 tasks built, merged @ `f3c23d8`, pushed, deployed,
+and Colton confirmed the live flow works.** Both DDL scripts applied;
+`places-search` deployed. 229 tests passing. Follow-ups that came out of the
+build are listed at the end of this section.
+
+**DISCUSSED AND APPROVED 2026-08-05 (Colton). SPEC + PLAN WRITTEN.**
 Closes the rest of §11 (sign-up demographics), which §29 had scoped down to
 school only. Also advances §7 (onboarding) and §6 (favorites / saved venues).
 
@@ -1119,8 +1124,17 @@ non-empty on day one instead of showing a new user nothing.
 - **Birthday, not an age band.** The band is derived; under-21s have no band,
   so scoring uses the exact age against the existing `ageAffinity()`.
 - **No alcohol age gate** — "we aren't serving drinks, just showing where to go."
-- **13+ floor** added as a COPPA data-protection floor, not an alcohol gate.
-  One constant to remove if Colton disagrees.
+- ~~**13+ floor**~~ → **AGE FLOOR IS 18, changed 2026-08-06.** The plan's 13
+  (a COPPA data floor) contradicted the *already-published* `/privacy`, which
+  said "adults aged 18+", and `/terms`, which already required 18. Shipping 13
+  would have collected data from people the policy says are not users. Still
+  **not** a drinking gate — no 21 restriction exists anywhere.
+- **Gender options are now `woman | man | prefer_not_to_say`** — Colton dropped
+  `nonbinary` 2026-08-06 (shipped @ `326fc24`). Flagged that this leaves
+  nonbinary users no accurate answer and that "prefer not to say" reads as a
+  refusal rather than an identity; he went ahead. **The list in
+  `src/lib/profilePrivate.ts` and the `profile_private_gender_check` constraint
+  must always change together** — out of sync means a 23514 on write.
 - Two screens. No minimum on picks. Off-menu bars via real Google search.
 - Birthday and gender go in a new `profile_private` table, **not** `profiles` —
   that table's SELECT policy exposes every column to any signed-in user.
@@ -1137,3 +1151,32 @@ the `places-search` edge function deployed (with jwt verification, unlike
 is cache-only, no push handler, no email service, no email column). The design
 only makes "a new favorite bar has been added" buildable later — most likely
 behind the Capacitor path in §31.
+
+### Follow-ups owed from the build (added 2026-08-06, NOT discussed)
+
+1. **`venue_requests` has no admin surface.** Users can now ask for bars ENDZ
+   doesn't carry, and nobody can read the list — the requests accumulate
+   unseen, which also means the "we added your bar" promise has no operator
+   path. Needs the gate before building; `venue_requests` already has an
+   admin-readable RLS policy (`auth.uid() = user_id or public.is_admin()`), so
+   this is a UI in §30's dashboard, not new schema. Relates to §30.
+2. **`places-search` has no rate limit.** A signed-in user can hammer the
+   endpoint and spend the Google Places quota. Low risk at East Village scale,
+   real before any launch push.
+3. **App Store nutrition label must add date of birth and gender.** Blocks the
+   §31 submission, not this feature. → §31
+
+### Security finding from the build — read before writing any edge function
+
+Deploying with `verify_jwt` does **NOT** restrict a function to signed-in
+users. Verified live 2026-08-06: `places-search` returned **200 with real
+Google results** to a call carrying only `VITE_SUPABASE_PUBLISHABLE_KEY`, which
+ships in the bundle to every visitor — an open proxy on a paid quota. ENDZ's key
+is a new-style `sb_publishable_…` key, which is not a JWT at all; the gateway
+accepts it as a valid API key and treats auth as satisfied. Any function that
+spends money or touches private data must resolve the caller itself
+(`auth.getUser(token)`) before doing the work, and the publishable-key probe in
+`docs/plans/2026-08-05-places-search-deploy-runbook.md` step 3b must be re-run
+after every deploy. `plan-guest` is the deliberate exception — it is
+`--no-verify-jwt` because guests have no account, and its safety comes from
+returning only the one plan a valid token names.
