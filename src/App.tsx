@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,13 +24,11 @@ import PlanPage from "@/pages/PlanPage";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAuthStore } from "@/store/auth";
-import AdminRoute from "@/admin/AdminRoute";
-import AdminLayout from "@/admin/AdminLayout";
-import AdminOverview from "@/admin/pages/AdminOverview";
-import AdminVenues from "@/admin/pages/AdminVenues";
-import AdminQuality from "@/admin/pages/AdminQuality";
-import DeferredSection from "@/admin/pages/DeferredSection";
-import { ADMIN_NAV_DEFERRED } from "@/admin/nav";
+// Lazy: the operator tool is for a handful of accounts, so it must not ship in
+// the bundle every visitor downloads — and a static import also published the
+// admin RPC names to anyone reading the JS. Open finding from the 2026-08-05
+// pre-launch safety check.
+const AdminRoutes = lazy(() => import("@/admin/AdminRoutes"));
 
 const queryClient = new QueryClient();
 
@@ -64,21 +63,22 @@ const App = () => {
               <Route path="terms" element={<Terms />} />
               <Route path="p/:token" element={<PlanPage />} />
               {/* Admin: role-gated operator tool, outside AppLayout so it
-                  never inherits the consumer bottom nav or map chrome. */}
-              <Route path="admin" element={<AdminRoute />}>
-                <Route element={<AdminLayout />}>
-                  <Route index element={<AdminOverview />} />
-                  <Route path="venues" element={<AdminVenues />} />
-                  <Route path="quality" element={<AdminQuality />} />
-                  {ADMIN_NAV_DEFERRED.map((item) => (
-                    <Route
-                      key={item.to}
-                      path={item.to.replace("/admin/", "")}
-                      element={<DeferredSection />}
-                    />
-                  ))}
-                </Route>
-              </Route>
+                  never inherits the consumer bottom nav or map chrome.
+                  Code-split — see src/admin/AdminRoutes.tsx. */}
+              <Route
+                path="admin/*"
+                element={
+                  <Suspense
+                    fallback={
+                      <div className="flex min-h-screen items-center justify-center bg-background">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      </div>
+                    }
+                  >
+                    <AdminRoutes />
+                  </Suspense>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
