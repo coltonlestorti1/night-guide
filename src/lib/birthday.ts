@@ -2,13 +2,20 @@
  * Birthday maths for onboarding. Kept separate from agePref.ts because that
  * module is the on-device band store; this is the derivation from a real date.
  *
- * MIN_AGE is a COPPA data-protection floor for collecting a birthday and
- * gender, NOT an alcohol gate. ENDZ shows public information about bars and
- * deliberately does not restrict by drinking age (Colton, 2026-08-05).
+ * MIN_AGE is a terms-of-use floor, NOT an alcohol gate. ENDZ shows public
+ * information about bars and deliberately does not restrict by drinking age
+ * (Colton, 2026-08-05).
+ *
+ * It is 18 because /privacy already states "ENDZ is for adults aged 18+" — the
+ * policy was published before this screen existed. The plan specified 13 as a
+ * COPPA data floor; that contradicted the live policy, and Colton chose 18 on
+ * 2026-08-06. Changing this number back means rewriting the Children section
+ * of /privacy in the same commit, or the app collects data the policy says it
+ * does not.
  */
 import type { AgeBand } from "@/lib/agePref";
 
-export const MIN_AGE = 13;
+export const MIN_AGE = 18;
 
 /** Whole years old, or null if the date is unparseable or in the future. */
 export function ageFromBirthday(iso: string, now: Date = new Date()): number | null {

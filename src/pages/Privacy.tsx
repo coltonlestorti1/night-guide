@@ -38,8 +38,8 @@ export default function Privacy() {
           apart from the rest of your profile, where <strong>only you can read
           it</strong>: it is never shown on your profile, never shown to friends,
           and never shown to anyone else. ENDZ does not check drinking age, and
-          nothing here restricts you by it. You must be at least 13 to have an
-          account.
+          nothing here restricts you by it — but you must be at least 18 to have
+          an account at all.
         </li>
         <li>
           <strong>Gender (optional).</strong> You can skip it and nothing changes

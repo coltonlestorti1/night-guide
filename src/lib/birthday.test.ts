@@ -25,10 +25,10 @@ describe("ageFromBirthday", () => {
 });
 
 describe("isUnderMinimum", () => {
-  it("is false on the 13th birthday and true the day before", () => {
-    expect(MIN_AGE).toBe(13);
-    expect(isUnderMinimum("2013-08-05", NOW)).toBe(false);
-    expect(isUnderMinimum("2013-08-06", NOW)).toBe(true);
+  it("is false on the 18th birthday and true the day before", () => {
+    expect(MIN_AGE).toBe(18);
+    expect(isUnderMinimum("2008-08-05", NOW)).toBe(false); // 18 today
+    expect(isUnderMinimum("2008-08-06", NOW)).toBe(true); // 18 tomorrow
   });
 
   it("treats an unparseable date as under minimum, failing closed", () => {
@@ -38,6 +38,12 @@ describe("isUnderMinimum", () => {
   it("does not gate on drinking age", () => {
     expect(isUnderMinimum("2008-01-01", NOW)).toBe(false); // 18
     expect(isUnderMinimum("2006-01-01", NOW)).toBe(false); // 20
+  });
+
+  it("rejects the ages the old 13+ floor would have allowed", () => {
+    expect(isUnderMinimum("2013-08-05", NOW)).toBe(true); // 13
+    expect(isUnderMinimum("2010-01-01", NOW)).toBe(true); // 16
+    expect(isUnderMinimum("2009-01-01", NOW)).toBe(true); // 17
   });
 });
 
