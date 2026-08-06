@@ -1,5 +1,23 @@
 # Night Feed — Slice 1: rating engine + private recap — Implementation Plan
 
+> **COMPLETE 2026-08-06.** All 7 tasks built (the step checkboxes below were
+> never ticked — that is bookkeeping, not unfinished work). Built by one session
+> on `feat/night-ratings`; audited and merged by another after Colton handed it
+> over. The audit found no gaps: every task's deliverable exists, the UI is
+> reachable (`Social.tsx` → `RecapCard` → `RateSheet`), and the DDL is applied.
+>
+> **Verified, not assumed:** typecheck exit 0 · 256 tests / 21 files (229
+> baseline + 27 new) · production build clean · `venue_ratings` anon SELECT `[]`
+> and anon INSERT refused `42501` · all four RLS policies owner-only
+> (`auth.uid() = user_id`, `to authenticated`) · the DDL never touches
+> `check_ins`, so the 2026-08-05 policies are unchanged and the `select *` view
+> trap does not apply · `/social` renders with 0 console errors and correctly
+> shows no card when there is nothing to recap.
+>
+> **NOT verified — needs two real accounts:** that account B cannot read account
+> A's ratings. The policies are structurally correct; nobody has executed the
+> cross-account read.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A signed-in user opens ENDZ the morning after and sees where they went last night, and can rate each venue Great / Good / Not great — with head-to-head comparisons once a bucket has company — producing a durable ranked list in `venue_ratings`.
