@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# pre-push — block a push that would ship a client/database column mismatch.
+#
+# The 2026-08-05 active_check_ins drift killed every vibe button for a day with
+# all 256 unit tests green, because that failure lives at the database/client
+# boundary. `npm run check:schema` is the only thing that sees it, and it only
+# helps if it runs.
+#
+# Deliberately narrow:
+#   * ONLY blocks on real drift (exit 1). Being unable to run — offline, no
+#     .env.local, missing key (exit 2) — warns and lets the push through. A hook
+#     that fails on a plane gets bypassed forever after.
+#   * Does NOT run tests or the build. Those are visible in other ways; this
+#     covers the failure that is invisible.
+#
+# Install:  npm run hooks:install
+# Bypass:   git push --no-verify
+#
+set -u
+
+# Skip cleanly if the script isn't present (older branch, shallow checkout).
+[ -f scripts/check-schema.mjs ] || exit 0
+
+printf 'pre-push: checking for schema drift...\n'
+npm run --silent check:schema
+status=$?
+
+if [ $status -eq 1 ]; then
+  printf '\npre-push: BLOCKED — the client selects columns the database does not have.\n'
+  printf 'Fix the schema (or the select) and try again.\n'
+  printf 'If a view is involved, re-run its definition WITH its security lines:\n'
+  printf '  scripts/2026-08-06-fix-active-check-ins-view.sql\n'
+  printf 'To push anyway: git push --no-verify\n'
+  exit 1
+fi
+
+if [ $status -ne 0 ]; then
+  printf 'pre-push: schema check could not run (exit %s) — allowing the push.\n' "$status"
+  exit 0
+fi
+
+exit 0
