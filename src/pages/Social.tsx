@@ -26,6 +26,7 @@ import SuggestedList from "@/components/social/SuggestedList";
 import { usePendingRequests, usePlanFeed } from "@/hooks/usePlans";
 import PlanCard from "@/components/social/PlanCard";
 import CreatePlanSheet from "@/components/social/CreatePlanSheet";
+import RecapCard from "@/components/night/RecapCard";
 
 type Tone = "primary" | "live" | "neutral";
 
@@ -126,6 +127,8 @@ const Social = () => {
     <section className="relative container pt-6 pb-24 max-w-lg">
       {glow}
       {header}
+
+      <RecapCard />
 
       {(incoming.length > 0 || outgoing.length > 0) && (
         <SectionCard
