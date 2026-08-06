@@ -75,7 +75,7 @@ boundary when the list is re-ranked:
 
 | Bucket | Band | Score with no comparisons yet |
 |---|---|---|
-| Great | 6.7 – 10.0 | 8.3 (midpoint) |
+| Great | 6.7 – 10.0 | 8.4 (midpoint) |
 | Good | 3.4 – 6.6 | 5.0 |
 | Not great | 0.0 – 3.3 | 1.7 |
 

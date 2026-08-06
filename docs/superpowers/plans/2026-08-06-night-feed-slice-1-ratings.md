@@ -195,7 +195,7 @@ describe("BUCKET_LABELS", () => {
 
 describe("scoreFor", () => {
   it("puts a lone entry at the band midpoint", () => {
-    expect(scoreFor("great", 0, 1)).toBeCloseTo(8.3, 1);
+    expect(scoreFor("great", 0, 1)).toBe(8.4);
     expect(scoreFor("good", 0, 1)).toBeCloseTo(5.0, 1);
     expect(scoreFor("not_great", 0, 1)).toBeCloseTo(1.7, 1);
   });
