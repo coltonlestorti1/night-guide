@@ -26,6 +26,18 @@
 create or replace view active_check_ins as
   select * from check_ins where expires_at > now();
 
+-- ---------- 🚨 SECURITY — these two lines are NOT optional ----------
+-- `create or replace view` above DROPS these settings every time it runs. Left
+-- off, the view reverts to running with its OWNER's privileges and bypasses RLS
+-- on check_ins entirely: on 2026-08-06 an anonymous caller holding only the
+-- publishable key read a live check-in whose visibility was 'friends', and any
+-- signed-in user could read every active check-in. Full write-up in
+-- scripts/2026-08-06-active-checkins-rls-leak.sql.
+--
+-- NEVER run the statement above without these two.
+alter view active_check_ins set (security_invoker = true);
+revoke all on active_check_ins from anon;
+
 -- ---------- verification ----------
 -- Expect all three to be true.
 select
@@ -35,3 +47,12 @@ select
     where table_name = 'active_check_ins' and column_name = 'vibe_at') = 1 as has_vibe_at,
   (select count(*) from information_schema.columns
     where table_name = 'active_check_ins' and column_name = 'ended_at') = 1 as has_ended_at;
+
+-- And the behavioural check that actually matters — a made-up signed-in user
+-- must see nothing. Rolls back, writes nothing. Expect 0.
+begin;
+  set local role authenticated;
+  set local request.jwt.claims =
+    '{"sub":"00000000-0000-0000-0000-000000000000","role":"authenticated"}';
+  select count(*) as stranger_can_see_this_many_checkins from active_check_ins;
+rollback;
