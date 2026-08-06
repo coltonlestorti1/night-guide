@@ -9,7 +9,17 @@
  * Deployed WITH jwt verification — unlike plan-guest, there is no guest case
  * here, and an unauthenticated proxy is a free ride on Colton's Places quota.
  * Returns placeId/name/address only; nothing else is needed or stored.
+ *
+ * The gateway's verify_jwt is NOT sufficient on its own, and this was verified
+ * against the live deployment on 2026-08-05: a call carrying only the
+ * publishable key (`sb_publishable_…`, which ships in the client bundle to
+ * every visitor) returned 200 with real Google results. New-style publishable
+ * keys are not JWTs; the gateway accepts them as valid API keys and treats the
+ * auth requirement as met. So the caller's identity MUST be established here,
+ * in the function, by resolving the bearer token to an actual user. Removing
+ * the check below turns this back into an open proxy on the Places quota.
  */
+import { createClient } from "@supabase/supabase-js";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, content-type, apikey",
@@ -32,6 +42,19 @@ Deno.serve(async (req) => {
 
   const key = Deno.env.get("GOOGLE_PLACES_API_KEY");
   if (!key) return json(500, { error: "not configured" });
+
+  // Establish a real signed-in user before spending any Places quota. The
+  // publishable key satisfies the gateway but resolves to no user here.
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return json(401, { error: "sign in required" });
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !anonKey) return json(500, { error: "not configured" });
+
+  const { data: userData, error: userError } = await createClient(supabaseUrl, anonKey)
+    .auth.getUser(token);
+  if (userError || !userData?.user) return json(401, { error: "sign in required" });
 
   let query = "";
   try {

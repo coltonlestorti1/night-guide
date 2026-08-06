@@ -40,6 +40,23 @@ From `~/Documents/night-guide`:
 
    Expect **401**. A 200 here means the JWT flag leaked in — redeploy without it.
 
+3b. **The load-bearing check.** A call carrying only the publishable key must
+    ALSO be refused. On the first deploy (2026-08-05) this returned 200 with
+    real Google results, because `sb_publishable_…` keys are not JWTs and the
+    gateway accepts them as valid API keys — `verify_jwt` cannot tell a public
+    visitor from a signed-in user. The function now resolves the bearer token
+    to a real user itself:
+
+       K=$(grep -m1 VITE_SUPABASE_PUBLISHABLE_KEY .env.local | cut -d= -f2-)
+       curl -s -o /dev/null -w "%{http_code}\n" \
+         -X POST "https://nqafzgryzjbtwpvzjagr.supabase.co/functions/v1/places-search" \
+         -H "apikey: $K" -H "Authorization: Bearer $K" \
+         -H "Content-Type: application/json" -d '{"query":"monas"}'
+
+    Expect **401**. A 200 is an open proxy on the Google Places quota — anyone
+    who reads the key out of the production bundle can spend it. Re-run this
+    after every deploy of this function.
+
 4. Signed-in calls return placeId/name/address and nothing else. Easiest check
    is the onboarding Spots screen itself; the field degrades to "no results"
    when the function is missing, so a populated dropdown is the pass.
