@@ -12,6 +12,8 @@ import Profile from "@/pages/Profile";
 import UserProfile from "@/pages/UserProfile";
 import VenueDetail from "@/pages/VenueDetail";
 import PickUsername from "@/pages/PickUsername";
+import AboutYou from "@/pages/AboutYou";
+import PickSpots from "@/pages/PickSpots";
 import LocationPrimer from "@/pages/LocationPrimer";
 import Join from "@/pages/Join";
 import Qr from "@/pages/Qr";
@@ -53,6 +55,8 @@ const App = () => {
                 <Route path="u/:username" element={<UserProfile />} />
               </Route>
               <Route path="welcome" element={<PickUsername />} />
+              <Route path="welcome/about" element={<AboutYou />} />
+              <Route path="welcome/spots" element={<PickSpots />} />
               <Route path="welcome/location" element={<LocationPrimer />} />
               <Route path="join" element={<Join />} />
               <Route path="qr" element={<Qr />} />

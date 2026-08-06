@@ -8,7 +8,7 @@ import { SUPPORT_EMAIL } from "@/lib/constants";
 
 export default function Privacy() {
   return (
-    <LegalLayout title="Privacy Policy" updated="July 17, 2026">
+    <LegalLayout title="Privacy Policy" updated="August 6, 2026">
       <p>
         ENDZ ("we", "us") runs a live nightlife map. This policy explains, in
         plain terms, what we collect and why. We built ENDZ on one rule:{" "}
@@ -33,9 +33,29 @@ export default function Privacy() {
           others from your school.
         </li>
         <li>
+          <strong>Your birthday.</strong> Asked once at sign-up and used to tailor
+          what ENDZ recommends — different rooms suit different ages. It is stored
+          apart from the rest of your profile, where <strong>only you can read
+          it</strong>: it is never shown on your profile, never shown to friends,
+          and never shown to anyone else. ENDZ does not check drinking age, and
+          nothing here restricts you by it — but you must be at least 18 to have
+          an account at all.
+        </li>
+        <li>
+          <strong>Gender (optional).</strong> You can skip it and nothing changes
+          except how well recommendations fit. It is kept in the same private place
+          as your birthday, with the same rule — visible to you alone, never
+          displayed to anyone.
+        </li>
+        <li>
           <strong>Your activity.</strong> When you check in to a venue, we store
           that check-in (the venue, the vibe you picked, and the time). When you
           add friends, we store those connections.
+        </li>
+        <li>
+          <strong>Bars you ask us to add.</strong> If you search for somewhere ENDZ
+          doesn't carry yet, we keep the place's name and its Google Maps id so we
+          can tell you if we add it. That's the only reason it's stored.
         </li>
         <li>
           <strong>Your check-in history.</strong> Check-ins are kept after they
@@ -49,7 +69,9 @@ export default function Privacy() {
           servers so they follow you between devices. Depending on your setting,
           your friends may see that you saved a place. You control this under
           Profile → Privacy → "Who sees your saves", and setting it to Nobody
-          applies to spots you already saved, not just new ones.
+          applies to spots you already saved, not just new ones. The spots you
+          pick during sign-up are saved the same way and follow the same setting,
+          which starts at friends.
         </li>
         <li>
           <strong>Location — only on your device.</strong> If you turn on location,
