@@ -49,6 +49,7 @@ That last point is the constraint this whole design is built around.
 | Notes | **Optional**, ~280 chars, no links |
 | Photos | **Optional**, up to 3 per post, user's own |
 | Feed placement | `/social` **becomes the feed**; friend management moves behind a header icon. No fifth tab. |
+| Default post audience | **School**, not friends and not public (Colton, 2026-08-06) — friends-only starves the feed at launch; public is the wrong default for this user base. `everyone` stays available **opt-in per post**. |
 | Moderation | **Ships with the feature, not after** |
 | Scorer integration | **Out of scope.** This spec writes `venue_ratings`; §3 reads it. |
 
@@ -88,8 +89,11 @@ truth and the score is a rendering of it. Displayed to one decimal place.
 - `user_id`, `venue_id`
 - `night_date` — **date, not timestamp.** The load-bearing privacy decision.
 - `note` — nullable text, capped
-- `visibility` — reuses the existing `CheckinVisibility` union
-  (`everyone` | `friends` | `nobody`), defaulting to `friends`
+- `visibility` — `everyone` | `school` | `friends` | `nobody`, **defaulting to
+  `school`**. This is a **new, wider union than `CheckinVisibility`** — live
+  check-in visibility is deliberately left alone and keeps its three values.
+  Do not widen the shared type; a live location and a next-day post are not
+  the same disclosure and must not share a default.
 - `created_at`
 
 ### `night_post_photos` — child rows of a post
@@ -162,7 +166,7 @@ a full class of users.
 |---|---|
 | Check-in history / recap | **Author only.** Current RLS already permits `auth.uid() = user_id`; no policy change. |
 | Live presence | Unchanged — friends only, ghost mode, existing visibility rules |
-| `night_posts` | Per-post `visibility`, default friends |
+| `night_posts` | Per-post `visibility`, **default `school`** — matched on `profiles.college_slug`. `everyone` is opt-in per post. |
 | Check-in timestamps | **Nobody but the author, via any path** |
 
 The 2026-08-05 policy is not modified by this feature. That is a hard
@@ -183,16 +187,36 @@ The §32 spec cut free-text self-describe as "a moderation surface with no
 personalization payoff." Here the payoff *is* the feature — so the surface is
 justified, and the moderation path ships with it.
 
-## Cold start
+## Cold start — why the default is school
 
-An empty feed is worse than no feed, and most early mornings will be empty.
+An empty feed is worse than no feed, and a friends-only default would leave
+most early mornings blank. **Campus scope is the fix**, and it needs no new
+data: `profiles.college_slug` is already captured by the onboarding picker
+(145 schools, `scripts/colleges-seed.sql`).
+
+Public-by-default was considered and rejected (Colton's question, 2026-08-06):
+
+- A browsable record of which bars a 19-year-old visits, and when she is out,
+  is legible as a **routine** after a few weeks even at day granularity. Bars at
+  1am with a college user base is a materially different risk profile from
+  Beli's restaurants at 7pm.
+- **The change is one-way.** Narrow → wide later reads as a feature; wide →
+  narrow later is a trust event, because the earlier posts were already seen.
+- Apple scrutinises **public** UGC in apps with young users far harder than
+  scoped UGC, and §31 is live.
+
+Campus scope also produces *better* content than public would: HWS students in
+the East Village are more relevant to each other than a stranger across town.
 
 - The author's own recap always renders
-- Friends' posts fill in as they exist
-- Empty state shows the user's own recent posts plus a nudge to add friends
+- School posts fill the feed from day one
+- `everyone` stays available opt-in, per post, for users who want reach
 
-The HWS beachhead helps: a dense social graph where everyone already knows
-everyone.
+**Pre-build check:** campus scope is only as good as the field behind it. Before
+building, measure real `college_slug` coverage on live signups. If a meaningful
+share is null or junk, the tier is leaky and closer to public than it looks —
+in which case tighten to friends and revisit, rather than shipping a boundary
+that does not hold.
 
 ## Acceptance criteria
 
@@ -203,6 +227,12 @@ everyone.
 - A skipped venue writes no `night_posts` row
 - A friend's feed shows venue, score, note and photos — and **no check-in
   timestamp is reachable from any client query**
+- A post left at the default is visible to same-school users and **not** to a
+  signed-in user at another school; a post set to `everyone` is visible to both
+- A user with a null `college_slug` never sees, and is never seen in, another
+  school's scoped posts
+- Live check-in visibility is **unchanged** — `CheckinVisibility` keeps its
+  three values and its existing default
 - An uploaded photo carries **no EXIF** in storage, verified against a real
   camera photo
 - Every post is reportable, and deletable by its author
