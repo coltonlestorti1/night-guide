@@ -25,8 +25,9 @@ import { getSupabase } from "@/lib/supabase";
 import { PageHeader, EmptyState, ErrorNote } from "../components/AdminKit";
 import { fetchAdminVenues, type AdminVenueRow } from "../data/venues";
 import VenueEditSheet from "../components/VenueEditSheet";
+import { PLACEHOLDER } from "@/lib/venueImages";
 
-type ActiveFilter = "all" | "active" | "dormant";
+type ActiveFilter = "all" | "active" | "dormant" | "no photo";
 
 const AdminVenues = () => {
   const [search, setSearch] = useState("");
@@ -47,6 +48,7 @@ const AdminVenues = () => {
     return rows.filter((v) => {
       if (activeFilter === "active" && !v.is_active) return false;
       if (activeFilter === "dormant" && v.is_active) return false;
+      if (activeFilter === "no photo" && v.image_url) return false;
       if (!q) return true;
       return (
         v.name.toLowerCase().includes(q) ||
@@ -62,6 +64,7 @@ const AdminVenues = () => {
       all: rows.length,
       active: rows.filter((v) => v.is_active).length,
       dormant: rows.filter((v) => !v.is_active).length,
+      "no photo": rows.filter((v) => !v.image_url).length,
     };
   }, [data]);
 
@@ -98,7 +101,7 @@ const AdminVenues = () => {
                 className="pl-9"
               />
             </div>
-            {(["all", "active", "dormant"] as const).map((f) => (
+            {(["all", "active", "dormant", "no photo"] as const).map((f) => (
               <Button
                 key={f}
                 variant={activeFilter === f ? "default" : "outline"}
@@ -127,6 +130,7 @@ const AdminVenues = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-14"><span className="sr-only">Photo</span></TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Price</TableHead>
@@ -144,6 +148,13 @@ const AdminVenues = () => {
                       className="cursor-pointer"
                       onClick={() => setEditing(v)}
                     >
+                      <TableCell>
+                        <img
+                          src={v.image_url || PLACEHOLDER[v.type] || PLACEHOLDER.bar}
+                          alt=""
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-1.5">
                           {v.name}
