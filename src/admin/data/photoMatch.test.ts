@@ -17,6 +17,7 @@ const VENUES = [
   venue("v3", "Death & Co"),
   venue("v4", "Bar Nine"),
   venue("v5", "Bar Nine"), // deliberate duplicate name
+  venue("v6", "Nublu 151"),
 ];
 
 describe("slugify", () => {
@@ -65,5 +66,17 @@ describe("matchFileToVenues", () => {
   it("does not fuzzy-match a substring — a wrong bar is worse than no bar", () => {
     // "bar" appears inside "Bar Nine" but must not match on its own.
     expect(matchFileToVenues("bar.jpg", VENUES).confidence).toBe("none");
+  });
+
+  it("matches a venue whose real name ends in digits, trying the full name before stripping a counter", () => {
+    const m = matchFileToVenues("nublu-151.jpg", VENUES);
+    expect(m.venueId).toBe("v6");
+    expect(m.confidence).toBe("exact");
+  });
+
+  it("still strips a genuine download counter when the full name doesn't match anything", () => {
+    // "the-grafton-2" isn't a venue on its own — only after the trailing
+    // counter is stripped does it resolve to "The Grafton".
+    expect(matchFileToVenues("the-grafton-2.webp", VENUES).venueId).toBe("v2");
   });
 });

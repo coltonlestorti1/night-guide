@@ -146,16 +146,25 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
       await updateAdminVenue(venue.id, changed);
       // Only now that the row points at the new URL. The reverse order 404s
       // the live photo if the write fails.
+      let staleFileRemains = false;
       if (supersededUrl && supersededUrl !== draft.image_url) {
-        await deleteVenuePhotoByUrl(supersededUrl);
+        if (!(await deleteVenuePhotoByUrl(supersededUrl))) staleFileRemains = true;
       }
       // A photo uploaded this session that isn't the value just saved (e.g.
       // picked, then Removed, before hitting Save) is orphaned the same way.
       if (pendingUploadUrl && pendingUploadUrl !== draft.image_url) {
-        await deleteVenuePhotoByUrl(pendingUploadUrl);
+        if (!(await deleteVenuePhotoByUrl(pendingUploadUrl))) staleFileRemains = true;
       }
       setPendingUploadUrl(null);
       toast.success(`Saved ${draft.name}.`);
+      // Separate toast, never folded into the success one above: the save
+      // itself worked, but the old photo file is still sitting in the
+      // public bucket and may still be reachable at its old URL.
+      if (staleFileRemains) {
+        toast.warning(
+          "The old photo could not be deleted and may still be publicly reachable at its old URL.",
+        );
+      }
       onSaved();
     } catch (e) {
       // Verbatim, not a friendly rewrite: the likely cause is the missing
@@ -216,7 +225,12 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
                     variant="ghost"
                     size="sm"
                     disabled={uploading}
-                    onClick={() => set("image_url", null)}
+                    onClick={() => {
+                      // Clear both — leaving image_source behind points
+                      // provenance at a photo that no longer exists.
+                      set("image_url", null);
+                      set("image_source", null);
+                    }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Remove

@@ -1,5 +1,6 @@
 /**
- * Bulk venue photos: drop a folder, review every match, then write.
+ * Bulk venue photos: choose multiple photo files at once, review every
+ * match, then write. (Multi-select file input only — no drag-and-drop.)
  *
  * Lives in /admin rather than scripts/ for two reasons, both checked:
  * only the publishable (anon) key exists on disk, so a CLI script could not
@@ -10,7 +11,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { matchFileToVenues } from "../data/photoMatch";
 import { updateAdminVenue, type AdminVenueRow } from "../data/venues";
-import { uploadVenuePhoto } from "@/lib/venuePhotos";
+import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
 
 const UNASSIGNED = "__none__";
 
@@ -110,18 +111,47 @@ const BulkPhotoPanel = ({
 
   const ready = staged.filter((s) => s.venueId);
 
+  // Two staged rows can resolve to the same venue (baseName strips a
+  // download counter, so "grafton.jpg" and "grafton (1).jpg" both hit "The
+  // Grafton" exactly) and the run would silently let the second write win.
+  // Flag it in the preview rather than block — the human decides.
+  const venueHitCounts = new Map<string, number>();
+  staged.forEach((s) => {
+    if (s.venueId) venueHitCounts.set(s.venueId, (venueHitCounts.get(s.venueId) ?? 0) + 1);
+  });
+  const duplicateVenueIds = new Set(
+    [...venueHitCounts.entries()].filter(([, count]) => count > 1).map(([id]) => id),
+  );
+
   const run = async () => {
     setRunning(true);
     let ok = 0;
     const failed: string[] = [];
+    const staleFiles: string[] = [];
+    const venueById = new Map(venues.map((v) => [v.id, v]));
     for (const item of ready) {
       try {
+        const previousUrl = venueById.get(item.venueId!)?.image_url ?? null;
         const url = await uploadVenuePhoto(item.file, item.venueId!);
         await updateAdminVenue(item.venueId!, {
           image_url: url,
           ...(source.trim() ? { image_source: source.trim() } : {}),
         });
         ok++;
+        // Keep the local snapshot current: if a second staged row targets
+        // this same venue (the F3b duplicate case — flagged in the preview,
+        // not blocked), its own "previous photo" lookup must see the URL
+        // this row just wrote, not the stale pre-run value, or the file
+        // this row just uploaded becomes an orphan nobody ever deletes.
+        venueById.set(item.venueId!, { ...venueById.get(item.venueId!)!, image_url: url });
+        // Only now that the row points at the new URL — mirrors
+        // VenueEditSheet's save order so a failed write never 404s a live
+        // photo. Re-running a batch without this accrues public orphans.
+        if (previousUrl && previousUrl !== url) {
+          if (!(await deleteVenuePhotoByUrl(previousUrl))) {
+            staleFiles.push(venueById.get(item.venueId!)?.name ?? item.fileName);
+          }
+        }
       } catch (e) {
         failed.push(`${item.fileName}: ${(e as Error).message}`);
       }
@@ -136,6 +166,13 @@ const BulkPhotoPanel = ({
     // Verbatim, one toast each: a bulk run that hides its failures behind a
     // count is how you end up believing 56 venues have photos when 9 do not.
     failed.forEach((f) => toast.error(f));
+    // Separate from both toasts above: the save itself succeeded, but the
+    // superseded file is still sitting in the public bucket.
+    staleFiles.forEach((name) =>
+      toast.warning(
+        `${name}: the old photo could not be deleted and may still be publicly reachable at its old URL.`,
+      ),
+    );
     onDone();
   };
 
@@ -148,9 +185,15 @@ const BulkPhotoPanel = ({
           multiple
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
+          disabled={running}
           onChange={(e) => stage(e.target.files)}
         />
-        <Button variant="outline" size="sm" onClick={() => fileInput.current?.click()}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={running}
+          onClick={() => fileInput.current?.click()}
+        >
           <Upload className="mr-2 h-4 w-4" />
           Choose photos
         </Button>
@@ -168,38 +211,50 @@ const BulkPhotoPanel = ({
       {staged.length > 0 && (
         <>
           <div className="max-h-80 space-y-2 overflow-y-auto">
-            {staged.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded border border-border p-2">
-                <img src={item.previewUrl} alt="" className="h-12 w-12 rounded object-cover" />
-                <span className="min-w-0 flex-1 truncate text-sm">{item.fileName}</span>
-                {item.confidence === "exact" ? (
-                  <span className="text-sm">
-                    {venues.find((v) => v.id === item.venueId)?.name}
-                  </span>
-                ) : (
-                  <Select
-                    value={item.venueId ?? UNASSIGNED}
-                    onValueChange={(v) => assign(item.id, v)}
-                  >
-                    <SelectTrigger className="w-[240px]">
-                      <SelectValue placeholder="Pick a venue" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={UNASSIGNED}>Skip this file</SelectItem>
-                      {(item.candidates.length > 0
-                        ? venues.filter((v) => item.candidates.includes(v.id))
-                        : venues
-                      ).map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          {v.name}
-                          {v.neighborhood ? ` — ${v.neighborhood}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            ))}
+            {staged.map((item) => {
+              const isDuplicateTarget = item.venueId != null && duplicateVenueIds.has(item.venueId);
+              return (
+                <div key={item.id} className="rounded border border-border p-2">
+                  <div className="flex items-center gap-3">
+                    <img src={item.previewUrl} alt="" className="h-12 w-12 rounded object-cover" />
+                    <span className="min-w-0 flex-1 truncate text-sm">{item.fileName}</span>
+                    {item.confidence === "exact" ? (
+                      <span className="text-sm">
+                        {venues.find((v) => v.id === item.venueId)?.name}
+                      </span>
+                    ) : (
+                      <Select
+                        value={item.venueId ?? UNASSIGNED}
+                        onValueChange={(v) => assign(item.id, v)}
+                        disabled={running}
+                      >
+                        <SelectTrigger className="w-[240px]">
+                          <SelectValue placeholder="Pick a venue" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={UNASSIGNED}>Skip this file</SelectItem>
+                          {(item.candidates.length > 0
+                            ? venues.filter((v) => item.candidates.includes(v.id))
+                            : venues
+                          ).map((v) => (
+                            <SelectItem key={v.id} value={v.id}>
+                              {v.name}
+                              {v.neighborhood ? ` — ${v.neighborhood}` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  {isDuplicateTarget && (
+                    <p className="mt-1.5 flex items-center gap-1.5 pl-[60px] text-xs font-medium text-amber-600 dark:text-amber-400">
+                      <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                      Same venue as another staged file — last write wins if you continue.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-3 flex items-center gap-2">

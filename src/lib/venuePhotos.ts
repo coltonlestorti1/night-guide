@@ -82,25 +82,40 @@ export async function uploadVenuePhoto(file: File, venueId: string): Promise<str
  * venues.image_url has been repointed — the reverse order 404s the live photo
  * if the row write fails.
  *
- * Best-effort: a failure here leaves an orphaned file, which is invisible and
- * costs a few hundred KB. Never let it fail the caller's save.
+ * Non-throwing by design — that property is load-bearing. This runs after
+ * the database row has already been committed, so a thrown error here would
+ * turn a successful save into a visible failure. But "non-throwing" must not
+ * mean "silent": the `venue-photos` bucket is public and a takedown request
+ * is this project's entire licensing mitigation, so a delete that fails has
+ * to be loud. It's console.warn'd here, and the return value lets callers on
+ * the takedown path (replacing/removing a photo) surface a distinct warning
+ * toast — never folded into the success toast.
+ *
+ * Returns true if nothing needed deleting (empty/external URL) or the delete
+ * succeeded; false only when a delete was actually attempted and failed.
  */
-export async function deleteVenuePhotoByUrl(url: string): Promise<void> {
+export async function deleteVenuePhotoByUrl(url: string): Promise<boolean> {
   const supabase = getSupabase();
-  if (!supabase || !url) return;
+  if (!supabase || !url) return true;
   // Match the full Supabase public-object path, not just "/venue-photos/" —
   // that fragment could appear in an externally hosted URL too
   // (e.g. https://example.com/venue-photos/123/photo.jpg), which would then
   // get parsed as one of ours and issue a delete against our bucket.
   const marker = `/object/public/${BUCKET}/`;
   const at = url.indexOf(marker);
-  if (at === -1) return; // not one of ours — an external URL, leave it alone
+  if (at === -1) return true; // not one of ours — an external URL, leave it alone
   const path = url.slice(at + marker.length);
   try {
-    await supabase.storage.from(BUCKET).remove([path]);
-  } catch {
-    // Best-effort: an orphaned file is invisible and costs a few hundred KB.
-    // The caller already wrote the database row successfully — surfacing an
-    // error here would tell the user their save failed when it didn't.
+    const { error } = await supabase.storage.from(BUCKET).remove([path]);
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    // The caller already wrote the database row successfully — throwing
+    // here would tell the admin their save failed when it didn't. But this
+    // file is still public and fetchable at `path`, possibly after someone
+    // asked for it to be taken down, so it must not vanish into a catch
+    // block unseen.
+    console.warn(`[venuePhotos] failed to delete "${path}" — it may still be publicly reachable.`, e);
+    return false;
   }
 }
