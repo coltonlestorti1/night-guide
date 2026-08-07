@@ -438,9 +438,20 @@ what starts the spot rankings.
 
 **Still to do — each needs its own discussion:**
 
-- **Comments on posts.** New table, new RLS, and a *second* moderation surface:
-  every comment is user text attached to a post about a named real business,
-  while §31 is open. Needs a report path from day one, same as posts got.
+- **Comments on posts** — **SPECCED 2026-08-07, design approved, build NOT
+  approved.** Spec: `docs/superpowers/specs/2026-08-07-night-comments-design.md`.
+  Settled with Colton: **friends of the post author may write** (including on
+  `school` and `everyone` posts); anyone who can see the post reads the whole
+  thread; blocking gates the **viewer-vs-commenter** axis, which post
+  visibility does not cover; post author *and* comment author can each delete;
+  no editing, enforced by having no UPDATE policy; **no notifications on
+  purpose**, so unread badges stay a separate decision; rendered as a count
+  plus the newest comment inline, full thread behind a tap.
+  Two audit findings that change the cost: the report path needs **no DDL**
+  (`reports.context` is free text), and **implementation task 1 is a blocking
+  SQL probe**, not code — does a subquery inside an RLS policy inherit the
+  referenced table's own policy? The DDL shape depends on the answer, and the
+  photo policies sidestepped the question rather than answering it.
 - **Unread badges on Social** — a count for new posts, friend requests and
   plans. Sounds cosmetic, is not: "unread" means per-user read state, which is
   a new table written on nearly every view, plus a decision about what counts
@@ -458,6 +469,28 @@ audience-scoped with blocking gating every tier, and photos live in a PRIVATE
 bucket behind signed URLs. Any of these features must inherit that, not restate
 it — a second copy of the audience rule is a second thing that can disagree
 with the first. See `docs/superpowers/specs/2026-08-06-night-feed-design.md`.
+
+**🐛 Feed scrolled sideways on mobile — FIXED and pushed 2026-08-07** (`12cfeab`).
+Colton reported the feed moving side to side. Cause: the author line in
+`PostCard` had no `break-words`, so one unbroken token in a display name or
+venue title could not wrap — `min-w-0` lets the box shrink but never lets the
+text break. Measured at 390×844: a 60-character display name gave **195px** of
+whole-page horizontal scroll, a 60-character venue title **236px**. The note
+right below it was fine, which is what made the omission invisible by reading.
+Reachable with real data — no `maxLength` on the display-name or username
+inputs, no length constraint in the DDL — and it broke the layout **for
+everyone who could see that person's posts**, not just their own view. Shipped
+`break-words` plus an `overflow-x: clip` backstop on `html, body`, each proved
+to work on its own; `clip` not `hidden`, because `hidden` on body breaks
+`position: sticky`. Two elements I suspected first — the negative-offset unread
+badges and the `animate-ping` dot — measured **0px** and are cleared; don't
+re-suspect them.
+
+- **Cap `display_name` / `username` length** (logged 2026-08-07, hygiene, not
+  blocking) — no `maxLength` on the inputs in `EditProfileDialog.tsx` and no
+  constraint on `profiles.username` / `display_name`. The `break-words` fix
+  makes the layout safe without it, so this is about sane data rather than a
+  broken page.
 
 
 - **Unblock UI** — **MERGED to main** (`5d98e56`; verified on main 2026-07-19 — stale "awaiting merge" note corrected). Collapsed "Blocked (n)" section at the bottom of the Social page; Unblock deletes the block row via the existing friends data layer (`unblockUser` → `deleteFriendshipRow`, optimistic with rollback). Only rows where you're the blocker are shown.
