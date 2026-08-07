@@ -8,10 +8,12 @@
 import { useNightFeed } from "@/hooks/useNightFeed";
 import { useVenues } from "@/hooks/useVenues";
 import PostCard from "@/components/night/PostCard";
+import { usePostPhotos } from "@/hooks/usePostPhotos";
 
 export default function FeedList() {
   const { data: posts, isLoading } = useNightFeed();
   const { data: venues } = useVenues({});
+  const { data: photos } = usePostPhotos((posts ?? []).map((p) => p.id));
 
   if (isLoading) return null;
 
@@ -36,6 +38,7 @@ export default function FeedList() {
           key={post.id}
           post={post}
           venue={venues?.find((v) => v.id === post.venueId)}
+          photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
         />
       ))}
     </div>

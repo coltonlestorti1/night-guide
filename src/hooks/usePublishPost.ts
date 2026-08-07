@@ -33,7 +33,7 @@ export function usePublishPost() {
       score: number | null;
     }) => {
       if (!userId) throw new Error("Not signed in");
-      return publishPost({ userId, ...v });
+      return publishPost({ userId, ...v }); // resolves to the post id
     },
     onSuccess: invalidate,
   });

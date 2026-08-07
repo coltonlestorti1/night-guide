@@ -53,7 +53,16 @@ function ScoreRing({ score }: { score: number | null }) {
   );
 }
 
-export default function PostCard({ post, venue }: { post: FeedPost; venue?: Venue }) {
+export default function PostCard({
+  post,
+  venue,
+  photos = [],
+}: {
+  post: FeedPost;
+  venue?: Venue;
+  /** Signed URLs for this post, already filtered by the caller. */
+  photos?: { id: string; url: string | null }[];
+}) {
   const myId = useAuthStore((s) => s.session?.user.id);
   const remove = useDeletePost();
   const [confirming, setConfirming] = useState(false);
@@ -132,6 +141,23 @@ export default function PostCard({ post, venue }: { post: FeedPost; venue?: Venu
           </DropdownMenu>
         </div>
       </div>
+
+      {photos.length > 0 && (
+        <div className={cn("mt-3 grid gap-2", photos.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+          {photos.map(
+            (ph) =>
+              ph.url && (
+                <img
+                  key={ph.id}
+                  src={ph.url}
+                  alt=""
+                  loading="lazy"
+                  className="h-40 w-full rounded-xl object-cover"
+                />
+              ),
+          )}
+        </div>
+      )}
 
       <p className="mt-3 text-xs text-muted-foreground">{nightLabel(post.nightDate)}</p>
 

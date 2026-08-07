@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { defaultAudience, audienceOptions, AUDIENCE_LABELS, type Audience } from "./audience";
+import {
+  defaultAudience,
+  audienceOptions,
+  AUDIENCE_LABELS,
+  AUDIENCE_SHORT,
+  type Audience,
+} from "./audience";
 
 describe("defaultAudience", () => {
   it("is school when the user has a college", () => {
@@ -65,5 +71,16 @@ describe("AUDIENCE_LABELS", () => {
   it("labels every audience value", () => {
     const all: Audience[] = ["everyone", "school", "friends", "nobody"];
     for (const a of all) expect(AUDIENCE_LABELS[a]).toBeTruthy();
+  });
+});
+
+describe("AUDIENCE_SHORT", () => {
+  it("labels every audience value", () => {
+    const all: Audience[] = ["everyone", "school", "friends", "nobody"];
+    for (const a of all) expect(AUDIENCE_SHORT[a]).toBeTruthy();
+  });
+
+  it("stays short enough for a chip row", () => {
+    for (const v of Object.values(AUDIENCE_SHORT)) expect(v.length).toBeLessThanOrEqual(10);
   });
 });

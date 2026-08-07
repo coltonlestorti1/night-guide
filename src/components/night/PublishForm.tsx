@@ -1,0 +1,254 @@
+/**
+ * The publish form: note, audience, and the publish/skip controls.
+ *
+ * Deliberately NOT a Drawer. It is rendered inside one — by PublishSheet from
+ * the recap, and by AddNightSheet as its second step. Two vaul drawers alive
+ * for one flow interrupt each other's transitions (the outgoing one stays
+ * visible at data-state="closed" while the incoming one mounts stuck at its
+ * start transform, with a stale body pointer-events lock). One drawer with two
+ * steps makes that impossible rather than merely unlikely.
+ */
+import { useEffect, useRef, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
+import { Venue } from "@/data/types";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuthStore } from "@/store/auth";
+import { useMyPostsForNight, postFor } from "@/hooks/useNightFeed";
+import { useMyRatings, ratingFor } from "@/hooks/useMyRatings";
+import { useDeletePost, usePublishPost } from "@/hooks/usePublishPost";
+import {
+  AUDIENCE_LABELS,
+  AUDIENCE_SHORT,
+  audienceOptions,
+  defaultAudience,
+  type Audience,
+} from "@/lib/night/audience";
+import { cn } from "@/lib/utils";
+import { logEvent } from "@/lib/analytics";
+import { toast } from "sonner";
+import {
+  MAX_PHOTOS_PER_POST,
+  attachPhotos,
+  uploadNightPhoto,
+} from "@/lib/night/photos";
+
+const NOTE_MAX = 280;
+const LINK_RE = /https?:\/\/|www\./i;
+
+export default function PublishForm({
+  venue,
+  nightDate,
+  onDone,
+  onBack,
+}: {
+  venue: Venue;
+  nightDate: string;
+  onDone: () => void;
+  /** Shown as the secondary action when this is a step in a larger flow. */
+  onBack?: () => void;
+}) {
+  const collegeSlug = useAuthStore((s) => s.profile?.college_slug);
+  const { data: myPosts } = useMyPostsForNight(nightDate);
+  const { data: ratings } = useMyRatings();
+  const publish = usePublishPost();
+  const remove = useDeletePost();
+
+  const existing = postFor(myPosts, venue.id);
+  // Snapshot, not a live join: venue_ratings stays owner-only, so the post
+  // carries the score as it stood when published. Editing refreshes it.
+  const myScore = ratingFor(ratings, venue.id)?.score ?? null;
+  const options = audienceOptions(collegeSlug);
+
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<{ path: string; preview: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [note, setNote] = useState("");
+  const [audience, setAudience] = useState<Audience>(defaultAudience(collegeSlug));
+
+  // Seed once per venue. Seeding on every render would wipe what the user is
+  // typing the moment the posts query refetches.
+  useEffect(() => {
+    setNote(existing?.note ?? "");
+    setAudience(existing?.visibility ?? defaultAudience(collegeSlug));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venue.id, nightDate]);
+
+  const userId = useAuthStore((s) => s.session?.user.id);
+
+  const addFiles = async (files: FileList | null) => {
+    if (!files?.length || !userId) return;
+    const room = MAX_PHOTOS_PER_POST - pending.length;
+    if (room <= 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files).slice(0, room)) {
+        // Uploaded immediately rather than held until Post: the re-encode is
+        // the slow part, and doing it here means the publish tap is instant
+        // and the EXIF strip has definitely happened before anything is stored.
+        const path = await uploadNightPhoto(file, userId);
+        setPending((p) => [...p, { path, preview: URL.createObjectURL(file) }]);
+      }
+    } catch {
+      toast.error("Couldn't add that photo. Try another.");
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
+
+  const remaining = NOTE_MAX - note.length;
+  const hasLink = LINK_RE.test(note);
+  const busy = publish.isPending || remove.isPending;
+
+  const doPublish = async () => {
+    if (hasLink) return;
+    try {
+      const postId = await publish.mutateAsync({
+        venueId: venue.id,
+        nightDate,
+        note: note.trim() || null,
+        visibility: audience,
+        score: myScore,
+      });
+      if (pending.length) {
+        await attachPhotos(postId, pending.map((p) => p.path));
+      }
+      logEvent("night_post_published", {
+        venue_id: venue.id,
+        visibility: audience,
+        has_note: !!note.trim(),
+        photos: pending.length,
+      });
+      onDone();
+    } catch {
+      toast.error("Couldn't post that. Try again.");
+    }
+  };
+
+  const doDelete = async () => {
+    if (!existing) return;
+    try {
+      await remove.mutateAsync(existing.id);
+      logEvent("night_post_deleted", { venue_id: venue.id });
+      onDone();
+    } catch {
+      toast.error("Couldn't remove that post. Try again.");
+    }
+  };
+
+  return (
+    <>
+      <h2 className="text-lg font-display font-bold">
+        {existing ? "Edit your post" : `Post about ${venue.title}?`}
+      </h2>
+      <p className="text-sm text-muted-foreground mt-1 mb-4">
+        Optional — say something about the night, or just post the spot.
+      </p>
+
+      <Textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
+        placeholder="How was it? (optional)"
+        rows={3}
+        className="resize-none"
+        aria-label="Note about your night"
+      />
+      <div className="flex items-center justify-between mt-1.5 mb-4 text-xs">
+        <span className={cn("text-muted-foreground", hasLink && "text-destructive")}>
+          {hasLink ? "Links aren't allowed in notes." : " "}
+        </span>
+        <span className={cn("text-muted-foreground", remaining < 20 && "text-destructive")}>
+          {remaining}
+        </span>
+      </div>
+
+      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Photos</p>
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        {pending.map((p) => (
+          <div key={p.path} className="relative h-20 w-20 overflow-hidden rounded-xl border border-border">
+            <img src={p.preview} alt="" className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => setPending((cur) => cur.filter((x) => x.path !== p.path))}
+              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/90 text-foreground"
+              aria-label="Remove photo"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+
+        {pending.length < MAX_PHOTOS_PER_POST && (
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            disabled={uploading}
+            className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted-foreground hover:bg-secondary/60 disabled:opacity-50"
+            aria-label="Add a photo"
+          >
+            <ImagePlus className="h-5 w-5" aria-hidden="true" />
+            <span className="text-[10px]">{uploading ? "Adding…" : "Add"}</span>
+          </button>
+        )}
+
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          multiple
+          className="sr-only"
+          onChange={(e) => addFiles(e.target.files)}
+        />
+      </div>
+
+      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+        Who can see this?
+      </p>
+      <div className="flex flex-wrap gap-2 mb-5">
+        {options.map((o) => (
+          <button
+            key={o}
+            type="button"
+            onClick={() => setAudience(o)}
+            aria-pressed={audience === o}
+            aria-label={AUDIENCE_LABELS[o]}
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-sm transition-all",
+              audience === o
+                ? "bg-primary text-primary-foreground border-transparent"
+                : "bg-secondary border-border hover:bg-secondary/70",
+            )}
+          >
+            {AUDIENCE_SHORT[o]}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          variant="secondary"
+          className="h-11 rounded-xl"
+          disabled={busy}
+          onClick={onBack ?? onDone}
+        >
+          {onBack ? "Back" : existing ? "Cancel" : "Skip"}
+        </Button>
+        <Button className="h-11 rounded-xl" disabled={busy || hasLink} onClick={doPublish}>
+          {existing ? "Save" : "Post"}
+        </Button>
+      </div>
+
+      {existing && (
+        <Button
+          variant="ghost"
+          className="w-full h-10 rounded-xl mt-2 text-destructive hover:text-destructive"
+          disabled={busy}
+          onClick={doDelete}
+        >
+          Delete post
+        </Button>
+      )}
+    </>
+  );
+}

@@ -16,6 +16,7 @@ import { useVenues } from "@/hooks/useVenues";
 import { getSupabase } from "@/lib/supabase";
 import type { FeedPost } from "@/lib/night/posts";
 import PostCard from "@/components/night/PostCard";
+import { usePostPhotos } from "@/hooks/usePostPhotos";
 import { listMyPosts } from "@/lib/night/posts";
 
 export default function MyActivity({ limit = 20 }: { limit?: number }) {
@@ -27,6 +28,9 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
     queryFn: () => (userId ? listMyPosts(userId, limit) : Promise.resolve([])),
     enabled: !!userId && !!getSupabase(),
   });
+
+  const photosQuery = usePostPhotos((posts ?? []).map((p) => p.id));
+  const photos = photosQuery.data;
 
   if (isLoading) return null;
 
@@ -49,6 +53,7 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
           key={post.id}
           post={post}
           venue={venues?.find((v) => v.id === post.venueId)}
+          photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
         />
       ))}
     </div>
