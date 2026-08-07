@@ -6,6 +6,8 @@
 import { useMemo, useState } from "react";
 import { Venue } from "@/data/types";
 import { scoreVenues, VibePrefs } from "@/lib/vibeScore";
+import { useMyRatings } from "@/hooks/useMyRatings";
+import { inferTaste } from "@/lib/taste";
 import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 import BarCard from "@/components/BarCard";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
@@ -112,9 +114,20 @@ export default function VibeFinder({
     setNear(want);
   };
 
+  // Personal signals. Signed-out or unrated users get `[]`, and scoreVenues is
+  // then byte-identical to its pre-personalization behaviour (pinned by a test).
+  const { data: myRatings } = useMyRatings();
+  const taste = useMemo(() => inferTaste(myRatings, venues), [myRatings, venues]);
+
   const ranked = useMemo(
-    () => (page === null ? [] : scoreVenues(venues, { vibe, drinks, when, near, happyHour, outside, age }, activity, undefined, coords)),
-    [page, venues, vibe, drinks, when, near, happyHour, outside, age, activity, coords],
+    () =>
+      page === null
+        ? []
+        : scoreVenues(venues, { vibe, drinks, when, near, happyHour, outside, age }, activity, undefined, coords, {
+            ratings: myRatings,
+            taste,
+          }),
+    [page, venues, vibe, drinks, when, near, happyHour, outside, age, activity, coords, myRatings, taste],
   );
 
   // Don't offer an option that can't match anything (same rule as the map chips).

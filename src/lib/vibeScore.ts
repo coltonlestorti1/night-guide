@@ -9,6 +9,8 @@ import { getEnrichment, computeOpenState, isWithinPeriods, formatTime, getHappyH
 import { isCocktailSpot, hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 import { Coords } from "@/store/location";
 import { haversineMiles, formatMiles } from "@/lib/distance";
+import { directBoost, tasteBoost, type TasteProfile } from "@/lib/taste";
+import type { RatingRow } from "@/lib/night/ratings";
 
 export type VibePrefs = {
   vibe?: "chill" | "lively" | "packed";
@@ -28,12 +30,23 @@ type Activity = Record<string, { count: number; vibe?: string }> | undefined;
 const tierOf = (count: number): "chill" | "lively" | "packed" =>
   count >= 6 ? "packed" : count >= 3 ? "lively" : "chill";
 
+/**
+ * Personal signals. Optional on purpose: omit it (or pass no ratings) and this
+ * function scores exactly as it did before personalization existed.
+ */
+export type PersonalSignals = {
+  ratings?: RatingRow[];
+  /** Inferred once, by the caller, from the same venue set being scored. */
+  taste?: TasteProfile | null;
+};
+
 export function scoreVenues(
   venues: Venue[],
   prefs: VibePrefs,
   activity: Activity,
   now: Date = new Date(),
   userCoords?: Coords | null,
+  personal?: PersonalSignals,
 ): ScoredVenue[] {
   const scored: ScoredVenue[] = [];
 
@@ -135,6 +148,27 @@ export function scoreVenues(
       const dist = haversineMiles(userCoords, { lat: venue.latitude, lng: venue.longitude });
       score += Math.max(0, 1.5 - dist * 2); // ~0 mi: +1.5, fades to 0 by 0.75 mi
       reasons.unshift(`${formatMiles(dist)} away`);
+    }
+
+    // ---- personal signals, last so they only ever reorder what already
+    // qualifies. Anything excluded above (closed when "now", a filter miss) has
+    // already been skipped or sunk, and nothing here can undo that.
+    if (personal) {
+      const rated = directBoost(venue.id, personal.ratings);
+      if (rated > 0) {
+        score += rated;
+        reasons.unshift("You rated this great");
+      } else if (rated < 0) {
+        score += rated; // sunk, never explained — no one needs telling twice
+      }
+
+      // Taste only applies to venues they have NOT rated: for a rated venue the
+      // direct signal is the better evidence, and stacking both double-counts.
+      if (rated === 0) {
+        const { delta, reason } = tasteBoost(venue, personal.taste ?? null);
+        score += delta;
+        if (reason) reasons.push(reason);
+      }
     }
 
     scored.push({ venue, score, reasons: reasons.slice(0, 3) });

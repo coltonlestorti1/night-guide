@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Venue } from "@/data/types";
 import { pickWeekendSlots } from "@/lib/weekendPicks";
 import { AGE_BANDS, AgeBand, ageOf, getStoredAgeBand, storeAgeBand } from "@/lib/agePref";
+import { useMyAge } from "@/hooks/useMyAge";
 import BarCard from "@/components/BarCard";
 import { cn } from "@/lib/utils";
 
@@ -27,9 +28,14 @@ export default function WeekendFavorites({ venues, onPick }: { venues: Venue[]; 
   const today = new Date().getDay();
   const [day, setDay] = useState<number>(WEEKEND.some((w) => w.day === today) ? today : 5);
   const [ageBand, setAgeBand] = useState<AgeBand | null>(() => getStoredAgeBand());
+  const [editingAge, setEditingAge] = useState(false);
+
+  // A birthday given during onboarding is the better answer, and asking again
+  // for something already provided is the kind of thing that reads as broken.
+  const { age: realAge, fromBirthday } = useMyAge();
+
   // Asked once; "skip" dismisses for the session without storing anything.
   const [askAge, setAskAge] = useState<boolean>(() => getStoredAgeBand() === null);
-  const [editingAge, setEditingAge] = useState(false);
 
   const pickBand = (band: AgeBand) => {
     storeAgeBand(band);
@@ -38,9 +44,13 @@ export default function WeekendFavorites({ venues, onPick }: { venues: Venue[]; 
     setEditingAge(false);
   };
 
-  const { picks, favorites } = pickWeekendSlots(venues, day, ageBand ? ageOf(ageBand) : null);
+  const { picks, favorites } = pickWeekendSlots(
+    venues,
+    day,
+    realAge ?? (ageBand ? ageOf(ageBand) : null),
+  );
 
-  const agePrompt = (askAge || editingAge) && (
+  const agePrompt = (askAge || editingAge) && !fromBirthday && (
     <div className="mb-3 rounded-2xl glass px-3.5 py-3 animate-fade-in">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-medium">Your age? Sharpens the picks.</p>

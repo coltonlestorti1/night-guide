@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useConfigStore } from "@/store/config";
 import { useAuthStore } from "@/store/auth";
 import { AGE_BANDS, AgeBand, getStoredAgeBand, storeAgeBand } from "@/lib/agePref";
+import { useMyAge } from "@/hooks/useMyAge";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import SavedSpotsList from "@/components/SavedSpotsList";
 import SaveVisibilityRow from "@/components/SaveVisibilityRow";
@@ -74,6 +75,7 @@ const Profile = () => {
   const [signingIn, setSigningIn] = useState(false);
   const [editing, setEditing] = useState(false);
   const [ageBand, setAgeBand] = useState<AgeBand | null>(() => getStoredAgeBand());
+  const { age: myAge, fromBirthday } = useMyAge();
 
   const pickAgeBand = (band: AgeBand) => {
     storeAgeBand(band);
@@ -197,6 +199,22 @@ const Profile = () => {
           <SavedSpotsList />
 
           <SectionLabel>Preferences</SectionLabel>
+          {myAge != null && fromBirthday ? (
+            // Real age from the onboarding birthday. Shown to the account owner
+            // only — birthday and gender live in profile_private precisely
+            // because `profiles` is readable by every signed-in user, and this
+            // renders inside the owner's own settings page (Colton, 2026-08-07:
+            // "just me for now").
+            <div className="glass rounded-2xl p-4">
+              <div className="font-medium text-sm">
+                Your age <span className="text-muted-foreground font-normal">· {myAge}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                From the birthday you gave when you signed up. Only you can see it — it
+                sharpens your picks and is never shown on your profile.
+              </p>
+            </div>
+          ) : (
           <div className="glass rounded-2xl p-4">
             <div className="font-medium text-sm">Your age range</div>
             <p className="text-xs text-muted-foreground mt-0.5 mb-3">
@@ -221,6 +239,7 @@ const Profile = () => {
               ))}
             </div>
           </div>
+          )}
 
           <SectionLabel>Privacy</SectionLabel>
           <div className="flex items-start gap-3 glass rounded-2xl p-4">
