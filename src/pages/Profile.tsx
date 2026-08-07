@@ -6,6 +6,7 @@ import { AGE_BANDS, AgeBand, getStoredAgeBand, storeAgeBand } from "@/lib/agePre
 import { useMyAge } from "@/hooks/useMyAge";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import SavedSpotsList from "@/components/SavedSpotsList";
+import MyActivity from "@/components/night/MyActivity";
 import SaveVisibilityRow from "@/components/SaveVisibilityRow";
 import DeleteAccountDialog from "@/components/DeleteAccountDialog";
 import { Input } from "@/components/ui/input";
@@ -193,6 +194,11 @@ const Profile = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          <SectionLabel>Activity</SectionLabel>
+          <div className="mb-6">
+            <MyActivity />
           </div>
 
           <SectionLabel>Saved spots</SectionLabel>
