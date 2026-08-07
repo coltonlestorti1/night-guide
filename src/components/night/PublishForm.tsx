@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
+import RateSteps from "@/components/night/RateSteps";
 import {
   MAX_PHOTOS_PER_POST,
   attachPhotos,
@@ -41,12 +42,20 @@ export default function PublishForm({
   nightDate,
   onDone,
   onBack,
+  onPickingChange,
 }: {
   venue: Venue;
   nightDate: string;
   onDone: () => void;
   /** Shown as the secondary action when this is a step in a larger flow. */
   onBack?: () => void;
+  /**
+   * Raised while the OS file dialog is open. The enclosing drawer must not
+   * close on outside-interaction during that window — opening a native file
+   * picker moves focus out of the page, which vaul reads as "user tapped
+   * away" and dismisses the sheet, losing everything they had typed.
+   */
+  onPickingChange?: (picking: boolean) => void;
 }) {
   const collegeSlug = useAuthStore((s) => s.profile?.college_slug);
   const { data: myPosts } = useMyPostsForNight(nightDate);
@@ -63,6 +72,9 @@ export default function PublishForm({
   const fileInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{ path: string; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+  // After posting, offer the rating in the SAME sheet rather than sending the
+  // user somewhere else — this is what starts the spot rankings.
+  const [rateAfterPost, setRateAfterPost] = useState(false);
   const [note, setNote] = useState("");
   const [audience, setAudience] = useState<Audience>(defaultAudience(collegeSlug));
 
@@ -75,6 +87,24 @@ export default function PublishForm({
   }, [venue.id, nightDate]);
 
   const userId = useAuthStore((s) => s.session?.user.id);
+
+  /**
+   * Open the file dialog behind a guard.
+   *
+   * The dialog is a native window: it blurs the page, and vaul treats that as
+   * an outside interaction and closes the drawer. The flag stays up until the
+   * window regains focus — which happens whether the user picks a file or
+   * cancels, and `change` alone does not fire on cancel.
+   */
+  const beginPick = () => {
+    onPickingChange?.(true);
+    const release = () => {
+      onPickingChange?.(false);
+      window.removeEventListener("focus", release);
+    };
+    window.addEventListener("focus", release);
+    fileInput.current?.click();
+  };
 
   const addFiles = async (files: FileList | null) => {
     if (!files?.length || !userId) return;
@@ -93,6 +123,7 @@ export default function PublishForm({
       toast.error("Couldn't add that photo. Try another.");
     } finally {
       setUploading(false);
+      onPickingChange?.(false);
       if (fileInput.current) fileInput.current.value = "";
     }
   };
@@ -120,7 +151,11 @@ export default function PublishForm({
         has_note: !!note.trim(),
         photos: pending.length,
       });
-      onDone();
+      // Unrated spots get the "how was it?" step now; already-rated ones are
+      // done. Skippable either way — a post without a score is normal, and
+      // "went to" vs "ranked" depends on that staying true.
+      if (myScore === null) setRateAfterPost(true);
+      else onDone();
     } catch {
       toast.error("Couldn't post that. Try again.");
     }
@@ -136,6 +171,21 @@ export default function PublishForm({
       toast.error("Couldn't remove that post. Try again.");
     }
   };
+
+  if (rateAfterPost) {
+    return (
+      <>
+        <h2 className="text-lg font-display font-bold">Posted. How was {venue.title}?</h2>
+        <p className="text-sm text-muted-foreground mt-1 mb-5">
+          Only you see this — it's what tunes your recommendations.
+        </p>
+        <RateSteps venue={venue} prompt="" onDone={() => onDone()} />
+        <Button variant="ghost" className="w-full h-10 rounded-xl mt-3" onClick={onDone}>
+          Skip
+        </Button>
+      </>
+    );
+  }
 
   return (
     <>
@@ -182,7 +232,7 @@ export default function PublishForm({
         {pending.length < MAX_PHOTOS_PER_POST && (
           <button
             type="button"
-            onClick={() => fileInput.current?.click()}
+            onClick={beginPick}
             disabled={uploading}
             className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted-foreground hover:bg-secondary/60 disabled:opacity-50"
             aria-label="Add a photo"

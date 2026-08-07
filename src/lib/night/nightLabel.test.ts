@@ -6,12 +6,12 @@ const NOW = new Date("2026-08-07T10:00:00");
 
 describe("nightLabel", () => {
   it("calls the most recent night 'Last night'", () => {
-    expect(nightLabel("2026-08-06", NOW)).toBe("Last night");
+    expect(nightLabel("2026-08-06", NOW)).toBe("Last night · Aug 6");
   });
 
   it("names the weekday within the past week", () => {
-    expect(nightLabel("2026-08-04", NOW)).toBe("Tuesday");
-    expect(nightLabel("2026-08-02", NOW)).toBe("Sunday");
+    expect(nightLabel("2026-08-04", NOW)).toBe("Tuesday · Aug 4");
+    expect(nightLabel("2026-08-02", NOW)).toBe("Sunday · Aug 2");
   });
 
   it("falls back to a date once a weekday would be ambiguous", () => {
@@ -22,12 +22,17 @@ describe("nightLabel", () => {
   it("still says 'Last night' late the following evening, before the new night ends", () => {
     // 23:00 Friday: the 12-hour lookback lands on Friday 11:00, so last night
     // is still Thursday — the label does not jump to tonight mid-evening.
-    expect(nightLabel("2026-08-06", new Date("2026-08-07T23:00:00"))).toBe("Last night");
+    expect(nightLabel("2026-08-06", new Date("2026-08-07T23:00:00"))).toBe("Last night · Aug 6");
   });
 
   it("never renders a time of day", () => {
     for (const d of ["2026-08-06", "2026-08-04", "2026-07-30"]) {
       expect(nightLabel(d, NOW)).not.toMatch(/\d{1,2}:\d{2}|AM|PM/i);
+    }
+  });
+  it("always carries the date, so a weekday is never ambiguous", () => {
+    for (const d of ["2026-08-06", "2026-08-04", "2026-07-30"]) {
+      expect(nightLabel(d, NOW)).toMatch(/[A-Z][a-z]{2} \d{1,2}/);
     }
   });
 });
