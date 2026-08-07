@@ -28,15 +28,39 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
+import { execFileSync } from "node:child_process";
 
 const SRC = "src";
 const URL_KEY = "VITE_SUPABASE_URL";
 const ANON_KEY = "VITE_SUPABASE_PUBLISHABLE_KEY";
 
+/**
+ * Where .env.local might live. `.env.local` is gitignored, so it exists only in
+ * the MAIN checkout — never in a worktree. CLAUDE.md requires all work to happen
+ * in worktrees under .claude/worktrees/, so without this fallback the check
+ * exits 2 ("cannot reach the database") on every push it was written to guard,
+ * and the pre-push hook waves it through. Found 2026-08-07.
+ */
+function envCandidates() {
+  const files = [".env.local", ".env"];
+  const roots = ["."];
+  try {
+    // git-common-dir is the main .git for a worktree; its parent is the main
+    // checkout. In a normal clone this resolves to the same place as ".".
+    const common = execFileSync("git", ["rev-parse", "--git-common-dir"], {
+      encoding: "utf8",
+    }).trim();
+    if (common) roots.push(join(common, ".."));
+  } catch {
+    /* not a git repo, or git unavailable — "." is still tried */
+  }
+  return roots.flatMap((r) => files.map((f) => join(r, f)));
+}
+
 /** Read VITE_* vars out of .env.local without pulling in a dotenv dependency. */
 function loadEnv() {
   const out = { ...process.env };
-  for (const file of [".env.local", ".env"]) {
+  for (const file of envCandidates()) {
     try {
       for (const line of readFileSync(file, "utf8").split("\n")) {
         const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
