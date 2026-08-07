@@ -30,6 +30,32 @@ export function nightDateOf(d: Date): string {
 }
 
 /**
+ * The night-date of the most recently COMPLETED night.
+ *
+ * A night runs 18:00 → 06:00, so between those hours you are inside a night
+ * that has not finished yet, and the last completed one is the night before.
+ * Outside them, the night that ended this morning is the answer.
+ *
+ * The earlier `nightDateOf(now - 12h)` shortcut got the daytime case right and
+ * the evening case wrong: at 23:00 Friday it returned Friday, so the recap card
+ * said "Last night" about the night the user was currently out in, from 18:00
+ * until 06:00 — exactly the hours the app is used.
+ */
+export function lastCompletedNightDate(now: Date = new Date()): string {
+  const hour = now.getHours();
+  const insideANight = hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
+
+  if (insideANight) {
+    // nightDateOf(now) is the night in progress; step back one.
+    const [y, m, d] = nightDateOf(now).split("-").map(Number);
+    const prev = new Date(y, m - 1, d - 1);
+    return iso(prev);
+  }
+  // Daytime: 12 hours back lands in the night that ended this morning.
+  return nightDateOf(new Date(now.getTime() - 12 * 60 * 60 * 1000));
+}
+
+/**
  * The half-open window [start, end) covered by a night-date: 18:00 that day
  * through 06:00 the next. `end` is exclusive, so a 06:00 check-in belongs to
  * the following night, matching nightDateOf.

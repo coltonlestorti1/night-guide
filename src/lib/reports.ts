@@ -31,7 +31,14 @@ export const REPORT_REASONS: { value: ReportReason; label: string; hint: string 
 
 /** Where the report was filed from. Not a foreign key — a report has to
  *  outlive the thing it points at. */
-export type ReportContext = "profile" | "plan";
+/** Where the report was filed from. Not a foreign key — a report has to
+ *  outlive the thing it points at.
+ *
+ *  `post` (night-feed posts, slice 2) needed no DDL: reports.context is plain
+ *  text with no CHECK constraint, and the partial unique index on
+ *  (reporter_id, reported_user_id, context, context_id) already dedupes
+ *  reports that carry a context_id. */
+export type ReportContext = "profile" | "plan" | "post";
 
 export type MyReport = {
   id: string;
