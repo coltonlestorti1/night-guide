@@ -5,9 +5,9 @@
  * clobber each other, and a save that changes nothing is a no-op rather than a
  * full-row rewrite.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImagePlus, Trash2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -33,6 +33,8 @@ import {
   type AdminVenueRow,
   type VenuePatch,
 } from "../data/venues";
+import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
+import { PLACEHOLDER } from "@/lib/venueImages";
 
 type Props = {
   venue: AdminVenueRow | null;
@@ -46,6 +48,12 @@ const NO_PRICE = "__none__";
 const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const [draft, setDraft] = useState<AdminVenueRow | null>(venue);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  // The photo the venue had when the sheet opened. If the draft now points
+  // somewhere else, this file is superseded and gets deleted after a
+  // successful save — never before.
+  const supersededUrl = venue.image_url;
 
   useEffect(() => setDraft(venue), [venue]);
 
@@ -53,6 +61,21 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
 
   const set = <K extends keyof AdminVenueRow>(key: K, value: AdminVenueRow[K]) =>
     setDraft((d) => (d ? { ...d, [key]: value } : d));
+
+  const pickPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      set("image_url", await uploadVenuePhoto(file, venue.id));
+    } catch (e) {
+      // Verbatim: while the bucket is missing, the Postgres/storage message
+      // names the real cause and a friendly rewrite would hide it.
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
 
   const changed: VenuePatch = {};
   for (const field of EDITABLE_FIELDS) {
@@ -73,6 +96,11 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
     setSaving(true);
     try {
       await updateAdminVenue(venue.id, changed);
+      // Only now that the row points at the new URL. The reverse order 404s
+      // the live photo if the write fails.
+      if (supersededUrl && supersededUrl !== draft.image_url) {
+        await deleteVenuePhotoByUrl(supersededUrl);
+      }
       toast.success(`Saved ${draft.name}.`);
       onSaved();
     } catch (e) {
@@ -96,6 +124,65 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
         </SheetHeader>
 
         <div className="flex-1 space-y-4 pb-4">
+          <FieldRow
+            label="Photo"
+            hint="Venue-owned photos only (their Instagram or site). Not Google Maps, not press sites."
+          >
+            <div className="flex gap-3">
+              <img
+                src={draft.image_url || PLACEHOLDER[draft.type] || PLACEHOLDER.bar}
+                alt=""
+                className="h-20 w-20 flex-shrink-0 rounded-lg border border-border object-cover"
+              />
+              <div className="flex flex-col justify-center gap-2">
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => pickPhoto(e.target.files?.[0])}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => fileInput.current?.click()}
+                >
+                  {uploading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="mr-2 h-4 w-4" />
+                  )}
+                  {draft.image_url ? "Replace" : "Add photo"}
+                </Button>
+                {draft.image_url && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => set("image_url", null)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+          </FieldRow>
+
+          <FieldRow
+            label="Photo source"
+            hint="Where it came from. Makes a takedown a 30-second edit."
+          >
+            <Input
+              value={draft.image_source ?? ""}
+              onChange={(e) => set("image_source", e.target.value)}
+              placeholder="instagram.com/venuehandle"
+            />
+          </FieldRow>
+
           <FieldRow label="Name">
             <Input value={draft.name} onChange={(e) => set("name", e.target.value)} />
           </FieldRow>
@@ -219,7 +306,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
         <div className="sticky bottom-0 flex gap-2 border-t border-border bg-background py-3">
           <Button
             onClick={save}
-            disabled={!dirty || saving || coordsInvalid}
+            disabled={!dirty || saving || uploading || coordsInvalid}
             className="flex-1"
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
