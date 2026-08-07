@@ -464,6 +464,26 @@ what starts the spot rankings.
   your own pictures", read as: a tagged person contributing photos to a post
   they are on.
 
+- **Edit a post from the feed** (Colton, 2026-08-07) — the write path ALREADY
+  exists: `publishPost` upserts on `(user_id, venue_id, night_date)`, so
+  re-publishing the same venue/night is an edit, reachable today from the recap
+  card. What is missing is only the entry point on the feed card — `PostCard`'s
+  menu has Delete (yours) and Report (others), no Edit. Small, mostly UI.
+- **Share a post** (Colton, 2026-08-07) — `navigator.share` is already used in
+  `ShareHandleCard.tsx:25` and `CreatePlanSheet.tsx:186`, so the mechanism
+  exists. **The hard part is audience, not plumbing:** a `friends`-scoped post
+  shared as a link would land in front of exactly the people RLS refuses.
+  Either the link works only for people who could already see the post (nearly
+  useless as a share), or sharing silently widens the audience the author
+  chose. Needs a decision before any build.
+- **Reporting the same person twice is silently swallowed** (found 2026-08-07)
+  — `reports.ts:71` discards error `23505`, and profile reports carry
+  `context_id = null`, so the partial unique index allows exactly ONE profile
+  report per reporter per target, ever. A second report for a different reason
+  shows a success toast and records nothing. Reporting distinct posts or
+  comments is fine (each carries its own `context_id`). The swallow was
+  deliberate for double-taps; it is wrong for a genuinely different report.
+
 **Constraint that carries into all three:** `night_posts` is deliberately
 audience-scoped with blocking gating every tier, and photos live in a PRIVATE
 bucket behind signed URLs. Any of these features must inherit that, not restate
