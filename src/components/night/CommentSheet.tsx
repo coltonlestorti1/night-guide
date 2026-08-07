@@ -16,6 +16,7 @@ import { useAuthStore } from "@/store/auth";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 import ReportDialog from "@/components/social/ReportDialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,13 +145,21 @@ export default function CommentSheet({
         <div className="border-t border-border px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
           {canComment.status === "yes" ? (
             <div className="flex items-end gap-2">
-              <textarea
+              {/* The shared Textarea, NOT a raw <textarea>. It carries
+                  `text-base md:text-sm`, and that is load-bearing: iOS Safari
+                  force-zooms the whole page when a focused field's font-size is
+                  under 16px, which blows the layout up and pushes the Post
+                  button off screen. The first version of this composer was a
+                  raw element at text-sm and did exactly that on Colton's phone.
+                  min-h-0 + rows=1 keeps it a one-line composer rather than the
+                  component's default 80px box. */}
+              <Textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 maxLength={COMMENT_MAX}
                 rows={1}
                 placeholder="Add a comment…"
-                className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                className="min-h-0 min-w-0 flex-1 resize-none rounded-xl"
                 aria-label="Add a comment"
               />
               <Button
