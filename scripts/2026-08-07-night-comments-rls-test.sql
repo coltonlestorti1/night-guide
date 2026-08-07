@@ -18,6 +18,14 @@
 -- (user_id, venue_id, night_date) unique constraint on night_posts can never
 -- collide with a real row.
 --
+-- EVERY SCENARIO SETS ITS OWN ROLE. Never assume impersonation carries over
+-- from the previous scenario, even when the actor is unchanged — a prior
+-- scenario's admin-restore (or its exception handler's admin-restore) is the
+-- last role change in effect otherwise, and the next scenario would silently
+-- run as admin, which bypasses RLS. That exact mistake produced a false FAIL
+-- on scenario 3 in an earlier run of this file. role_at_op below exists so
+-- that mistake can never again be misread as a policy result.
+--
 -- The five required scenarios (see scripts/2026-08-07-night-comments-ddl.sql
 -- for the policies being proved):
 --   1. Stranger reads comments on a 'nobody' post          -> 0 rows
@@ -36,11 +44,14 @@
 begin;
 
 create temp table _res(
-  id       serial,
-  scenario text,
-  expected int,
-  actual   int,
-  verdict  text
+  id         serial,
+  scenario   text,
+  expected   int,
+  actual     int,
+  role_at_op text,   -- current_setting('role') captured AT the impersonated
+                      -- operation, not at the _res write. NULL for SETUP
+                      -- FAILED / SKIP rows, which never impersonate anyone.
+  verdict    text
 ) on commit drop;
 
 -- Belt and braces. _res is owned by the admin role that runs this script, so
@@ -53,16 +64,19 @@ grant insert, select on _res to authenticated;
 
 do $$
 declare
-  v_author        uuid;
-  v_friend        uuid;  -- accepted friend of v_author
-  v_stranger      uuid;  -- no friendship row of any kind against v_author
-  v_venues        uuid[];
-  v_post_nobody   uuid;
-  v_post_friends  uuid;
-  v_post_everyone uuid;
+  v_author         uuid;
+  v_friend         uuid;  -- accepted friend of v_author
+  v_stranger       uuid;  -- no friendship row of any kind against v_author
+  v_venues         uuid[];
+  v_post_nobody    uuid;
+  v_post_friends   uuid;
+  v_post_everyone  uuid;
   v_comment_friend uuid;
-  v_cnt           int;
-  v_admin         text := current_user;
+  v_cnt            int;
+  v_role_at_op     text;  -- captured fresh for every scenario, right after
+                           -- that scenario's own set_config calls, before the
+                           -- risky operation runs.
+  v_admin          text := current_user;
 begin
   -- An accepted friendship pair. Direction doesn't matter — both policies
   -- check (user_id, friend_id) in either order.
@@ -73,7 +87,8 @@ begin
    limit 1;
 
   if v_author is null then
-    insert into _res values (default, 'SETUP FAILED: no accepted friendship exists', 0, 0, 'SKIP');
+    insert into _res (scenario, expected, actual, verdict)
+    values ('SETUP FAILED: no accepted friendship exists', 0, 0, 'SKIP');
     return;
   end if;
 
@@ -90,13 +105,15 @@ begin
    limit 1;
 
   if v_stranger is null then
-    insert into _res values (default, 'SETUP FAILED: no non-friend profile found for the author', 0, 0, 'SKIP');
+    insert into _res (scenario, expected, actual, verdict)
+    values ('SETUP FAILED: no non-friend profile found for the author', 0, 0, 'SKIP');
     return;
   end if;
 
   select array_agg(id) into v_venues from (select id from venues limit 3) v;
   if v_venues is null or array_length(v_venues, 1) < 3 then
-    insert into _res values (default, 'SETUP FAILED: fewer than 3 venues exist', 0, 0, 'SKIP');
+    insert into _res (scenario, expected, actual, verdict)
+    values ('SETUP FAILED: fewer than 3 venues exist', 0, 0, 'SKIP');
     return;
   end if;
 
@@ -132,9 +149,11 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', v_stranger, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
   select count(*) into v_cnt from night_comments where post_id = v_post_nobody;
   perform set_config('role', v_admin, true);
-  insert into _res values (default, 'stranger reads comments on a nobody post', 0, v_cnt,
+  insert into _res (scenario, expected, actual, role_at_op, verdict)
+  values ('stranger reads comments on a nobody post', 0, v_cnt, v_role_at_op,
     case when v_cnt = 0 then 'PASS' else 'FAIL' end);
 
   -- ---- scenario 2: non-friend inserts a comment on a 'friends' post.
@@ -144,6 +163,7 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', v_stranger, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
 
   -- The role restore in each branch below is NOT optional. The subtransaction
   -- rollback that PL/pgSQL performs when an exception is caught undoes table
@@ -153,16 +173,20 @@ begin
   -- moment the exception handler runs, role is still 'authenticated', and
   -- writing to _res while wearing it is exactly the bug that failed the first
   -- run. Restore admin as the FIRST statement of every branch, before any
-  -- write to _res.
+  -- write to _res. v_role_at_op was already captured above, before any of
+  -- this restoring happens, so it reflects the role that was actually active
+  -- for the insert attempt, not the role active when we record the result.
   begin
     insert into night_comments (post_id, user_id, body)
     values (v_post_friends, v_stranger, 'should be refused - friends post');
     -- unexpectedly succeeded
     perform set_config('role', v_admin, true);
-    insert into _res values (default, 'non-friend inserts on a friends post', 42501, 0, 'FAIL');
+    insert into _res (scenario, expected, actual, role_at_op, verdict)
+    values ('non-friend inserts on a friends post', 42501, 0, v_role_at_op, 'FAIL');
   exception when insufficient_privilege then
     perform set_config('role', v_admin, true);
-    insert into _res values (default, 'non-friend inserts on a friends post', 42501, 42501, 'PASS');
+    insert into _res (scenario, expected, actual, role_at_op, verdict)
+    values ('non-friend inserts on a friends post', 42501, 42501, v_role_at_op, 'PASS');
   end;
 
   -- ---- scenario 3: non-friend inserts a comment on an 'everyone' post.
@@ -170,17 +194,30 @@ begin
   -- 'everyone'), but the WRITE policy never consults visibility at all, only
   -- friendship with the author. A policy that gated writes on audience instead
   -- of friendship would wrongly allow this; this is the case that proves it
-  -- doesn't. Still impersonating v_stranger from scenario 2 above — no new
-  -- set_config needed, the claims haven't changed.
+  -- doesn't.
+  --
+  -- v_stranger is the same actor as scenario 2, but role is NOT assumed to
+  -- carry over — scenario 2's exception handler (or its success branch) just
+  -- restored admin above, so without re-impersonating here this scenario
+  -- would silently run as admin, which bypasses RLS and would make the
+  -- insert wrongly succeed. That is exactly the false FAIL a previous run of
+  -- this file produced. Every scenario re-establishes its own role.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', v_stranger, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
+
   begin
     insert into night_comments (post_id, user_id, body)
     values (v_post_everyone, v_stranger, 'should be refused - everyone post');
     -- unexpectedly succeeded
     perform set_config('role', v_admin, true);
-    insert into _res values (default, 'non-friend inserts on an everyone post', 42501, 0, 'FAIL');
+    insert into _res (scenario, expected, actual, role_at_op, verdict)
+    values ('non-friend inserts on an everyone post', 42501, 0, v_role_at_op, 'FAIL');
   exception when insufficient_privilege then
     perform set_config('role', v_admin, true);
-    insert into _res values (default, 'non-friend inserts on an everyone post', 42501, 42501, 'PASS');
+    insert into _res (scenario, expected, actual, role_at_op, verdict)
+    values ('non-friend inserts on an everyone post', 42501, 42501, v_role_at_op, 'PASS');
   end;
 
   -- ---- scenario 4: an unrelated user deletes someone else's comment on
@@ -192,10 +229,12 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', v_stranger, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
   delete from night_comments where id = v_comment_friend;
   get diagnostics v_cnt = row_count;
   perform set_config('role', v_admin, true);
-  insert into _res values (default, 'unrelated user deletes someone else''s comment', 0, v_cnt,
+  insert into _res (scenario, expected, actual, role_at_op, verdict)
+  values ('unrelated user deletes someone else''s comment', 0, v_cnt, v_role_at_op,
     case when v_cnt = 0 then 'PASS' else 'FAIL' end);
 
   -- ---- scenario 5: the post author deletes a friend's comment on their own
@@ -206,23 +245,40 @@ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', v_author, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
   delete from night_comments where id = v_comment_friend;
   get diagnostics v_cnt = row_count;
   perform set_config('role', v_admin, true);
-  insert into _res values (default, 'post author deletes a friend''s comment', 1, v_cnt,
+  insert into _res (scenario, expected, actual, role_at_op, verdict)
+  values ('post author deletes a friend''s comment', 1, v_cnt, v_role_at_op,
     case when v_cnt = 1 then 'PASS' else 'FAIL' end);
 end $$;
 
 -- Single result set, deliberately: the Supabase SQL editor only shows the
 -- LAST result set, so the per-scenario breakdown and the overall verdict are
--- combined into one query here rather than two separate selects. "overall" is
--- repeated on every row so it is visible at a glance without scrolling.
-select scenario, expected, actual, verdict,
+-- combined into one query here rather than two separate selects.
+--
+-- Self-check first: any scenario row (role_at_op is not null, i.e. it's not a
+-- SETUP FAILED/SKIP row) whose role_at_op was not 'authenticated' at the
+-- moment of its operation gets its verdict OVERRIDDEN to a distinct
+-- 'BAD HARNESS: ran as <role>' string — never PASS, never FAIL — so a role
+-- mistake in this script can never again be misread as a policy result in
+-- either direction.
+with checked as (
+  select id, scenario, expected, actual, role_at_op,
+         case
+           when role_at_op is not null and role_at_op <> 'authenticated'
+             then 'BAD HARNESS: ran as ' || role_at_op
+           else verdict
+         end as verdict
+    from _res
+)
+select scenario, expected, actual, role_at_op, verdict,
        case when count(*) filter (where verdict <> 'PASS') over () = 0
             then 'ALL PASS'
             else count(*) filter (where verdict <> 'PASS') over () || ' FAILED'
        end as overall
-  from _res
+  from checked
  order by id;
 
 rollback;
