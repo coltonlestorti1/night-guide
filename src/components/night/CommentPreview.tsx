@@ -25,10 +25,8 @@ export default function CommentPreview({
 
   if (!preview) {
     return (
-      // The mt-2 spacing lives on this wrapper, not the button, so it never
-      // shares an axis with the button's own -my-1.5 below — two classes
-      // setting the same property on the same element is a cascade-order
-      // gamble, not a guarantee.
+      // The mt-2 spacing lives on this wrapper, not the button, to avoid
+      // margin collapse.
       <div className="mt-2">
         <button
           type="button"
