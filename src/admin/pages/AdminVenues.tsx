@@ -25,6 +25,7 @@ import { getSupabase } from "@/lib/supabase";
 import { PageHeader, EmptyState, ErrorNote } from "../components/AdminKit";
 import { fetchAdminVenues, type AdminVenueRow } from "../data/venues";
 import VenueEditSheet from "../components/VenueEditSheet";
+import BulkPhotoPanel from "../components/BulkPhotoPanel";
 import { PLACEHOLDER } from "@/lib/venueImages";
 
 type ActiveFilter = "all" | "active" | "dormant" | "no photo";
@@ -33,6 +34,7 @@ const AdminVenues = () => {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [editing, setEditing] = useState<AdminVenueRow | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const configured = Boolean(getSupabase());
 
@@ -113,7 +115,14 @@ const AdminVenues = () => {
                 <span className="ml-1.5 tabular-nums opacity-70">{counts[f]}</span>
               </Button>
             ))}
+            <Button variant={bulkOpen ? "default" : "outline"} size="sm" onClick={() => setBulkOpen((b) => !b)}>
+              Bulk photos
+            </Button>
           </div>
+
+          {bulkOpen && (
+            <BulkPhotoPanel venues={data ?? []} onDone={() => refetch()} />
+          )}
 
           {isLoading ? (
             <Card className="p-8 text-center text-sm text-muted-foreground">
