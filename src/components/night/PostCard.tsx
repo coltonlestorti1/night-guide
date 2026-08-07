@@ -13,6 +13,7 @@
  * component.
  */
 import { useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Lock, MapPin, MoreHorizontal, Trash2 } from "lucide-react";
 import { Venue } from "@/data/types";
 import type { FeedPost } from "@/lib/night/posts";
@@ -66,6 +67,7 @@ export default function PostCard({
   const myId = useAuthStore((s) => s.session?.user.id);
   const remove = useDeletePost();
   const [confirming, setConfirming] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const mine = post.author.id === myId;
   const ranked = post.score !== null;
 
@@ -150,19 +152,37 @@ export default function PostCard({
           {photos.map(
             (ph) =>
               ph.url && (
-                <img
+                <button
                   key={ph.id}
-                  src={ph.url}
-                  alt=""
-                  loading="lazy"
-                  className="aspect-square w-full rounded-2xl object-cover bg-secondary"
-                />
+                  type="button"
+                  onClick={() => setExpanded(ph.url)}
+                  className="group relative overflow-hidden rounded-2xl"
+                  aria-label="Expand photo"
+                >
+                  <img
+                    src={ph.url}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-square w-full object-cover bg-secondary transition-transform group-active:scale-[0.98]"
+                  />
+                </button>
               ),
           )}
         </div>
       )}
 
       <p className="mt-3 text-xs text-muted-foreground">{nightLabel(post.nightDate)}</p>
+
+      {/* Tap to expand. The signed URL is reused rather than re-minted — it is
+          already in memory and still valid for the life of this view. */}
+      <Dialog open={!!expanded} onOpenChange={(o) => !o && setExpanded(null)}>
+        <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
+          <DialogTitle className="sr-only">Photo</DialogTitle>
+          {expanded && (
+            <img src={expanded} alt="" className="max-h-[85vh] w-full rounded-2xl object-contain" />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {confirming && (
         <div className="mt-3 flex items-center gap-2">

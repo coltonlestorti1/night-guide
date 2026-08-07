@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
+import RateSteps from "@/components/night/RateSteps";
 import {
   MAX_PHOTOS_PER_POST,
   attachPhotos,
@@ -71,6 +72,9 @@ export default function PublishForm({
   const fileInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{ path: string; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+  // After posting, offer the rating in the SAME sheet rather than sending the
+  // user somewhere else — this is what starts the spot rankings.
+  const [rateAfterPost, setRateAfterPost] = useState(false);
   const [note, setNote] = useState("");
   const [audience, setAudience] = useState<Audience>(defaultAudience(collegeSlug));
 
@@ -147,7 +151,11 @@ export default function PublishForm({
         has_note: !!note.trim(),
         photos: pending.length,
       });
-      onDone();
+      // Unrated spots get the "how was it?" step now; already-rated ones are
+      // done. Skippable either way — a post without a score is normal, and
+      // "went to" vs "ranked" depends on that staying true.
+      if (myScore === null) setRateAfterPost(true);
+      else onDone();
     } catch {
       toast.error("Couldn't post that. Try again.");
     }
@@ -163,6 +171,21 @@ export default function PublishForm({
       toast.error("Couldn't remove that post. Try again.");
     }
   };
+
+  if (rateAfterPost) {
+    return (
+      <>
+        <h2 className="text-lg font-display font-bold">Posted. How was {venue.title}?</h2>
+        <p className="text-sm text-muted-foreground mt-1 mb-5">
+          Only you see this — it's what tunes your recommendations.
+        </p>
+        <RateSteps venue={venue} prompt="" onDone={() => onDone()} />
+        <Button variant="ghost" className="w-full h-10 rounded-xl mt-3" onClick={onDone}>
+          Skip
+        </Button>
+      </>
+    );
+  }
 
   return (
     <>
