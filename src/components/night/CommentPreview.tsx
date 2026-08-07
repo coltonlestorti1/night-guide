@@ -33,10 +33,9 @@ export default function CommentPreview({
         <button
           type="button"
           onClick={onOpen}
-          // py-1.5 -my-1.5 grows the tap target toward the ~44px guideline
-          // without pushing the surrounding layout — the extra padding is
-          // clawed back by the negative margin.
-          className="-my-1.5 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+          // Tap target extended via absolutely-positioned pseudo-element,
+          // which does not participate in layout or trigger margin collapse.
+          className="relative text-sm text-muted-foreground hover:text-foreground before:absolute before:inset-x-0 before:-inset-y-3 before:content-['']"
         >
           Add a comment
         </button>
@@ -52,7 +51,7 @@ export default function CommentPreview({
         <button
           type="button"
           onClick={onOpen}
-          className="-my-1.5 block py-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="relative block text-sm text-muted-foreground hover:text-foreground before:absolute before:inset-x-0 before:-inset-y-3 before:content-['']"
         >
           View all {preview.count} comments
         </button>
