@@ -1,26 +1,8 @@
 import { getSupabase } from "@/lib/supabase";
-
-const MAX_EDGE = 512;
+import { reencodeImage } from "@/lib/imageEncode";
 
 /** Downscale to ≤512px JPEG so we never store multi-MB originals. */
-async function downscale(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("Couldn't process that image."))),
-      "image/jpeg",
-      0.85,
-    ),
-  );
-}
+const downscale = (file: File) => reencodeImage(file, { maxEdge: 512 });
 
 /**
  * Upload a new avatar to avatars/<uid>/avatar-<ts>.jpg (timestamped names
