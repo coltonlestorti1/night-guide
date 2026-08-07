@@ -11,6 +11,19 @@
  */
 export type Audience = "everyone" | "school" | "friends" | "nobody";
 
+/**
+ * Short labels for the inline picker. The long ones stay for aria-labels and
+ * anywhere the audience is described rather than chosen — a chip row has to fit
+ * on one line on a phone, and four stacked full-width buttons made the publish
+ * sheet feel like a settings screen.
+ */
+export const AUDIENCE_SHORT: Record<Audience, string> = {
+  everyone: "Everyone",
+  school: "My school",
+  friends: "Friends",
+  nobody: "Just me",
+};
+
 /** Labels name the audience, not the setting — "Friends only", not "Friends". */
 export const AUDIENCE_LABELS: Record<Audience, string> = {
   everyone: "Everyone on ENDZ",

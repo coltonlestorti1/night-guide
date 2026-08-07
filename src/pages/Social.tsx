@@ -1,33 +1,34 @@
 /**
- * Social — the night feed, plus what is happening tonight.
+ * Social — who's out now, what you did last night, and what everyone else did.
  *
- * Section order: header → last night's recap → the feed → out tonight → plans.
- * Friend *management* (requests, search, your list, blocked) moved into
- * FriendsSheet behind the header icon: it is a surface people visit twice and
- * then stop, and it was occupying the page the feed needs.
+ * Section order (Colton, 2026-08-07): header → out tonight → your recap → the
+ * feed. Live presence leads because it is the only thing here that is
+ * time-critical; the recap sits above the feed because it is the prompt that
+ * produces feed content.
  *
- * Plans and Out tonight deliberately stayed. They are not friend management —
- * they carry tonight-relevant, actionable information, and burying an invite
- * that needs approving behind an icon would be a regression dressed up as
- * tidying.
+ * Three header controls, all sheets: **+** adds a night you never checked into,
+ * **Plans** holds tonight's plans and invites, **Friends** holds requests,
+ * search, your list and blocked. Plans and Friends both carry badges — moving a
+ * section behind an icon must never lose the signal that made people open it.
  *
  * RLS decides every list's contents; nothing is filtered in the client.
  */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, MapPin, Users } from "lucide-react";
+import { CalendarClock, MapPin, Plus, Users } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { deriveFriends, deriveIncoming } from "@/lib/friends";
 import { useFriendsOutTonight, useMyFriendships } from "@/hooks/useFriends";
+import { usePendingRequests, usePlanFeed } from "@/hooks/usePlans";
 import { Button } from "@/components/ui/button";
 import SectionCard from "@/components/social/SectionCard";
 import OutTonightRow from "@/components/social/OutTonightRow";
 import FriendsSheet from "@/components/social/FriendsSheet";
-import { usePendingRequests, usePlanFeed } from "@/hooks/usePlans";
-import PlanCard from "@/components/social/PlanCard";
+import PlansSheet from "@/components/social/PlansSheet";
 import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 import RecapCard from "@/components/night/RecapCard";
 import FeedList from "@/components/night/FeedList";
+import AddNightSheet from "@/components/night/AddNightSheet";
 
 const Social = () => {
   const navigate = useNavigate();
@@ -37,11 +38,17 @@ const Social = () => {
   const { data: out } = useFriendsOutTonight();
   const { data: planItems } = usePlanFeed();
   const { data: pendingRequests } = usePendingRequests();
+
   const [createOpen, setCreateOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const [plansOpen, setPlansOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const openInvites = (planItems ?? []).filter((p) => p.invitedNoResponse).length;
   const requestCount = (pendingRequests ?? []).length;
+  // One badge for everything Plans needs from you: invites to answer and guest
+  // requests to approve.
+  const planAlerts = openInvites + requestCount;
   const incoming = rows && userId ? deriveIncoming(rows, userId) : [];
   const friends = rows && userId ? deriveFriends(rows, userId) : [];
 
@@ -64,31 +71,55 @@ const Social = () => {
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Social</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Where everyone went — and who&apos;s out now.
+          Who&apos;s out now — and where everyone went.
         </p>
       </div>
 
       {status === "signedIn" && (
-        <Button
-          variant="secondary"
-          size="icon"
-          className="relative shrink-0 h-10 w-10 rounded-full mt-1"
-          onClick={() => setFriendsOpen(true)}
-          aria-label={
-            incoming.length > 0
-              ? `Friends — ${incoming.length} pending request${incoming.length === 1 ? "" : "s"}`
-              : "Friends"
-          }
-        >
-          <Users className="h-4 w-4" aria-hidden="true" />
-          {/* The request signal used to sit in plain view on the page. Moving
-              the section behind this button must not silently lose it. */}
-          {incoming.length > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
-              {incoming.length}
-            </span>
-          )}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2 mt-1">
+          <Button
+            size="icon"
+            className="h-10 w-10 rounded-full"
+            onClick={() => setAddOpen(true)}
+            aria-label="Add a night you didn't check into"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="icon"
+            className="relative h-10 w-10 rounded-full"
+            onClick={() => setPlansOpen(true)}
+            aria-label={planAlerts > 0 ? `Plans — ${planAlerts} waiting on you` : "Plans"}
+          >
+            <CalendarClock className="h-4 w-4" aria-hidden="true" />
+            {planAlerts > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {planAlerts}
+              </span>
+            )}
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="icon"
+            className="relative h-10 w-10 rounded-full"
+            onClick={() => setFriendsOpen(true)}
+            aria-label={
+              incoming.length > 0
+                ? `Friends — ${incoming.length} pending request${incoming.length === 1 ? "" : "s"}`
+                : "Friends"
+            }
+          >
+            <Users className="h-4 w-4" aria-hidden="true" />
+            {incoming.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {incoming.length}
+              </span>
+            )}
+          </Button>
+        </div>
       )}
     </header>
   );
@@ -125,12 +156,6 @@ const Social = () => {
       {glow}
       {header}
 
-      <RecapCard />
-
-      <div className="mb-4">
-        <FeedList />
-      </div>
-
       {friends.length > 0 && (
         <SectionCard
           title="Out tonight"
@@ -158,44 +183,20 @@ const Social = () => {
         </SectionCard>
       )}
 
-      <SectionCard
-        title="Plans"
-        icon={CalendarClock}
-        tone="primary"
-        badge={
-          openInvites > 0 || requestCount > 0 ? (
-            <span className="flex shrink-0 items-center gap-1.5">
-              {requestCount > 0 && (
-                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
-                  {requestCount} to approve
-                </span>
-              )}
-              {openInvites > 0 && (
-                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
-                  {openInvites} new
-                </span>
-              )}
-            </span>
-          ) : undefined
-        }
-      >
-        {(planItems ?? []).map((item) => (
-          <PlanCard key={item.plan.id} item={item} />
-        ))}
-        {(planItems ?? []).length === 0 && (
-          <p className="text-sm text-muted-foreground py-2">Nothing on the books tonight.</p>
-        )}
-        <Button
-          variant="secondary"
-          className="w-full h-10 rounded-xl mt-2"
-          onClick={() => setCreateOpen(true)}
-        >
-          <CalendarClock className="h-4 w-4 mr-2" /> Make a plan
-        </Button>
-      </SectionCard>
+      <RecapCard />
+
+      <FeedList />
 
       <CreatePlanSheet open={createOpen} onOpenChange={setCreateOpen} surface="social" />
       <FriendsSheet open={friendsOpen} onOpenChange={setFriendsOpen} />
+      <PlansSheet
+        open={plansOpen}
+        onOpenChange={setPlansOpen}
+        onMakePlan={() => setCreateOpen(true)}
+      />
+      {/* One drawer, two steps — it publishes internally rather than handing
+          off to PublishSheet. See the note in AddNightSheet. */}
+      <AddNightSheet open={addOpen} onOpenChange={setAddOpen} />
     </section>
   );
 };
