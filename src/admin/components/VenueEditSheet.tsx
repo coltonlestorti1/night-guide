@@ -50,14 +50,21 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  // A photo uploaded during this open session that hasn't yet been committed
+  // by a successful save. Cleaned up on close (Cancel/X) or, if it wasn't
+  // the value that ended up saved, right after save — so a Cancel, a second
+  // pick before saving, or a pick-then-Remove never orphans a bucket file.
+  const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
+
+  useEffect(() => setDraft(venue), [venue]);
+
+  // Hooks above run unconditionally; everything below may read `venue`.
+  if (!venue || !draft) return null;
+
   // The photo the venue had when the sheet opened. If the draft now points
   // somewhere else, this file is superseded and gets deleted after a
   // successful save — never before.
   const supersededUrl = venue.image_url;
-
-  useEffect(() => setDraft(venue), [venue]);
-
-  if (!venue || !draft) return null;
 
   const set = <K extends keyof AdminVenueRow>(key: K, value: AdminVenueRow[K]) =>
     setDraft((d) => (d ? { ...d, [key]: value } : d));
@@ -66,7 +73,13 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
     if (!file) return;
     setUploading(true);
     try {
-      set("image_url", await uploadVenuePhoto(file, venue.id));
+      const url = await uploadVenuePhoto(file, venue.id);
+      // Picking again before ever saving orphans the previous pick — clean
+      // it up now rather than waiting for close. Best-effort; never awaited
+      // so a slow delete can't stall the new upload from landing.
+      if (pendingUploadUrl) void deleteVenuePhotoByUrl(pendingUploadUrl);
+      setPendingUploadUrl(url);
+      set("image_url", url);
     } catch (e) {
       // Verbatim: while the bucket is missing, the Postgres/storage message
       // names the real cause and a friendly rewrite would hide it.
@@ -75,6 +88,16 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
     }
+  };
+
+  // Cancel and the sheet's own close (X / Escape / overlay click) both land
+  // here. Any photo uploaded this session that never made it into a saved
+  // row is deleted — fire-and-forget, so a slow or failed delete can't
+  // block the sheet from closing.
+  const handleClose = () => {
+    if (pendingUploadUrl) void deleteVenuePhotoByUrl(pendingUploadUrl);
+    setPendingUploadUrl(null);
+    onClose();
   };
 
   const changed: VenuePatch = {};
@@ -101,6 +124,12 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
       if (supersededUrl && supersededUrl !== draft.image_url) {
         await deleteVenuePhotoByUrl(supersededUrl);
       }
+      // A photo uploaded this session that isn't the value just saved (e.g.
+      // picked, then Removed, before hitting Save) is orphaned the same way.
+      if (pendingUploadUrl && pendingUploadUrl !== draft.image_url) {
+        await deleteVenuePhotoByUrl(pendingUploadUrl);
+      }
+      setPendingUploadUrl(null);
       toast.success(`Saved ${draft.name}.`);
       onSaved();
     } catch (e) {
@@ -113,7 +142,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   };
 
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
+    <Sheet open onOpenChange={(open) => !open && handleClose()}>
       <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-lg">
         <SheetHeader className="pb-4">
           <SheetTitle>{venue.name}</SheetTitle>
@@ -312,7 +341,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {dirty ? `Save ${Object.keys(changed).length} change${Object.keys(changed).length === 1 ? "" : "s"}` : "No changes"}
           </Button>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+          <Button variant="outline" onClick={handleClose} disabled={saving}>
             Cancel
           </Button>
         </div>
