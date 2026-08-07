@@ -55,11 +55,20 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   // the value that ended up saved, right after save — so a Cancel, a second
   // pick before saving, or a pick-then-Remove never orphans a bucket file.
   const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
+  // The venue this mounted sheet instance is currently showing, kept fresh
+  // every render. VenueEditSheet is never remounted between venues — the
+  // parent just swaps the `venue` prop — so an upload's async continuation
+  // needs a way to notice the sheet moved on to someone else while it was
+  // in flight. A plain closure over `venue` can't do that; a ref that's
+  // reassigned on every render can.
+  const latestVenueId = useRef<string | null>(null);
 
   useEffect(() => setDraft(venue), [venue]);
 
   // Hooks above run unconditionally; everything below may read `venue`.
   if (!venue || !draft) return null;
+
+  latestVenueId.current = venue.id;
 
   // The photo the venue had when the sheet opened. If the draft now points
   // somewhere else, this file is superseded and gets deleted after a
@@ -71,9 +80,21 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
 
   const pickPhoto = async (file: File | undefined) => {
     if (!file) return;
+    const pickedForVenueId = venue.id;
     setUploading(true);
     try {
-      const url = await uploadVenuePhoto(file, venue.id);
+      const url = await uploadVenuePhoto(file, pickedForVenueId);
+      if (latestVenueId.current !== pickedForVenueId) {
+        // The sheet has since moved on to a different venue. Closing
+        // mid-upload is blocked below, so this needs another path to have
+        // happened — treat it as possible anyway: the upload belongs to
+        // nobody's draft now, so delete it and touch no state, rather than
+        // writing venue A's photo into venue B's draft via the functional
+        // setDraft updater below (which reads whatever draft is current,
+        // not whatever draft was current when this closure was created).
+        void deleteVenuePhotoByUrl(url);
+        return;
+      }
       // Picking again before ever saving orphans the previous pick — clean
       // it up now rather than waiting for close. Best-effort; never awaited
       // so a slow delete can't stall the new upload from landing.
@@ -91,10 +112,14 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   };
 
   // Cancel and the sheet's own close (X / Escape / overlay click) both land
-  // here. Any photo uploaded this session that never made it into a saved
-  // row is deleted — fire-and-forget, so a slow or failed delete can't
-  // block the sheet from closing.
+  // here. Blocked while an upload is in flight — closing mid-upload is
+  // exactly what lets a later-resolving upload get attributed to whatever
+  // venue the admin opens next, so it's refused outright rather than raced
+  // against. Any photo uploaded this session that never made it into a
+  // saved row is deleted — fire-and-forget, so a slow or failed delete
+  // can't block the sheet from closing.
   const handleClose = () => {
+    if (uploading) return;
     if (pendingUploadUrl) void deleteVenuePhotoByUrl(pendingUploadUrl);
     setPendingUploadUrl(null);
     onClose();
@@ -341,7 +366,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {dirty ? `Save ${Object.keys(changed).length} change${Object.keys(changed).length === 1 ? "" : "s"}` : "No changes"}
           </Button>
-          <Button variant="outline" onClick={handleClose} disabled={saving}>
+          <Button variant="outline" onClick={handleClose} disabled={saving || uploading}>
             Cancel
           </Button>
         </div>
