@@ -21,6 +21,9 @@ type VenueRow = {
   is_college_scene?: boolean | null;
   has_rooftop?: boolean | null;
   has_outdoor?: boolean | null;
+  // Added 2026-08-07 with venue photos. Optional for the same reason as the
+  // fields above: the code ships before the DDL is pasted.
+  image_url?: string | null;
 };
 
 const PRICE_LEVEL: Record<string, 1 | 2 | 3 | 4> = { $: 1, $$: 2, $$$: 3, $$$$: 4 };
@@ -63,6 +66,7 @@ export function mapVenueRow(row: VenueRow): Venue {
   if (row.is_college_scene) venue.is_college_scene = true;
   if (row.has_rooftop) venue.has_rooftop = true;
   if (row.has_outdoor) venue.has_outdoor = true;
+  if (row.image_url) venue.image_url = row.image_url;
   return venue;
 }
 
