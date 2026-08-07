@@ -51,9 +51,19 @@ export async function uploadVenuePhoto(file: File, venueId: string): Promise<str
 export async function deleteVenuePhotoByUrl(url: string): Promise<void> {
   const supabase = getSupabase();
   if (!supabase || !url) return;
-  const marker = `/${BUCKET}/`;
+  // Match the full Supabase public-object path, not just "/venue-photos/" —
+  // that fragment could appear in an externally hosted URL too
+  // (e.g. https://example.com/venue-photos/123/photo.jpg), which would then
+  // get parsed as one of ours and issue a delete against our bucket.
+  const marker = `/object/public/${BUCKET}/`;
   const at = url.indexOf(marker);
   if (at === -1) return; // not one of ours — an external URL, leave it alone
   const path = url.slice(at + marker.length);
-  await supabase.storage.from(BUCKET).remove([path]);
+  try {
+    await supabase.storage.from(BUCKET).remove([path]);
+  } catch {
+    // Best-effort: an orphaned file is invisible and costs a few hundred KB.
+    // The caller already wrote the database row successfully — surfacing an
+    // error here would tell the user their save failed when it didn't.
+  }
 }
