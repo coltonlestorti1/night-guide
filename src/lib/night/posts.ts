@@ -91,6 +91,21 @@ export async function listMyPostsForNight(
  * audience is the same act as publishing, and the unique constraint makes a
  * second insert an error the user did not cause.
  */
+/** The caller's own posts, newest first — the profile Activity tab. Includes
+ *  `nobody` posts: a private entry is still your activity. */
+export async function listMyPosts(userId: string, limit = 20): Promise<FeedPost[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("night_posts")
+    .select(POST_SELECT)
+    .eq("user_id", userId)
+    .order("night_date", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as unknown as DbPost[]).map(toFeedPost);
+}
+
 export async function publishPost(input: {
   userId: string;
   venueId: string;
