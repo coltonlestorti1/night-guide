@@ -26,6 +26,8 @@ function row(over: Partial<AdminVenueRow> = {}): AdminVenueRow {
     lat: 40.7276,
     lng: -73.9857,
     neighborhood: "East Village",
+    image_url: null,
+    image_source: null,
     is_college_scene: true,
     has_rooftop: false,
     has_outdoor: true,
