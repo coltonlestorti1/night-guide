@@ -9,11 +9,15 @@ import { useNightFeed } from "@/hooks/useNightFeed";
 import { useVenues } from "@/hooks/useVenues";
 import PostCard from "@/components/night/PostCard";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
+import { useCommentPreviews } from "@/hooks/useComments";
+import { reduceCommentPreviews } from "@/lib/night/comments";
 
 export default function FeedList() {
   const { data: posts, isLoading } = useNightFeed();
   const { data: venues } = useVenues({});
   const { data: photos } = usePostPhotos((posts ?? []).map((p) => p.id));
+  const { data: commentRows } = useCommentPreviews((posts ?? []).map((p) => p.id));
+  const previews = reduceCommentPreviews(commentRows ?? []);
 
   if (isLoading) return null;
 
@@ -39,6 +43,7 @@ export default function FeedList() {
           post={post}
           venue={venues?.find((v) => v.id === post.venueId)}
           photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
+          commentPreview={previews.get(post.id)}
         />
       ))}
     </div>

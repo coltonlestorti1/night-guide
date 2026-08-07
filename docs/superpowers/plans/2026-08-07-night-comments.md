@@ -192,7 +192,8 @@ Create `scripts/2026-08-07-night-comments-ddl.sql`. **Task 1 returned `rows_visi
 create table if not exists night_comments (
   id         uuid primary key default gen_random_uuid(),
   post_id    uuid not null references night_posts (id) on delete cascade,
-  user_id    uuid not null references profiles (id) on delete cascade,
+  user_id    uuid not null constraint night_comments_user_id_fkey
+               references profiles (id) on delete cascade,
   body       text not null check (char_length(btrim(body)) between 1 and 280),
   created_at timestamptz not null default now()
 );
@@ -294,15 +295,20 @@ create policy "friends of the author comment"
                 or (f.friend_id = auth.uid() and f.user_id   = p.user_id))
           )
         )
-    )
-    -- Belt and braces. blockUser() deletes the pair's row before inserting the
-    -- block, so 'accepted' and 'blocked' should never coexist — but that
-    -- invariant lives in client code, not in a constraint.
-    and not exists (
-      select 1 from friendships f
-      where f.status = 'blocked'
-        and ((f.user_id = auth.uid()   and f.friend_id = night_comments.user_id)
-          or (f.friend_id = auth.uid() and f.user_id   = night_comments.user_id))
+        -- Belt and braces, checked against the POST AUTHOR (p.user_id), not
+        -- the commenter. The first clause above already forces
+        -- night_comments.user_id = auth.uid(), so a check against the
+        -- commenter would only ever ask "have I blocked myself" — never true,
+        -- so it could never reject anything. blockUser() deletes the pair's
+        -- 'accepted' row before inserting the block, so 'accepted' and
+        -- 'blocked' between viewer and author should never coexist — but that
+        -- invariant lives in client code, not in a constraint.
+        and not exists (
+          select 1 from friendships f
+          where f.status = 'blocked'
+            and ((f.user_id = auth.uid()   and f.friend_id = p.user_id)
+              or (f.friend_id = auth.uid() and f.user_id   = p.user_id))
+        )
     )
   );
 

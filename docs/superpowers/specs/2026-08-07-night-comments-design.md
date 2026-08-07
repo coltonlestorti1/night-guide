@@ -182,9 +182,17 @@ create policy "friends of the author comment"
   );
 ```
 
-Note there is **no** `visibility` check on the write path beyond friendship. A
-friend commenting on an `everyone` post is still a friend. And a `nobody` post
-is only readable by its author, so no one else can reach it to comment.
+Note there is no *restated* `visibility` check on the write path — but that is
+not the same as "no dependency on visibility." The `exists (select 1 from
+night_posts p where p.id = night_comments.post_id and (...))` subquery runs
+under `night_posts`' own RLS, exactly like the read policy's gate 1 does, so
+the write path *transitively inherits* audience through that subquery in
+addition to requiring friendship. A friend commenting on an `everyone` post is
+still a friend, so that case behaves the same either way. But a `nobody` post
+is invisible to everyone but its author — including a friend, because the
+subquery itself can't see the row to match against — so even a friend of the
+author is refused. The friendship clause and the inherited visibility clause
+are two independent gates on this path, not one.
 
 ### 5.4 Delete policy
 

@@ -31,6 +31,10 @@ import {
 import { nightLabel } from "@/lib/night/nightLabel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import CommentPreview from "@/components/night/CommentPreview";
+import CommentSheet from "@/components/night/CommentSheet";
+import type { CommentPreview as CommentPreviewData } from "@/lib/night/comments";
+import { useCanCommentOn } from "@/hooks/useComments";
 
 /** Beli-style ring: warmer as the score climbs, muted when there is none. */
 function ScoreRing({ score }: { score: number | null }) {
@@ -58,16 +62,20 @@ export default function PostCard({
   post,
   venue,
   photos = [],
+  commentPreview,
 }: {
   post: FeedPost;
   venue?: Venue;
   /** Signed URLs for this post, already filtered by the caller. */
   photos?: { id: string; url: string | null }[];
+  commentPreview?: CommentPreviewData;
 }) {
   const myId = useAuthStore((s) => s.session?.user.id);
   const remove = useDeletePost();
   const [confirming, setConfirming] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [threadOpen, setThreadOpen] = useState(false);
+  const canComment = useCanCommentOn(post.author.id);
   const mine = post.author.id === myId;
   const ranked = post.score !== null;
 
@@ -178,6 +186,14 @@ export default function PostCard({
       )}
 
       <p className="mt-3 text-xs text-muted-foreground">{nightLabel(post.nightDate)}</p>
+
+      <CommentPreview
+        preview={commentPreview}
+        canComment={canComment.status}
+        onOpen={() => setThreadOpen(true)}
+      />
+
+      <CommentSheet post={post} open={threadOpen} onOpenChange={setThreadOpen} />
 
       {/* Tap to expand. The signed URL is reused rather than re-minted — it is
           already in memory and still valid for the life of this view. */}

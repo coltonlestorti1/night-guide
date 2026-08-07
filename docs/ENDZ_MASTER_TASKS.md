@@ -438,8 +438,25 @@ what starts the spot rankings.
 
 **Still to do — each needs its own discussion:**
 
-- **Comments on posts** — **SPECCED 2026-08-07, design approved, build NOT
-  approved.** Spec: `docs/superpowers/specs/2026-08-07-night-comments-design.md`.
+- **Comments on posts** — ✅ **SHIPPED 2026-08-07.**
+  **Proved against live, 8 RLS scenarios, ALL PASS** with a `role_at_op` column
+  confirming each impersonated op ran as `authenticated`
+  (`scripts/2026-08-07-night-comments-rls-test.sql`). Verified in a real
+  signed-in browser: comment posted through live RLS, preview updated, delete
+  worked, and at a true 390x844 viewport with 61-char unbroken strings in the
+  author name, commenter name and body there is zero horizontal overflow.
+  **Two durable findings.** (1) A policy's `USING` clause DOES get the
+  referenced table's RLS applied — probed and proved, so the read policy
+  inherits `night_posts`' audience rule instead of copying it. The night-photos
+  policies restated that predicate only because the question was open; that
+  duplicate can be collapsed later, with its own verification pass.
+  (2) The **write** path inherits visibility too, through the same `exists()`
+  subquery — a friend is refused on a `nobody` post. The spec originally claimed
+  the opposite and no test covered it; scenario 6 now does.
+  **Not verified:** soft-keyboard dismissal of the comment sheet. It needs a
+  real touch keyboard — a programmatic focus never opens one, which is the same
+  reason the 2026-08-07 file-dialog bug slipped through its own test.
+ Spec: `docs/superpowers/specs/2026-08-07-night-comments-design.md`.
   Settled with Colton: **friends of the post author may write** (including on
   `school` and `everyone` posts); anyone who can see the post reads the whole
   thread; blocking gates the **viewer-vs-commenter** axis, which post
@@ -463,6 +480,35 @@ what starts the spot rankings.
   what happens when one party edits or deletes. Also folds in Colton's "add
   your own pictures", read as: a tagged person contributing photos to a post
   they are on.
+
+- **Like a post** (Colton, 2026-08-07) — new table (`night_post_likes`), new
+  RLS, and the same inherited-audience question comments just answered: a like
+  must only be readable by people who can already see the post, and the
+  viewer-vs-liker block axis applies exactly as it does for comments. Cheap
+  compared to comments (no text, so **no moderation surface and no report
+  path**), but it is the app's first write on the hot read path — a like count
+  per feed card wants the same batched-read treatment as comment previews, NOT
+  a denormalized counter. Decide whether likes are visible-to-all-who-see-the-post
+  or private-to-the-author before building.
+- **Edit a post from the feed** (Colton, 2026-08-07) — the write path ALREADY
+  exists: `publishPost` upserts on `(user_id, venue_id, night_date)`, so
+  re-publishing the same venue/night is an edit, reachable today from the recap
+  card. What is missing is only the entry point on the feed card — `PostCard`'s
+  menu has Delete (yours) and Report (others), no Edit. Small, mostly UI.
+- **Share a post** (Colton, 2026-08-07) — `navigator.share` is already used in
+  `ShareHandleCard.tsx:25` and `CreatePlanSheet.tsx:186`, so the mechanism
+  exists. **The hard part is audience, not plumbing:** a `friends`-scoped post
+  shared as a link would land in front of exactly the people RLS refuses.
+  Either the link works only for people who could already see the post (nearly
+  useless as a share), or sharing silently widens the audience the author
+  chose. Needs a decision before any build.
+- **Reporting the same person twice is silently swallowed** (found 2026-08-07)
+  — `reports.ts:71` discards error `23505`, and profile reports carry
+  `context_id = null`, so the partial unique index allows exactly ONE profile
+  report per reporter per target, ever. A second report for a different reason
+  shows a success toast and records nothing. Reporting distinct posts or
+  comments is fine (each carries its own `context_id`). The swallow was
+  deliberate for double-taps; it is wrong for a genuinely different report.
 
 **Constraint that carries into all three:** `night_posts` is deliberately
 audience-scoped with blocking gating every tier, and photos live in a PRIVATE
