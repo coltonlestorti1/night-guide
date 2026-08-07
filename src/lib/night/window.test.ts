@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nightDateOf, nightRange } from "./window";
+import { nightDateOf, nightRange, lastCompletedNightDate } from "./window";
 
 describe("nightDateOf", () => {
   it("dates an evening check-in to that same day", () => {
@@ -56,5 +56,34 @@ describe("nightRange", () => {
     expect(nightDateOf(start)).toBe(nightDate);
     expect(nightDateOf(justInside)).toBe(nightDate);
     expect(nightDateOf(end)).not.toBe(nightDate); // end is exclusive
+  });
+});
+
+describe("lastCompletedNightDate", () => {
+  it("returns the night that ended this morning, during the day", () => {
+    expect(lastCompletedNightDate(new Date("2026-08-07T10:00:00"))).toBe("2026-08-06");
+    expect(lastCompletedNightDate(new Date("2026-08-07T17:59:00"))).toBe("2026-08-06");
+  });
+
+  it("does NOT call tonight 'last night' once the evening starts", () => {
+    // The bug this replaced: at 18:00+ the old `now - 12h` rule returned today,
+    // so the recap labelled the night in progress as last night.
+    expect(lastCompletedNightDate(new Date("2026-08-07T18:00:00"))).toBe("2026-08-06");
+    expect(lastCompletedNightDate(new Date("2026-08-07T23:00:00"))).toBe("2026-08-06");
+  });
+
+  it("still points at the completed night after midnight, mid-night-out", () => {
+    // 02:00 Saturday: Friday night is still running until 06:00, so the last
+    // completed night is Thursday.
+    expect(lastCompletedNightDate(new Date("2026-08-08T02:00:00"))).toBe("2026-08-06");
+  });
+
+  it("rolls over the moment the night ends at 06:00", () => {
+    expect(lastCompletedNightDate(new Date("2026-08-08T05:59:00"))).toBe("2026-08-06");
+    expect(lastCompletedNightDate(new Date("2026-08-08T06:00:00"))).toBe("2026-08-07");
+  });
+
+  it("rolls backwards across a month boundary", () => {
+    expect(lastCompletedNightDate(new Date("2026-09-01T20:00:00"))).toBe("2026-08-31");
   });
 });
