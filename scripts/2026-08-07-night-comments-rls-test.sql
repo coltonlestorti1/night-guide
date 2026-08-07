@@ -26,19 +26,36 @@
 -- on scenario 3 in an earlier run of this file. role_at_op below exists so
 -- that mistake can never again be misread as a policy result.
 --
--- The five required scenarios (see scripts/2026-08-07-night-comments-ddl.sql
--- for the policies being proved):
+-- The eight scenarios (see scripts/2026-08-07-night-comments-ddl.sql for the
+-- policies being proved):
 --   1. Stranger reads comments on a 'nobody' post          -> 0 rows
 --   2. Non-friend inserts a comment on a 'friends' post    -> 42501
 --   3. Non-friend inserts a comment on an 'everyone' post  -> 42501
 --   4. Unrelated user deletes someone else's comment       -> 0 rows
 --   5. Post author deletes a friend's comment on their own post -> 1 row
+--   6. A FRIEND of the author inserts a comment on a 'nobody' post -> 42501
+--   7. A user who BLOCKED the commenter reads a mutual friend's post thread
+--      -> the blocked person's comment is invisible (0 rows for that comment)
+--   8. UPDATE against night_comments by the comment's own author -> 0 rows
 --
--- Scenario 3 is the one that matters most: the WRITE policy gates on
--- friendship with the post author, not on audience. An 'everyone' post is
--- fully readable by a stranger, but that does not make the stranger a friend,
--- so the insert must still be refused. An audience-only policy would wrongly
--- allow this.
+-- Scenario 3 is about the WRITE policy's friendship clause: the insert's
+-- exists() subquery requires an accepted friendship with the post author (or
+-- being the author). An 'everyone' post is fully readable by a stranger, but
+-- that does not make the stranger a friend, so the insert must still be
+-- refused. An audience-only policy would wrongly allow this.
+--
+-- Scenario 3 does NOT, however, prove that the write path is independent of
+-- visibility — it only proves the friendship clause bites on its own. The
+-- WITH CHECK's exists() subquery reads night_posts, and that read is itself
+-- subject to night_posts' RLS, exactly the way the SELECT policy's gate 1 is.
+-- So the write path transitively INHERITS post visibility in addition to
+-- requiring friendship — it is not friendship-only. Scenario 3's stranger
+-- fails the friendship clause regardless of visibility, so scenarios 1-5 all
+-- pass whether or not that inheritance holds; none of them distinguishes the
+-- two. Scenario 6 below is the one that actually exercises it: a FRIEND, who
+-- passes the friendship clause on its own, targeting a 'nobody' post — a
+-- visibility tier that hides the post from everyone but its author, friends
+-- included.
 -- ============================================================================
 
 begin;
@@ -72,6 +89,12 @@ declare
   v_post_friends   uuid;
   v_post_everyone  uuid;
   v_comment_friend uuid;
+  v_blocker        uuid;  -- for scenario 7: no friendship row of any kind
+                           -- against v_friend, so blocking it is unambiguous
+  v_comment_new    uuid;  -- fresh comment for scenarios 7-8 — scenario 5 above
+                           -- really does delete v_comment_friend (that's the
+                           -- one DELETE scenario expected to succeed), so it
+                           -- can't be reused past that point
   v_cnt            int;
   v_role_at_op     text;  -- captured fresh for every scenario, right after
                            -- that scenario's own set_config calls, before the
@@ -191,10 +214,13 @@ begin
 
   -- ---- scenario 3: non-friend inserts a comment on an 'everyone' post.
   -- Expect 42501 — the post is fully READABLE by v_stranger (visibility =
-  -- 'everyone'), but the WRITE policy never consults visibility at all, only
-  -- friendship with the author. A policy that gated writes on audience instead
-  -- of friendship would wrongly allow this; this is the case that proves it
-  -- doesn't.
+  -- 'everyone'), but v_stranger still has no accepted friendship with the
+  -- author, so the WRITE policy's friendship clause refuses the insert. A
+  -- policy that gated writes on audience alone, with no friendship
+  -- requirement, would wrongly allow this; this is the case that proves it
+  -- doesn't. (This scenario does NOT prove the write path ignores visibility
+  -- — it can't, since v_stranger fails the friendship clause regardless of
+  -- what visibility does. Scenario 6 below is the one that isolates that.)
   --
   -- v_stranger is the same actor as scenario 2, but role is NOT assumed to
   -- carry over — scenario 2's exception handler (or its success branch) just
@@ -252,6 +278,120 @@ begin
   insert into _res (scenario, expected, actual, role_at_op, verdict)
   values ('post author deletes a friend''s comment', 1, v_cnt, v_role_at_op,
     case when v_cnt = 1 then 'PASS' else 'FAIL' end);
+
+  -- ------------------------------------------------------------------------
+  -- Setup for scenarios 6-8. Runs as admin (still restored from scenario 5).
+  --
+  -- v_blocker: a real profile with NO friendship row at all against v_friend
+  -- (either direction, any status) — same "clean" pattern used to find
+  -- v_stranger against v_author above, so scenario 7's block edge is the
+  -- only relationship in play between them.
+  select p.id into v_blocker
+    from profiles p
+   where p.id <> v_author and p.id <> v_friend and p.id <> v_stranger
+     and not exists (
+       select 1 from friendships f
+       where (f.user_id = v_friend and f.friend_id = p.id)
+          or (f.friend_id = v_friend and f.user_id = p.id)
+     )
+   limit 1;
+
+  if v_blocker is null then
+    insert into _res (scenario, expected, actual, verdict)
+    values ('SETUP FAILED: no profile found to block v_friend for scenario 7', 0, 0, 'SKIP');
+    return;
+  end if;
+
+  -- A fresh comment — v_comment_friend above no longer exists, scenario 5
+  -- really deleted it. Inserted as admin, same fixture pattern as the rest.
+  insert into night_comments (post_id, user_id, body)
+  values (v_post_everyone, v_friend, 'a second friend comment, for scenarios 7 and 8')
+  returning id into v_comment_new;
+
+  -- The block edge scenario 7 needs. Inserted as admin, deliberately
+  -- bypassing friendships' own INSERT policy — this script proves
+  -- night_comments' policies, not friendships'.
+  insert into friendships (user_id, friend_id, status)
+  values (v_blocker, v_friend, 'blocked');
+
+  -- ---- scenario 6: a FRIEND of the author inserts a comment on a 'nobody'
+  -- post. Expect 42501.
+  --
+  -- This is the scenario that actually isolates WITH CHECK's inheritance of
+  -- post visibility (see the file header). v_friend passes the WRITE
+  -- policy's friendship clause on its own — an accepted friendship with
+  -- v_author — so if friendship were the only gate, this insert would
+  -- wrongly succeed. It must not: the policy's exists(select 1 from
+  -- night_posts p where p.id = night_comments.post_id and (...)) subquery
+  -- reads night_posts under night_posts' OWN RLS, the same as the SELECT
+  -- policy's gate 1 does, and a 'nobody' post is invisible to everyone but
+  -- its author. So the subquery finds no row at all for v_friend, the whole
+  -- exists() is false, and the WITH CHECK fails regardless of friendship.
+  --
+  -- The real path that reaches this: publishPost() upserts, so an author can
+  -- re-publish an existing post at a narrower visibility — reachable from
+  -- the recap card — turning a post a friend already saw (and may already
+  -- have tried to comment on) into 'nobody'. This scenario proves narrowing
+  -- actually closes the WRITE path too, not just the read path.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', v_friend, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
+
+  begin
+    insert into night_comments (post_id, user_id, body)
+    values (v_post_nobody, v_friend, 'should be refused - nobody post, even for a friend');
+    -- unexpectedly succeeded
+    perform set_config('role', v_admin, true);
+    insert into _res (scenario, expected, actual, role_at_op, verdict)
+    values ('friend inserts on a nobody post', 42501, 0, v_role_at_op, 'FAIL');
+  exception when insufficient_privilege then
+    perform set_config('role', v_admin, true);
+    insert into _res (scenario, expected, actual, role_at_op, verdict)
+    values ('friend inserts on a nobody post', 42501, 42501, v_role_at_op, 'PASS');
+  end;
+
+  -- ---- scenario 7: a user who has BLOCKED the commenter reads a mutual
+  -- friend's post thread. Expect 0 rows for that comment.
+  --
+  -- Gate 2 of the READ policy (the block check) is otherwise entirely
+  -- unexercised by this script — scenario 1 is the only other READ scenario,
+  -- and it turns on gate 1 (post visibility) alone: v_stranger never even
+  -- reaches gate 2 there, because gate 1 already hides the whole post.
+  -- v_blocker can see v_post_everyone fine (visibility = 'everyone' is open
+  -- to any authenticated viewer), but v_blocker has blocked v_friend, so
+  -- v_comment_new — which v_friend posted on that same post — must not
+  -- appear in v_blocker's read, even though the thread itself is visible.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', v_blocker, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
+  select count(*) into v_cnt from night_comments where id = v_comment_new;
+  perform set_config('role', v_admin, true);
+  insert into _res (scenario, expected, actual, role_at_op, verdict)
+  values ('blocker cannot read the blocked commenter''s comment', 0, v_cnt, v_role_at_op,
+    case when v_cnt = 0 then 'PASS' else 'FAIL' end);
+
+  -- ---- scenario 8: UPDATE against night_comments by the comment's own
+  -- author. Expect 0 rows.
+  --
+  -- There is no UPDATE policy on night_comments, deliberately (see the DDL's
+  -- "NO UPDATE POLICY" section — "no editing" is a database rule, not a UI
+  -- promise). An absent policy means the command matches zero rows, the same
+  -- as DELETE with no matching policy clause (scenario 4) — it does not
+  -- raise an error. v_friend owns v_comment_new outright (scenario 7 only
+  -- read it, never wrote to it), which isolates "no UPDATE policy exists at
+  -- all" from "you don't own this row."
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', v_friend, 'role', 'authenticated')::text, true);
+  select current_setting('role', true) into v_role_at_op;
+  update night_comments set body = 'edited' where id = v_comment_new;
+  get diagnostics v_cnt = row_count;
+  perform set_config('role', v_admin, true);
+  insert into _res (scenario, expected, actual, role_at_op, verdict)
+  values ('comment author cannot UPDATE (no UPDATE policy exists)', 0, v_cnt, v_role_at_op,
+    case when v_cnt = 0 then 'PASS' else 'FAIL' end);
 end $$;
 
 -- Single result set, deliberately: the Supabase SQL editor only shows the

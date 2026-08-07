@@ -7,8 +7,11 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
+import { useMyFriendships } from "@/hooks/useFriends";
+import { deriveFriends, type FriendshipRow } from "@/lib/friends";
 import {
   addComment,
+  canCommentOn,
   deleteComment,
   listComments,
   listCommentPreviews,
@@ -63,4 +66,34 @@ export function useDeleteComment() {
     mutationFn: (v: { commentId: string; postId: string }) => deleteComment(v.commentId),
     onSuccess: (_data, v) => invalidate(v.postId),
   });
+}
+
+export type CanCommentStatus = "loading" | "yes" | "no";
+
+/**
+ * Pure decision, split out from useCanCommentOn so the three states are
+ * testable without mounting react-query. `friendships` is exactly
+ * useMyFriendships()'s `data` — undefined means "still loading", not
+ * "no friends". Collapsing that distinction was the bug: PostCard and
+ * CommentSheet used to each do `friendships && myId ? ... : []` inline,
+ * which reads a still-loading query as "not a friend" and briefly shows a
+ * friend the refusal copy before the real answer arrives.
+ */
+export function computeCanComment(
+  authorId: string,
+  myId: string | undefined,
+  friendships: FriendshipRow[] | undefined,
+): CanCommentStatus {
+  if (!myId) return "no";
+  if (friendships === undefined) return "loading";
+  const friendIds = new Set(deriveFriends(friendships, myId).map((f) => f.profile.id));
+  return canCommentOn(authorId, myId, friendIds) ? "yes" : "no";
+}
+
+/** Whether the signed-in user may comment on authorId's post — loading-aware,
+ *  shared by PostCard (the preview row) and CommentSheet (the composer). */
+export function useCanCommentOn(authorId: string): { status: CanCommentStatus } {
+  const myId = useAuthStore((s) => s.session?.user.id);
+  const { data: friendships } = useMyFriendships();
+  return { status: computeCanComment(authorId, myId, friendships) };
 }

@@ -34,9 +34,7 @@ import { toast } from "sonner";
 import CommentPreview from "@/components/night/CommentPreview";
 import CommentSheet from "@/components/night/CommentSheet";
 import type { CommentPreview as CommentPreviewData } from "@/lib/night/comments";
-import { canCommentOn } from "@/lib/night/comments";
-import { useMyFriendships } from "@/hooks/useFriends";
-import { deriveFriends } from "@/lib/friends";
+import { useCanCommentOn } from "@/hooks/useComments";
 
 /** Beli-style ring: warmer as the score climbs, muted when there is none. */
 function ScoreRing({ score }: { score: number | null }) {
@@ -77,11 +75,7 @@ export default function PostCard({
   const [confirming, setConfirming] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [threadOpen, setThreadOpen] = useState(false);
-  const { data: friendships } = useMyFriendships();
-  const friendIds = new Set(
-    friendships && myId ? deriveFriends(friendships, myId).map((f) => f.profile.id) : [],
-  );
-  const mayComment = canCommentOn(post.author.id, myId, friendIds);
+  const canComment = useCanCommentOn(post.author.id);
   const mine = post.author.id === myId;
   const ranked = post.score !== null;
 
@@ -195,7 +189,7 @@ export default function PostCard({
 
       <CommentPreview
         preview={commentPreview}
-        canComment={mayComment}
+        canComment={canComment.status}
         onOpen={() => setThreadOpen(true)}
       />
 

@@ -17,6 +17,8 @@ import { getSupabase } from "@/lib/supabase";
 import type { FeedPost } from "@/lib/night/posts";
 import PostCard from "@/components/night/PostCard";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
+import { useCommentPreviews } from "@/hooks/useComments";
+import { reduceCommentPreviews } from "@/lib/night/comments";
 import { listMyPosts } from "@/lib/night/posts";
 
 export default function MyActivity({ limit = 20 }: { limit?: number }) {
@@ -31,6 +33,11 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
 
   const photosQuery = usePostPhotos((posts ?? []).map((p) => p.id));
   const photos = photosQuery.data;
+  // Mirrors FeedList — without this, the author is the one person who can
+  // never see that their own post has replies: the feed shows "View all 5
+  // comments" and their own Activity tab shows "Add a comment".
+  const { data: commentRows } = useCommentPreviews((posts ?? []).map((p) => p.id));
+  const previews = reduceCommentPreviews(commentRows ?? []);
 
   if (isLoading) return null;
 
@@ -54,6 +61,7 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
           post={post}
           venue={venues?.find((v) => v.id === post.venueId)}
           photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
+          commentPreview={previews.get(post.id)}
         />
       ))}
     </div>

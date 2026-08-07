@@ -10,10 +10,8 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/compone
 import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { FeedPost } from "@/lib/night/posts";
-import { canCommentOn, COMMENT_MAX, type NightComment } from "@/lib/night/comments";
-import { useAddComment, useCommentThread, useDeleteComment } from "@/hooks/useComments";
-import { useMyFriendships } from "@/hooks/useFriends";
-import { deriveFriends } from "@/lib/friends";
+import { COMMENT_MAX, type NightComment } from "@/lib/night/comments";
+import { useAddComment, useCanCommentOn, useCommentThread, useDeleteComment } from "@/hooks/useComments";
 import { useAuthStore } from "@/store/auth";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 import ReportDialog from "@/components/social/ReportDialog";
@@ -87,17 +85,12 @@ export default function CommentSheet({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
-  const myId = useAuthStore((s) => s.session?.user.id);
   const { data: comments, isLoading } = useCommentThread(open ? post.id : null);
-  const { data: friendships } = useMyFriendships();
+  const canComment = useCanCommentOn(post.author.id);
   const add = useAddComment();
   const remove = useDeleteComment();
   const [draft, setDraft] = useState("");
 
-  const friendIds = new Set(
-    friendships && myId ? deriveFriends(friendships, myId).map((f) => f.profile.id) : [],
-  );
-  const mayComment = canCommentOn(post.author.id, myId, friendIds);
   const authorName = post.author.display_name || post.author.username;
 
   const submit = async () => {
@@ -149,7 +142,7 @@ export default function CommentSheet({
         </div>
 
         <div className="border-t border-border px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
-          {mayComment ? (
+          {canComment.status === "yes" ? (
             <div className="flex items-end gap-2">
               <textarea
                 value={draft}
@@ -168,6 +161,13 @@ export default function CommentSheet({
               >
                 Post
               </Button>
+            </div>
+          ) : canComment.status === "loading" ? (
+            // The friendships query that decides this hasn't resolved yet — a
+            // neutral spinner, never the refusal copy below, which would be
+            // an outright false statement for a friend mid-load.
+            <div className="flex justify-center py-2">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <p className="text-center text-sm text-muted-foreground break-words">
