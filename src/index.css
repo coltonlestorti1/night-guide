@@ -69,6 +69,20 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  /* Backstop only — never the fix. Without this, one element poking past the
+     viewport scrolls the ENTIRE page sideways, which is how a single missing
+     break-words in a feed card turned into a whole-app layout bug. An element
+     that overflows still gets fixed at the element; this just stops the next
+     one from being felt app-wide.
+
+     `clip` rather than `hidden` on purpose: overflow:hidden makes body a scroll
+     container and breaks position:sticky in every descendant. `clip` does not,
+     and it leaves inner overflow-x:auto rows scrolling normally. */
+  html,
+  body {
+    overflow-x: clip;
+  }
 }
 
 @layer utilities {
