@@ -438,8 +438,25 @@ what starts the spot rankings.
 
 **Still to do — each needs its own discussion:**
 
-- **Comments on posts** — **SPECCED 2026-08-07, design approved, build NOT
-  approved.** Spec: `docs/superpowers/specs/2026-08-07-night-comments-design.md`.
+- **Comments on posts** — ✅ **SHIPPED 2026-08-07.**
+  **Proved against live, 8 RLS scenarios, ALL PASS** with a `role_at_op` column
+  confirming each impersonated op ran as `authenticated`
+  (`scripts/2026-08-07-night-comments-rls-test.sql`). Verified in a real
+  signed-in browser: comment posted through live RLS, preview updated, delete
+  worked, and at a true 390x844 viewport with 61-char unbroken strings in the
+  author name, commenter name and body there is zero horizontal overflow.
+  **Two durable findings.** (1) A policy's `USING` clause DOES get the
+  referenced table's RLS applied — probed and proved, so the read policy
+  inherits `night_posts`' audience rule instead of copying it. The night-photos
+  policies restated that predicate only because the question was open; that
+  duplicate can be collapsed later, with its own verification pass.
+  (2) The **write** path inherits visibility too, through the same `exists()`
+  subquery — a friend is refused on a `nobody` post. The spec originally claimed
+  the opposite and no test covered it; scenario 6 now does.
+  **Not verified:** soft-keyboard dismissal of the comment sheet. It needs a
+  real touch keyboard — a programmatic focus never opens one, which is the same
+  reason the 2026-08-07 file-dialog bug slipped through its own test.
+ Spec: `docs/superpowers/specs/2026-08-07-night-comments-design.md`.
   Settled with Colton: **friends of the post author may write** (including on
   `school` and `everyone` posts); anyone who can see the post reads the whole
   thread; blocking gates the **viewer-vs-commenter** axis, which post
