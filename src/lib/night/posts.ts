@@ -114,7 +114,7 @@ export async function publishPost(input: {
   visibility: Audience;
   /** Snapshot of the author's rating. venue_ratings stays owner-only. */
   score: number | null;
-}): Promise<void> {
+}): Promise<string> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
   const { data, error } = await supabase
@@ -135,6 +135,7 @@ export async function publishPost(input: {
   // Zero rows with no error means RLS refused the write — the same silence that
   // hid the 2026-07-14 vibe bug for weeks. Read it back and fail loudly.
   if (!data?.length) throw new Error("Post write matched no rows");
+  return (data[0] as { id: string }).id;
 }
 
 export async function deletePost(postId: string): Promise<void> {

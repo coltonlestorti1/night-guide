@@ -8,7 +8,8 @@
  * start transform, with a stale body pointer-events lock). One drawer with two
  * steps makes that impossible rather than merely unlikely.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
 import { Venue } from "@/data/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +27,11 @@ import {
 import { cn } from "@/lib/utils";
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
+import {
+  MAX_PHOTOS_PER_POST,
+  attachPhotos,
+  uploadNightPhoto,
+} from "@/lib/night/photos";
 
 const NOTE_MAX = 280;
 const LINK_RE = /https?:\/\/|www\./i;
@@ -54,6 +60,9 @@ export default function PublishForm({
   const myScore = ratingFor(ratings, venue.id)?.score ?? null;
   const options = audienceOptions(collegeSlug);
 
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<{ path: string; preview: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [note, setNote] = useState("");
   const [audience, setAudience] = useState<Audience>(defaultAudience(collegeSlug));
 
@@ -65,6 +74,29 @@ export default function PublishForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venue.id, nightDate]);
 
+  const userId = useAuthStore((s) => s.session?.user.id);
+
+  const addFiles = async (files: FileList | null) => {
+    if (!files?.length || !userId) return;
+    const room = MAX_PHOTOS_PER_POST - pending.length;
+    if (room <= 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files).slice(0, room)) {
+        // Uploaded immediately rather than held until Post: the re-encode is
+        // the slow part, and doing it here means the publish tap is instant
+        // and the EXIF strip has definitely happened before anything is stored.
+        const path = await uploadNightPhoto(file, userId);
+        setPending((p) => [...p, { path, preview: URL.createObjectURL(file) }]);
+      }
+    } catch {
+      toast.error("Couldn't add that photo. Try another.");
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
+
   const remaining = NOTE_MAX - note.length;
   const hasLink = LINK_RE.test(note);
   const busy = publish.isPending || remove.isPending;
@@ -72,17 +104,21 @@ export default function PublishForm({
   const doPublish = async () => {
     if (hasLink) return;
     try {
-      await publish.mutateAsync({
+      const postId = await publish.mutateAsync({
         venueId: venue.id,
         nightDate,
         note: note.trim() || null,
         visibility: audience,
         score: myScore,
       });
+      if (pending.length) {
+        await attachPhotos(postId, pending.map((p) => p.path));
+      }
       logEvent("night_post_published", {
         venue_id: venue.id,
         visibility: audience,
         has_note: !!note.trim(),
+        photos: pending.length,
       });
       onDone();
     } catch {
@@ -125,6 +161,45 @@ export default function PublishForm({
         <span className={cn("text-muted-foreground", remaining < 20 && "text-destructive")}>
           {remaining}
         </span>
+      </div>
+
+      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Photos</p>
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        {pending.map((p) => (
+          <div key={p.path} className="relative h-20 w-20 overflow-hidden rounded-xl border border-border">
+            <img src={p.preview} alt="" className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => setPending((cur) => cur.filter((x) => x.path !== p.path))}
+              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/90 text-foreground"
+              aria-label="Remove photo"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+
+        {pending.length < MAX_PHOTOS_PER_POST && (
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            disabled={uploading}
+            className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted-foreground hover:bg-secondary/60 disabled:opacity-50"
+            aria-label="Add a photo"
+          >
+            <ImagePlus className="h-5 w-5" aria-hidden="true" />
+            <span className="text-[10px]">{uploading ? "Adding…" : "Add"}</span>
+          </button>
+        )}
+
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          multiple
+          className="sr-only"
+          onChange={(e) => addFiles(e.target.files)}
+        />
       </div>
 
       <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
