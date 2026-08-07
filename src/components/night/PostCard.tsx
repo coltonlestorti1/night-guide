@@ -86,7 +86,13 @@ export default function PostCard({
         <ProfileAvatar profile={post.author} className="h-10 w-10 shrink-0" />
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm leading-snug">
+          {/* break-words is load-bearing, not tidiness. Display names have no
+              length or charset limit, so one unbroken token here cannot wrap:
+              min-w-0 lets the BOX shrink but never lets the TEXT break, and the
+              card grows past the viewport. Measured at 390px — a 60-character
+              name gave 195px of horizontal page scroll, for everyone who could
+              see the post, not just its author. */}
+          <p className="text-sm leading-snug break-words">
             <span className="font-semibold">
               {mine ? "You" : post.author.display_name || post.author.username}
             </span>{" "}
