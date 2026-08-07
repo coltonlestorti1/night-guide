@@ -25,7 +25,28 @@
 
 ---
 
-### Task 1: Settle whether an RLS subquery inherits the referenced table's policy
+### Task 1: Settle whether an RLS subquery inherits the referenced table's policy — ✅ DONE 2026-08-07
+
+**ANSWER: `rows_visible = 0` → INHERITANCE HOLDS → Task 2 uses Branch A.**
+
+Run against live on 2026-08-07. The probe is committed at
+`scripts/2026-08-07-rls-inheritance-probe.sql`; its header carries the result.
+**Skip to Task 2 and delete Branch B from the DDL.**
+
+⚠️ **If you re-run this, keep the policy.** Three earlier drafts asked "does RLS
+apply to a subquery against `night_posts`?" and returned `false`, which looked
+like an answer but was not — a bare subquery is just a normal query, where RLS
+obviously applies. The construct that matters is a **policy whose `USING` clause
+references another table**, which is what the committed script builds. Without
+that policy you are measuring nothing.
+
+**Secondary finding, logged not acted on:** the night-photos policies restated
+the audience predicate because this question was open. They did not have to.
+Collapsing that duplicate is a change to a shipped security boundary and needs
+its own verification pass.
+
+<details>
+<summary>Original task text, kept for the record</summary>
 
 **This task writes no application code, and no later task may start until it returns.** The DDL shape in Task 2 depends on the answer. The photo policies sidestepped this question rather than answering it.
 
@@ -133,6 +154,8 @@ night_posts' own policy to a subquery inside another table's policy. The
 photo policies sidestepped this question; this answers it."
 ```
 
+</details>
+
 ---
 
 ### Task 2: `night_comments` table and RLS
@@ -142,12 +165,12 @@ photo policies sidestepped this question; this answers it."
 - Modify: `~/Documents/endz/endz-schema.sql` (append the applied DDL)
 
 **Interfaces:**
-- Consumes: the Task 1 result.
+- Consumes: the Task 1 result — **settled: Branch A**.
 - Produces: table `night_comments (id uuid, post_id uuid, user_id uuid, body text, created_at timestamptz)` with a FK named `night_comments_user_id_fkey` — Task 3's PostgREST embed depends on that exact constraint name.
 
 - [ ] **Step 1: Write the DDL**
 
-Create `scripts/2026-08-07-night-comments-ddl.sql`. Replace `<PASTE TASK 1 RESULT HERE>` with the literal probe output, then keep **only** the branch it selected — delete the other one entirely rather than leaving it commented out.
+Create `scripts/2026-08-07-night-comments-ddl.sql`. **Task 1 returned `rows_visible = 0`, so keep Branch A and delete Branch B entirely** — do not leave it commented out. The probe result line is already filled in below.
 
 ```sql
 -- ============================================================================
@@ -155,8 +178,11 @@ Create `scripts/2026-08-07-night-comments-ddl.sql`. Replace `<PASTE TASK 1 RESUL
 -- Additive and idempotent. Safe to run more than once.
 -- Spec: docs/superpowers/specs/2026-08-07-night-comments-design.md
 --
--- RLS SUBQUERY INHERITANCE PROBE RESULT: <PASTE TASK 1 RESULT HERE>
--- (scripts/2026-08-07-rls-inheritance-probe.sql — rerun it if you doubt this)
+-- RLS SUBQUERY INHERITANCE PROBE RESULT: rows_visible = 0, INHERITANCE HOLDS.
+-- Run against live 2026-08-07 via scripts/2026-08-07-rls-inheritance-probe.sql.
+-- The read policy below therefore INHERITS night_posts' audience rule instead
+-- of restating it. There is one copy of that rule, and it lives in
+-- scripts/2026-08-06-night-posts-ddl.sql.
 --
 -- Friends of the post's author may WRITE, including on 'school' and 'everyone'
 -- posts. Anyone who can see the post may READ. Those are different gates on
