@@ -14,7 +14,7 @@
  */
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Lock, MapPin, MoreHorizontal, Trash2 } from "lucide-react";
+import { Lock, MapPin, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Venue } from "@/data/types";
 import type { FeedPost } from "@/lib/night/posts";
 import { useAuthStore } from "@/store/auth";
@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import CommentPreview from "@/components/night/CommentPreview";
 import CommentSheet from "@/components/night/CommentSheet";
+import PublishSheet from "@/components/night/PublishSheet";
 import type { CommentPreview as CommentPreviewData } from "@/lib/night/comments";
 import { useCanCommentOn } from "@/hooks/useComments";
 
@@ -75,6 +76,7 @@ export default function PostCard({
   const [confirming, setConfirming] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [threadOpen, setThreadOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const canComment = useCanCommentOn(post.author.id);
   const mine = post.author.id === myId;
   const ranked = post.score !== null;
@@ -142,12 +144,28 @@ export default function PostCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {mine ? (
+                <>
+                  {/* Editing reuses the publish flow rather than duplicating
+                      it: PublishForm already looks up the existing post for
+                      this (venue, night) and pre-fills its note and audience,
+                      and publishPost upserts on that same key — so saving
+                      rewrites this post instead of adding one.
+
+                      Only offered when the venue resolved. PublishSheet needs a
+                      real Venue, and PostCard's venue prop is optional, so
+                      without this guard Edit would open an empty sheet. */}
+                  {venue && (
+                    <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                      <Pencil className="h-4 w-4 mr-2" /> Edit post
+                    </DropdownMenuItem>
+                  )}
                 <DropdownMenuItem
                   onSelect={() => setConfirming(true)}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" /> Delete post
                 </DropdownMenuItem>
+                </>
               ) : (
                 // Reuses the report flow shipped 2026-08-05 for App Store
                 // compliance — same reasons, same dedup, now pointed at a post.
@@ -194,6 +212,19 @@ export default function PostCard({
       />
 
       <CommentSheet post={post} open={threadOpen} onOpenChange={setThreadOpen} />
+
+      {/* Venue is guaranteed here by the guard on the menu item above. The
+          night is NOT editable and neither is the venue: the upsert key is
+          (user_id, venue_id, night_date), so changing either would quietly
+          create a second post rather than move this one. */}
+      {mine && venue && (
+        <PublishSheet
+          venue={venue}
+          nightDate={post.nightDate}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
 
       {/* Tap to expand. The signed URL is reused rather than re-minted — it is
           already in memory and still valid for the life of this view. */}
