@@ -11,7 +11,7 @@ Decision Log as they're made.
 |---|---------|--------|----------------------------------|
 | 1 | Apple Maps place links & named navigation | NOT DISCUSSED | Directions use **raw lat/lng only** (`src/lib/directions.ts`) — exactly the failure mode this task describes |
 | 2 | Dynamic Happy Hours | NOT DISCUSSED | `HappyHourRail.tsx` is already time-aware (active/upcoming, day tabs, real Google hours); no location/weather/preference inputs, no explanation labels beyond timing |
-| 3 | Dynamic Find the Move | NOT DISCUSSED | `VibeFinder.tsx` + `vibeScore.ts` already preference-scored (vibe/drinks/when/distance/HH), not hardcoded; no cooldowns, no diversity rules, no freshness signals |
+| 3 | Dynamic Find the Move | **PERSONALIZATION SHIPPED 2026-08-07** (gate passed, built, merged @ `90c4bdd`, pushed). Cooldowns / diversity / freshness still NOT discussed | `vibeScore.ts` now takes optional personal signals from `src/lib/taste.ts`: **directBoost** from rating #1 (great up, not_great down and never explained), **tasteBoost** from rating #3 for UNVISITED venues only. `good` is neutral by design. Capped at ±1.5 and applied AFTER exclusions, so it reorders what already qualifies and can never surface a closed venue or one a filter excluded. Collaborative filtering ruled out — needs hundreds of users, there are ~12. Zero-rating output is byte-identical, pinned by test and confirmed in-browser. Birthday also wired: `useMyAge()` feeds exact age to `ageAffinity()`, replacing the localStorage band that re-asked people who had already answered and gave under-21s nothing. **Still open: cooldowns, diversity rules, freshness signals.** → §3 |
 | 4 | Dynamic Weekend Favorites | NOT DISCUSSED | `WeekendFavorites.tsx` = static rating sort filtered by open-that-night — the most static of the three surfaces; same order every weekend |
 | 5 | Recommendation state & impression tracking | NOT DISCUSSED | Nothing exists. Explicitly gated: **do not create schema until recommendation design is approved** |
 | 6 | Favorites filter & saved venues | PARTIALLY SHIPPED (core) | **Core "Saved" filter chip SHIPPED 2026-07-17** (map+list narrow, stacks/ANDs w/ filters, device-local `store/saved.ts`, empty state, save via cards/detail). Open sub-ideas → §6 |
@@ -72,6 +72,22 @@ only, never in this list as work).
 - Which map changes should happen first?
 - How should Coopers and Swifts be verified before adding?
 - What makes a venue eligible for Discover and Find the Move?
+
+**Added 2026-08-07:**
+- **Phone-number login — PARKED, not built.** Colton asked for it 2026-08-07.
+  Supabase does not send SMS itself: it requires a paid third-party provider
+  (Twilio / MessageBird / Vonage), billed **per message including failed
+  attempts and bot traffic**, with no rate limiting in front of the endpoint —
+  a live cost on a pre-revenue app with ~12 users. It also does **not** remove
+  the Sign in with Apple obligation, because Google login stays. Recommended
+  order: **Sign in with Apple first** (hard App Store blocker, no marginal cost,
+  and it covers the "I don't want to use my Google account" user). Revisit when
+  there is a budget and a reason. Decide who pays for the SMS before any code.
+- **Age visibility.** Age currently renders to the **account owner only**, in
+  their own Profile settings. Making it friends-visible or public is a
+  deliberate decision — birthday lives in `profile_private` precisely because
+  `profiles` is readable by every signed-in user, so this would need an explicit
+  `age_visible` control, not a side effect. Relates to §32.
 
 **Added 2026-07-26 (from the §19 slice-1 build):**
 - **Popular Times and Specials — keep, revive, or delete?** Both render for 0/56 today. Reviving Popular Times needs the paid serpapi source (currently paused); Specials needs `specials.json` filled by hand. Colton owes this call.
