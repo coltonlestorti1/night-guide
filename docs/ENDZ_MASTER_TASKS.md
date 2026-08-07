@@ -464,6 +464,15 @@ what starts the spot rankings.
   your own pictures", read as: a tagged person contributing photos to a post
   they are on.
 
+- **Like a post** (Colton, 2026-08-07) — new table (`night_post_likes`), new
+  RLS, and the same inherited-audience question comments just answered: a like
+  must only be readable by people who can already see the post, and the
+  viewer-vs-liker block axis applies exactly as it does for comments. Cheap
+  compared to comments (no text, so **no moderation surface and no report
+  path**), but it is the app's first write on the hot read path — a like count
+  per feed card wants the same batched-read treatment as comment previews, NOT
+  a denormalized counter. Decide whether likes are visible-to-all-who-see-the-post
+  or private-to-the-author before building.
 - **Edit a post from the feed** (Colton, 2026-08-07) — the write path ALREADY
   exists: `publishPost` upserts on `(user_id, venue_id, night_date)`, so
   re-publishing the same venue/night is an edit, reachable today from the recap
