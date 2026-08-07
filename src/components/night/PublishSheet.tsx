@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/auth";
 import { useMyPostsForNight, postFor } from "@/hooks/useNightFeed";
+import { useMyRatings, ratingFor } from "@/hooks/useMyRatings";
 import { useDeletePost, usePublishPost } from "@/hooks/usePublishPost";
 import { AUDIENCE_LABELS, audienceOptions, defaultAudience, type Audience } from "@/lib/night/audience";
 import { cn } from "@/lib/utils";
@@ -37,10 +38,14 @@ export default function PublishSheet({
 }) {
   const collegeSlug = useAuthStore((s) => s.profile?.college_slug);
   const { data: myPosts } = useMyPostsForNight(nightDate);
+  const { data: ratings } = useMyRatings();
   const publish = usePublishPost();
   const remove = useDeletePost();
 
   const existing = postFor(myPosts, venue.id);
+  // Snapshot, not a live join: venue_ratings stays owner-only, so the post
+  // carries the score as it stood when published. Editing refreshes it.
+  const myScore = ratingFor(ratings, venue.id)?.score ?? null;
   const options = audienceOptions(collegeSlug);
 
   const [note, setNote] = useState("");
@@ -67,6 +72,7 @@ export default function PublishSheet({
         nightDate,
         note: note.trim() || null,
         visibility: audience,
+        score: myScore,
       });
       logEvent("night_post_published", {
         venue_id: venue.id,

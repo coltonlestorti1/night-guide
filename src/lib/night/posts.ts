@@ -17,7 +17,7 @@ import type { FriendProfile } from "@/lib/friends";
 const AUTHOR_COLS = "id, username, display_name, avatar_url";
 
 /** The embedded author join, shared so the two feed reads cannot drift apart. */
-const POST_SELECT = `id, venue_id, night_date, note, visibility, created_at,
+const POST_SELECT = `id, venue_id, night_date, note, visibility, score, created_at,
    author:profiles!night_posts_user_id_fkey(${AUTHOR_COLS})`;
 
 export type FeedPost = {
@@ -26,6 +26,8 @@ export type FeedPost = {
   nightDate: string;
   note: string | null;
   visibility: Audience;
+  /** The rating as it stood when this was published. Null if never rated. */
+  score: number | null;
   createdAt: string;
   author: FriendProfile;
 };
@@ -36,6 +38,7 @@ type DbPost = {
   night_date: string;
   note: string | null;
   visibility: Audience;
+  score: number | string | null;
   created_at: string;
   author: FriendProfile;
 };
@@ -46,6 +49,8 @@ const toFeedPost = (r: DbPost): FeedPost => ({
   nightDate: r.night_date,
   note: r.note,
   visibility: r.visibility,
+  // Postgres numeric arrives as a string through PostgREST.
+  score: r.score === null || r.score === undefined ? null : Number(r.score),
   createdAt: r.created_at,
   author: r.author,
 });
@@ -92,6 +97,8 @@ export async function publishPost(input: {
   nightDate: string;
   note: string | null;
   visibility: Audience;
+  /** Snapshot of the author's rating. venue_ratings stays owner-only. */
+  score: number | null;
 }): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
@@ -104,6 +111,7 @@ export async function publishPost(input: {
         night_date: input.nightDate,
         note: input.note?.trim() || null,
         visibility: input.visibility,
+        score: input.score,
       },
       { onConflict: "user_id,venue_id,night_date" },
     )

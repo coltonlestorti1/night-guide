@@ -30,6 +30,7 @@ export function usePublishPost() {
       nightDate: string;
       note: string | null;
       visibility: Audience;
+      score: number | null;
     }) => {
       if (!userId) throw new Error("Not signed in");
       return publishPost({ userId, ...v });
