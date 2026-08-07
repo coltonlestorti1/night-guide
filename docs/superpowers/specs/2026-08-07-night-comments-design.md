@@ -280,37 +280,69 @@ or drift horizontally on mobile.
 `max-width`. Any single element that pokes past the viewport therefore scrolls
 the entire page sideways.
 
-`PostCard` itself is mostly sound already: the flex child carries `min-w-0` and
-the note carries `break-words`. Two gaps found by reading, **both unconfirmed as
-the cause** — I have not yet reproduced the symptom in a browser, and this
-project's rule is not to trust a diagnosis derived from arithmetic when a
-screenshot is available:
+**Cause found and reproduced in Chrome at a true 390×844 mobile viewport
+(2026-08-07), not inferred:**
 
-1. **The author line has no `break-words`** (`PostCard.tsx:88-96`). A display
-   name or venue title that is one long unbroken token cannot wrap and will
-   push the card wider than the viewport.
-2. **Negative-offset absolute badges** — `absolute -right-0.5 -top-0.5` on the
-   Plans and Friends header buttons (`Social.tsx:98`, `:117`), and the
-   `animate-ping` dot which scales to 2× inside a non-clipping parent
-   (`Social.tsx:167-169`).
+**The author line in `PostCard.tsx:88-96` has no `break-words`.** The `<p>` holds
+three spans — display name, verb, venue title — and a single unbroken token in
+the name or the title cannot wrap. `min-w-0` on the flex parent lets the *box*
+shrink but does not let the *text* break, so the card grows past the viewport
+and, with no page-level guard, the whole document scrolls sideways.
 
-Requirements:
+Measured, injecting the exact `PostCard` markup into the live `section.container`
+at `clientWidth` 390:
 
-- `html, body { overflow-x: clip; }` as a page-level guard. `clip` rather than
-  `hidden` because `overflow: hidden` on `body` creates a scroll container and
-  breaks `position: sticky` in descendants; `clip` does not.
-- The guard is a backstop, **not** the fix. Any element found overflowing gets
-  fixed at the element.
-- Every new comment surface: `min-w-0` on flex children, `break-words` on all
-  user text (bodies and display names both), and no fixed pixel widths.
-- Comment bodies use `whitespace-pre-wrap break-words`, matching the note.
+| Case | `scrollWidth` | Overflow |
+|---|---|---|
+| Normal name and title | 390 | **0** |
+| 60-char unbroken **display name** | 585 | **195px** |
+| 60-char unbroken **venue title** | 626 | **236px** |
+| 60-char unbroken **note** | 390 | 0 — the note already has `break-words` |
+| Long URL in note | 390 | 0 |
+
+**This is reachable with real data today.** There is no `maxLength` on the
+display-name or username inputs in `EditProfileDialog.tsx`, and no length or
+charset constraint on `profiles.username` / `profiles.display_name` in
+`endz-schema.sql:22-23`. Any user can set a long unbroken display name and
+break the horizontal layout of the feed **for everyone who can see their
+posts** — it is not limited to the author's own view. The longest single word
+across the 56 seeded venue titles is `International` (13 chars), so venue
+titles are not currently a trigger; user-controlled names are.
+
+**Cleared, having suspected them first:** the negative-offset unread badges
+(`Social.tsx:98`, `:117`) and the `animate-ping` dot (`Social.tsx:167-169`)
+each measured **0px** of overflow — the container's horizontal padding absorbs
+the 2px. The 3-photo grid is also clean. I had these in an earlier draft of
+this spec as likely causes; they are not.
+
+Requirements, in priority order:
+
+1. **Fix the cause: add `break-words` to the author line** in
+   `PostCard.tsx:88`. This is a one-word change and it is the actual bug. It is
+   worth shipping on its own regardless of whether comments are ever built.
+2. **Add `html, body { overflow-x: clip; }` as a backstop.** `clip` rather than
+   `hidden` because `overflow: hidden` on `body` creates a scroll container and
+   breaks `position: sticky` in descendants; `clip` does not. This is a
+   backstop, never the fix — an element that overflows still gets fixed at the
+   element.
+3. **Every new comment surface:** `min-w-0` on flex children, `break-words` on
+   all user text — comment bodies *and* the commenter's display name, which is
+   the same span that just proved it can break the feed. Comment bodies use
+   `whitespace-pre-wrap break-words`, matching the note.
+4. **Out of scope but logged:** a length cap on `display_name` / `username`
+   at the input and in the DDL. The `break-words` fix makes the layout safe
+   without it, so this is hygiene rather than a blocker — added to the tracker
+   backlog, not built here.
 
 **Acceptance test, run in a real browser at 390×844:**
 `document.documentElement.scrollWidth <= document.documentElement.clientWidth`
 must hold on `/social` — with the feed populated, with a comment thread open,
-and after seeding a post whose author display name and comment body are both
-60-character unbroken strings. That last case is the one that catches gap 1,
-and it is the case a screenshot of normal data will never show.
+and with a post whose author display name and comment body are both
+60-character unbroken strings. That last case is the one that catches this
+class of bug, and it is the case a screenshot of normal data will never show.
+The measurement technique that found it is worth reusing: walk every element,
+flag any whose `getBoundingClientRect().right` exceeds `clientWidth`, which
+names the offending node instead of just reporting that the page is too wide.
 
 ## 8. Moderation
 
