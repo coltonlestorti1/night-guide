@@ -41,12 +41,20 @@ export default function PublishForm({
   nightDate,
   onDone,
   onBack,
+  onPickingChange,
 }: {
   venue: Venue;
   nightDate: string;
   onDone: () => void;
   /** Shown as the secondary action when this is a step in a larger flow. */
   onBack?: () => void;
+  /**
+   * Raised while the OS file dialog is open. The enclosing drawer must not
+   * close on outside-interaction during that window — opening a native file
+   * picker moves focus out of the page, which vaul reads as "user tapped
+   * away" and dismisses the sheet, losing everything they had typed.
+   */
+  onPickingChange?: (picking: boolean) => void;
 }) {
   const collegeSlug = useAuthStore((s) => s.profile?.college_slug);
   const { data: myPosts } = useMyPostsForNight(nightDate);
@@ -76,6 +84,24 @@ export default function PublishForm({
 
   const userId = useAuthStore((s) => s.session?.user.id);
 
+  /**
+   * Open the file dialog behind a guard.
+   *
+   * The dialog is a native window: it blurs the page, and vaul treats that as
+   * an outside interaction and closes the drawer. The flag stays up until the
+   * window regains focus — which happens whether the user picks a file or
+   * cancels, and `change` alone does not fire on cancel.
+   */
+  const beginPick = () => {
+    onPickingChange?.(true);
+    const release = () => {
+      onPickingChange?.(false);
+      window.removeEventListener("focus", release);
+    };
+    window.addEventListener("focus", release);
+    fileInput.current?.click();
+  };
+
   const addFiles = async (files: FileList | null) => {
     if (!files?.length || !userId) return;
     const room = MAX_PHOTOS_PER_POST - pending.length;
@@ -93,6 +119,7 @@ export default function PublishForm({
       toast.error("Couldn't add that photo. Try another.");
     } finally {
       setUploading(false);
+      onPickingChange?.(false);
       if (fileInput.current) fileInput.current.value = "";
     }
   };
@@ -182,7 +209,7 @@ export default function PublishForm({
         {pending.length < MAX_PHOTOS_PER_POST && (
           <button
             type="button"
-            onClick={() => fileInput.current?.click()}
+            onClick={beginPick}
             disabled={uploading}
             className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted-foreground hover:bg-secondary/60 disabled:opacity-50"
             aria-label="Add a photo"

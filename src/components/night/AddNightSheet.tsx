@@ -76,6 +76,9 @@ export default function AddNightSheet({
     return all.filter((v) => normalize(v.title).includes(needle)).slice(0, 8);
   }, [venues, q]);
 
+  // Held up while the OS file dialog is open — see PublishForm.
+  const [picking, setPicking] = useState(false);
+
   const close = () => {
     onOpenChange(false);
     // Reset after the exit animation so the sheet does not visibly rewind.
@@ -87,7 +90,9 @@ export default function AddNightSheet({
 
   return (
     <Drawer open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
-      <DrawerContent className="bg-card border-border max-h-[88vh]">
+      <DrawerContent
+        onInteractOutside={(e) => picking && e.preventDefault()}
+        className="bg-card border-border max-h-[88vh]">
         <DrawerTitle className="sr-only">Add a night</DrawerTitle>
         <DrawerDescription className="sr-only">
           Pick a night and a spot, then write your post.
@@ -96,6 +101,7 @@ export default function AddNightSheet({
         <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full overflow-y-auto">
           {venue ? (
             <PublishForm
+              onPickingChange={setPicking}
               venue={venue}
               nightDate={nightDate}
               onDone={close}

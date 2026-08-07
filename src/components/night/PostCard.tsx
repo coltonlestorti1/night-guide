@@ -143,7 +143,10 @@ export default function PostCard({
       </div>
 
       {photos.length > 0 && (
-        <div className={cn("mt-3 grid gap-2", photos.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+        // Square tiles in a row, after Beli: a photo of a night is a snapshot,
+        // not a banner, and a full-width band pushed everything else off the
+        // screen. One photo stays half width rather than stretching.
+        <div className={cn("mt-3 grid gap-3", photos.length >= 3 ? "grid-cols-3" : "grid-cols-2")}>
           {photos.map(
             (ph) =>
               ph.url && (
@@ -152,7 +155,7 @@ export default function PostCard({
                   src={ph.url}
                   alt=""
                   loading="lazy"
-                  className="h-40 w-full rounded-xl object-cover"
+                  className="aspect-square w-full rounded-2xl object-cover bg-secondary"
                 />
               ),
           )}
