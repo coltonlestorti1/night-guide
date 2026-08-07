@@ -8,7 +8,7 @@
  * an authenticated admin, so the existing policy does the authorising and no
  * new secret exists anywhere.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -17,13 +17,30 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { matchFileToVenues, type PhotoMatch } from "../data/photoMatch";
+import { matchFileToVenues } from "../data/photoMatch";
 import { updateAdminVenue, type AdminVenueRow } from "../data/venues";
 import { uploadVenuePhoto } from "@/lib/venuePhotos";
 
 const UNASSIGNED = "__none__";
 
-type Staged = PhotoMatch & { file: File; previewUrl: string };
+// `id` — not `fileName` — is the identity used for the React key and for
+// assign(): two dropped files can share a name ("IMG_0001.jpg" is the
+// entire reason this panel exists), and matching on fileName made picking a
+// venue for one row silently overwrite the other.
+//
+// `confidence` and `candidates` are the ORIGINAL match result and are never
+// mutated after staging — only `venueId` (the user's current selection)
+// changes. That keeps an ambiguous file's dropdown narrowed to its real
+// candidates even after Colton picks "Skip this file" and reopens it.
+type Staged = {
+  id: number;
+  fileName: string;
+  confidence: "exact" | "ambiguous" | "none";
+  candidates: string[];
+  venueId: string | null;
+  file: File;
+  previewUrl: string;
+};
 
 const BulkPhotoPanel = ({
   venues,
@@ -36,6 +53,23 @@ const BulkPhotoPanel = ({
   const [source, setSource] = useState("");
   const [running, setRunning] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const nextId = useRef(0);
+
+  // Kept in sync every render so the unmount-only effect below can revoke
+  // whatever is staged at the moment of unmount, not whatever was staged
+  // when the effect was first attached (an empty-deps effect closure would
+  // otherwise capture staged = [] forever).
+  const stagedRef = useRef<Staged[]>(staged);
+  stagedRef.current = staged;
+
+  // Toggling the "Bulk photos" button off unmounts this panel directly —
+  // that is a third leak path alongside Clear and re-stage, since neither
+  // of those handlers runs on unmount.
+  useEffect(() => {
+    return () => {
+      stagedRef.current.forEach((s) => URL.revokeObjectURL(s.previewUrl));
+    };
+  }, []);
 
   const stage = (files: FileList | null) => {
     if (!files) return;
@@ -44,11 +78,18 @@ const BulkPhotoPanel = ({
     // batch) leaks one object URL per discarded file.
     staged.forEach((s) => URL.revokeObjectURL(s.previewUrl));
     setStaged(
-      Array.from(files).map((file) => ({
-        ...matchFileToVenues(file.name, venues),
-        file,
-        previewUrl: URL.createObjectURL(file),
-      })),
+      Array.from(files).map((file) => {
+        const match = matchFileToVenues(file.name, venues);
+        return {
+          id: nextId.current++,
+          fileName: match.fileName,
+          confidence: match.confidence,
+          candidates: match.candidates,
+          venueId: match.venueId,
+          file,
+          previewUrl: URL.createObjectURL(file),
+        };
+      }),
     );
   };
 
@@ -58,15 +99,11 @@ const BulkPhotoPanel = ({
     if (fileInput.current) fileInput.current.value = "";
   };
 
-  const assign = (fileName: string, venueId: string) =>
+  const assign = (id: number, venueId: string) =>
     setStaged((s) =>
       s.map((item) =>
-        item.fileName === fileName
-          ? {
-              ...item,
-              venueId: venueId === UNASSIGNED ? null : venueId,
-              confidence: venueId === UNASSIGNED ? "none" : "exact",
-            }
+        item.id === id
+          ? { ...item, venueId: venueId === UNASSIGNED ? null : venueId }
           : item,
       ),
     );
@@ -132,7 +169,7 @@ const BulkPhotoPanel = ({
         <>
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {staged.map((item) => (
-              <div key={item.fileName} className="flex items-center gap-3 rounded border border-border p-2">
+              <div key={item.id} className="flex items-center gap-3 rounded border border-border p-2">
                 <img src={item.previewUrl} alt="" className="h-12 w-12 rounded object-cover" />
                 <span className="min-w-0 flex-1 truncate text-sm">{item.fileName}</span>
                 {item.confidence === "exact" ? (
@@ -142,14 +179,14 @@ const BulkPhotoPanel = ({
                 ) : (
                   <Select
                     value={item.venueId ?? UNASSIGNED}
-                    onValueChange={(v) => assign(item.fileName, v)}
+                    onValueChange={(v) => assign(item.id, v)}
                   >
                     <SelectTrigger className="w-[240px]">
                       <SelectValue placeholder="Pick a venue" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={UNASSIGNED}>Skip this file</SelectItem>
-                      {(item.confidence === "ambiguous"
+                      {(item.candidates.length > 0
                         ? venues.filter((v) => item.candidates.includes(v.id))
                         : venues
                       ).map((v) => (
