@@ -427,6 +427,39 @@ After a discussion is approved, Claude should:
 
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
+### Night feed — requested 2026-08-07, NOT specced, NOT approved
+
+Colton listed these while slice 2 and photos were shipping. The three small ones
+were built the same day; the rest are real features and each needs the gate.
+
+**Built 2026-08-07** (in `0c05394`): tap a photo to expand · the date shown
+beside the relative night label · "how was it?" folded into posting, which is
+what starts the spot rankings.
+
+**Still to do — each needs its own discussion:**
+
+- **Comments on posts.** New table, new RLS, and a *second* moderation surface:
+  every comment is user text attached to a post about a named real business,
+  while §31 is open. Needs a report path from day one, same as posts got.
+- **Unread badges on Social** — a count for new posts, friend requests and
+  plans. Sounds cosmetic, is not: "unread" means per-user read state, which is
+  a new table written on nearly every view, plus a decision about what counts
+  as *seen*. Likely to become the most-written table in the app; design the
+  write path before the UI.
+- **Collab nights.** The largest. Tag who you were out with, they **approve**,
+  and the post then appears on their profile too — a combined-Instagram-post
+  shape. That is an invitation flow, a consent state machine, and a rule for
+  what happens when one party edits or deletes. Also folds in Colton's "add
+  your own pictures", read as: a tagged person contributing photos to a post
+  they are on.
+
+**Constraint that carries into all three:** `night_posts` is deliberately
+audience-scoped with blocking gating every tier, and photos live in a PRIVATE
+bucket behind signed URLs. Any of these features must inherit that, not restate
+it — a second copy of the audience rule is a second thing that can disagree
+with the first. See `docs/superpowers/specs/2026-08-06-night-feed-design.md`.
+
+
 - **Unblock UI** — **MERGED to main** (`5d98e56`; verified on main 2026-07-19 — stale "awaiting merge" note corrected). Collapsed "Blocked (n)" section at the bottom of the Social page; Unblock deletes the block row via the existing friends data layer (`unblockUser` → `deleteFriendshipRow`, optimistic with rollback). Only rows where you're the blocker are shown.
 - **Map-pin friend avatars** — **BUILT 2026-07-15** on `feat/map-pin-avatars` + combined into `integration/2026-07-15`; awaiting Colton review. Faces (max 2 + "+N") under pins, same RLS-filtered friends-out feed as the venue sheet.
 - **Location permission in onboarding** — **BUILT 2026-07-15** on `feat/onboarding-location` + integration branch; skippable /welcome/location step after username. Copy needs Colton's confirm.
