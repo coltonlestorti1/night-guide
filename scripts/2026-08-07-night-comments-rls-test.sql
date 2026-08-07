@@ -43,6 +43,14 @@ create temp table _res(
   verdict  text
 ) on commit drop;
 
+-- Belt and braces. _res is owned by the admin role that runs this script, so
+-- an impersonated 'authenticated' role has no privilege on it by default. The
+-- role is always restored to admin before every write below, but this grant
+-- means a single missed restore degrades into a correct result instead of an
+-- aborted script. Free: this is a temp table inside a transaction that always
+-- rolls back.
+grant insert, select on _res to authenticated;
+
 do $$
 declare
   v_author        uuid;
@@ -137,11 +145,23 @@ begin
   perform set_config('request.jwt.claims',
     json_build_object('sub', v_stranger, 'role', 'authenticated')::text, true);
 
+  -- The role restore in each branch below is NOT optional. The subtransaction
+  -- rollback that PL/pgSQL performs when an exception is caught undoes table
+  -- writes made inside the begin/exception block, but it does NOT undo a role
+  -- change made in the ENCLOSING block — and set_config('role', ...) above was
+  -- called outside this begin/exception, in the enclosing scope. So the
+  -- moment the exception handler runs, role is still 'authenticated', and
+  -- writing to _res while wearing it is exactly the bug that failed the first
+  -- run. Restore admin as the FIRST statement of every branch, before any
+  -- write to _res.
   begin
     insert into night_comments (post_id, user_id, body)
     values (v_post_friends, v_stranger, 'should be refused - friends post');
+    -- unexpectedly succeeded
+    perform set_config('role', v_admin, true);
     insert into _res values (default, 'non-friend inserts on a friends post', 42501, 0, 'FAIL');
   exception when insufficient_privilege then
+    perform set_config('role', v_admin, true);
     insert into _res values (default, 'non-friend inserts on a friends post', 42501, 42501, 'PASS');
   end;
 
@@ -150,16 +170,18 @@ begin
   -- 'everyone'), but the WRITE policy never consults visibility at all, only
   -- friendship with the author. A policy that gated writes on audience instead
   -- of friendship would wrongly allow this; this is the case that proves it
-  -- doesn't.
+  -- doesn't. Still impersonating v_stranger from scenario 2 above — no new
+  -- set_config needed, the claims haven't changed.
   begin
     insert into night_comments (post_id, user_id, body)
     values (v_post_everyone, v_stranger, 'should be refused - everyone post');
+    -- unexpectedly succeeded
+    perform set_config('role', v_admin, true);
     insert into _res values (default, 'non-friend inserts on an everyone post', 42501, 0, 'FAIL');
   exception when insufficient_privilege then
+    perform set_config('role', v_admin, true);
     insert into _res values (default, 'non-friend inserts on an everyone post', 42501, 42501, 'PASS');
   end;
-
-  perform set_config('role', v_admin, true);
 
   -- ---- scenario 4: an unrelated user deletes someone else's comment on
   -- someone else's post. Expect 0 rows — neither DELETE clause matches for
