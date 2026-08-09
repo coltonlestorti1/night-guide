@@ -150,15 +150,21 @@ const AdminVenues = () => {
     });
   }, [baseData, search, activeFilter]);
 
+  // FINDING 3 (round 3): built from `baseData`, the same frozen-or-live
+  // source `venues` filters — not live `data` directly. Rows render from
+  // `baseData`, so a badge built from live `data` could show a count that
+  // disagrees with what's actually listed (e.g. "no photo" ticking down
+  // mid-upload while the row it refers to is still sitting in the table).
+  // Badge and rows must always agree on what's currently on screen.
   const counts = useMemo(() => {
-    const rows = data ?? [];
+    const rows = baseData ?? [];
     return {
       all: rows.length,
       active: rows.filter((v) => v.is_active).length,
       dormant: rows.filter((v) => !v.is_active).length,
       "no photo": rows.filter((v) => !v.image_url).length,
     };
-  }, [data]);
+  }, [baseData]);
 
   // Fast path for photographing all 55+ venues: drop an image straight onto
   // a table row and it's uploaded and saved to THAT venue immediately, no
@@ -198,19 +204,25 @@ const AdminVenues = () => {
     setTableDragActive(false);
   };
 
-  // FINDING C (round 2), part 1: clearing dragOverRowId/tableDragActive
-  // otherwise depends entirely on the browser delivering a dragleave or a
-  // drop to one of our own elements. Drag a file in, then release it
-  // outside the browser window (or switch apps mid-drag) and neither ever
-  // fires — the table would stay frozen forever with no drag actually in
-  // progress. `dragend` fires on drag-and-drop's *source*, which for an
-  // OS-level file drag is outside our DOM and thus outside React's
-  // synthetic event system, so this has to be a real `window` listener, not
-  // a JSX prop. `drop` is included too, as a second rescue for a drop that
-  // somehow lands outside every element we handle. Does not touch
-  // uploadingRowIds — that half of the freeze is governed by the actual
-  // upload's lifecycle, not by drag gestures, and must keep holding until
-  // the upload itself settles.
+  // FINDING C (round 2), part 1 — comment corrected in round 3 (finding 5):
+  // clearing dragOverRowId/tableDragActive otherwise depends entirely on
+  // the browser delivering a dragleave or a drop to one of our own
+  // elements. For an external OS-level file drag (dragging in from
+  // Finder), the page never receives a `dragend` at all — that event only
+  // fires on the drag's *source*, which for this kind of drag lives outside
+  // the browser/DOM entirely, so the `dragend` listener below is a no-op
+  // for the actual workflow this table is built for. The real rescue is
+  // the `drop` listener (catches a drop that lands somewhere in the window
+  // outside every element we explicitly handle) plus the existing
+  // per-row/table-body `dragleave` handlers, which already fire with
+  // `relatedTarget = null` when the pointer leaves the window and correctly
+  // clear the drag state through the normal `contains(relatedTarget)`
+  // guard — no different from round 1. `dragend` is kept anyway as cheap,
+  // harmless insurance in case some future drag source inside this page
+  // (an HTML5 `draggable` element, unlike an OS file drag) ever needs it.
+  // Does not touch uploadingRowIds — that half of the freeze is governed by
+  // the actual upload's lifecycle, not by drag gestures, and must keep
+  // holding until the upload itself settles.
   useEffect(() => {
     const resetDragState = () => {
       setDragOverRowId(null);
@@ -230,8 +242,14 @@ const AdminVenues = () => {
   // flight, the rendered rows can be a frozen snapshot; opening the sheet
   // on that frozen object risks showing an image_url whose storage file a
   // just-finished upload already deleted.
-  const openEditor = (venueId: string) => {
-    setEditing((data ?? []).find((v) => v.id === venueId) ?? null);
+  //
+  // FINDING 4 (round 3): falls back to the caller's own `fallback` row, not
+  // `null`, when the id isn't (yet) in live `data` — e.g. a venue that only
+  // exists in a frozen snapshot the moment it's clicked. `null` meant that
+  // click silently opened nothing. Showing the frozen row itself is worse
+  // than showing the true live one, but strictly better than doing nothing.
+  const openEditor = (venueId: string, fallback: AdminVenueRow) => {
+    setEditing((data ?? []).find((v) => v.id === venueId) ?? fallback);
   };
 
   const handleRowDrop = (e: React.DragEvent<HTMLTableRowElement>, venue: AdminVenueRow) => {
@@ -258,45 +276,36 @@ const AdminVenues = () => {
     setUploadingRowIds((ids) => new Set(ids).add(venue.id));
 
     void (async () => {
+      // Tracks whether the DB write is CONFIRMED to have landed — not
+      // "probably," since withTimeout rejecting only means we stopped
+      // waiting, not that updateAdminVenue's underlying request didn't
+      // still commit server-side (round 3, finding 2). Deleting the
+      // superseded file, and telling the admin it's done, both require
+      // certainty the row really points at `url` now — the write-before-
+      // delete ordering is non-negotiable precisely because a wrong guess
+      // here 404s a still-live photo.
+      let writeConfirmed = false;
+      let uploadedUrl: string | null = null;
       try {
         const url = await uploadVenuePhoto(image, venue.id);
-        // FINDING C (round 2), part 2: uploadVenuePhoto already races
-        // against UPLOAD_TIMEOUT_MS, but this write didn't — and this row's
-        // entry in uploadingRowIds (part of `isFrozen`) only ever clears in
-        // the `finally` below, once this promise settles one way or the
-        // other. A DB write that hangs with no timeout would freeze the
-        // whole table indefinitely, not just this row. Same timeout budget
-        // as the upload it follows.
+        uploadedUrl = url;
+        // uploadVenuePhoto already races against UPLOAD_TIMEOUT_MS, but
+        // this write didn't — and this row's entry in uploadingRowIds
+        // (part of `isFrozen`) only ever clears in the `finally` below, once
+        // this promise settles one way or the other. A DB write that hangs
+        // with no timeout would freeze the whole table indefinitely, not
+        // just this row. Same timeout budget as the upload it follows.
         await withTimeout(
           updateAdminVenue(venue.id, { image_url: url }),
           UPLOAD_TIMEOUT_MS,
-          `Saving ${venue.name}'s photo timed out after ${UPLOAD_TIMEOUT_MS / 1000}s. Check your connection and try again.`,
+          `Saving ${venue.name}'s photo is taking longer than ${UPLOAD_TIMEOUT_MS / 1000}s to confirm — it may have saved anyway. Refreshing to show the current state.`,
         );
-        // Only now that the row points at the new URL — the reverse order
-        // 404s the live photo if the write fails.
-        if (previousUrl && previousUrl !== url) {
-          if (!(await deleteVenuePhotoByUrl(previousUrl))) {
-            toast.warning(
-              `${venue.name}: the old photo could not be deleted and may still be publicly reachable at its old URL.`,
-            );
-          }
-        }
-        toast.success(`Photo set on ${venue.name}`, {
-          action: {
-            label: "Add source",
-            // Must be the just-updated venue, not the one captured before
-            // the upload (I2): that stale object still has the OLD
-            // image_url, whose storage file this upload just superseded and
-            // deleted. Opening the sheet on it renders a broken image, and
-            // an admin who reads that as "the upload failed" can hit Remove
-            // + Save and wipe the photo they just added.
-            onClick: () => setEditing({ ...venue, image_url: url }),
-          },
-        });
-        safeRefetch();
+        writeConfirmed = true;
       } catch (err) {
         // Verbatim: the real cause is usually a missing storage/DB policy
-        // and the raw Postgres/storage message names it.
+        // and the raw Postgres/storage message names it. (The timeout
+        // message above is the one exception — deliberately hedged, since a
+        // timeout is a "stopped waiting," not a confirmed failure.)
         toast.error((err as Error).message);
       } finally {
         setUploadingRowIds((ids) => {
@@ -304,7 +313,48 @@ const AdminVenues = () => {
           next.delete(venue.id);
           return next;
         });
+        // FINDING 2 (round 3): fire on every outcome, not just success.
+        // A timed-out write can still have committed server-side (see
+        // above) — without this the table would sit there showing the old
+        // photo, permanently out of sync with a save that actually worked,
+        // right after the admin was told (via the error toast) that it
+        // hadn't. A genuine failure refetching too is harmless: it just
+        // re-confirms nothing changed. Honest current state beats a
+        // confident wrong one either way.
+        safeRefetch();
       }
+
+      // FINDING 1 (round 3): deliberately OUTSIDE the try/finally above —
+      // uploadingRowIds (and therefore the freeze) has already been lifted
+      // by the finally, so however long deleteVenuePhotoByUrl takes (it has
+      // no timeout of its own — storage.remove() can hang) can no longer
+      // hold the table frozen. Gated on writeConfirmed: if the write wasn't
+      // confirmed, we don't know whether `previousUrl` is still the live
+      // photo or already superseded, so deleting it risks 404ing a photo
+      // that's still in use. The DB row is written before the superseded
+      // file is deleted either way — this just also guarantees "deleted"
+      // never races ahead of "confirmed written."
+      if (!writeConfirmed || !uploadedUrl) return;
+      const url = uploadedUrl;
+      if (previousUrl && previousUrl !== url) {
+        if (!(await deleteVenuePhotoByUrl(previousUrl))) {
+          toast.warning(
+            `${venue.name}: the old photo could not be deleted and may still be publicly reachable at its old URL.`,
+          );
+        }
+      }
+      toast.success(`Photo set on ${venue.name}`, {
+        action: {
+          label: "Add source",
+          // Must be the just-updated venue, not the one captured before
+          // the upload (I2): that stale object still has the OLD
+          // image_url, whose storage file this upload just superseded and
+          // deleted. Opening the sheet on it renders a broken image, and
+          // an admin who reads that as "the upload failed" can hit Remove
+          // + Save and wipe the photo they just added.
+          onClick: () => setEditing({ ...venue, image_url: url }),
+        },
+      });
     })();
   };
 
@@ -397,7 +447,7 @@ const AdminVenues = () => {
                         dragOverRowId === v.id &&
                           "bg-primary/10 outline outline-2 outline-dashed outline-primary outline-offset-[-2px]",
                       )}
-                      onClick={() => openEditor(v.id)}
+                      onClick={() => openEditor(v.id, v)}
                       onDragOver={(e) => handleRowDragOver(e, v.id)}
                       onDragLeave={(e) => handleRowDragLeave(e, v.id)}
                       onDrop={(e) => handleRowDrop(e, v)}
@@ -470,7 +520,7 @@ const AdminVenues = () => {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openEditor(v.id);
+                            openEditor(v.id, v);
                           }}
                         >
                           Edit
