@@ -287,11 +287,13 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   };
 
   const destroyed = deleteImpact ? totalDestroyed(deleteImpact) : 0;
-  // Below some threshold there's nothing to lose and a single click is
-  // enough; above it, typing the exact name is required. Case-sensitive,
+  // Deletion is irreversible whether or not anything is attached, so typing
+  // the exact name is required every time — even when nothing is attached.
+  // A one-click path for the "nothing attached" case is exactly where a
+  // reflex mis-click does irreversible damage. Case-sensitive,
   // untrimmed-on-the-right-only-by-trim(): fast enough to defeat a mis-tap,
   // not so exact it punishes a trailing space from autocomplete.
-  const deleteConfirmed = destroyed === 0 || confirmName.trim() === venue.name.trim();
+  const deleteConfirmed = confirmName.trim() === venue.name.trim();
 
   const openDeleteDialog = async () => {
     if (saving || uploading || deleting) return;
@@ -616,8 +618,9 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
                         </p>
                       ) : (
                         <p>
-                          Nothing is attached to this venue — there&apos;s no user
-                          data to lose.
+                          Nothing is attached to this venue, but the venue itself
+                          is still gone for good — there&apos;s no user data to
+                          lose, only the venue.
                         </p>
                       )}
                       {deleteImpact.events > 0 && (
@@ -634,7 +637,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
               </AlertDialogDescription>
             </AlertDialogHeader>
 
-            {deleteImpact && destroyed > 0 && (
+            {deleteImpact && (
               <div className="space-y-1.5">
                 <Label htmlFor="confirm-venue-name" className="text-xs">
                   Type <span className="font-semibold text-foreground">{venue.name}</span> to
