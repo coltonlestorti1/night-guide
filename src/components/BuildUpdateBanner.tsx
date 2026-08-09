@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { RefreshCw, X } from "lucide-react";
 import { useBuildUpdate } from "@/hooks/useBuildUpdate";
 
@@ -31,8 +31,11 @@ const BuildUpdateBanner = () => {
 
   // Measured rather than hardcoded: at 375px the copy wraps to a second line,
   // which would silently break a fixed offset and put us back under the
-  // Map/List toggle — the exact bug this placement exists to fix.
-  useEffect(() => {
+  // Map/List toggle — the exact bug this placement exists to fix. Must run
+  // before paint (useLayoutEffect, not useEffect): a passive effect would
+  // leave --endz-update-banner-h at 0px for the first painted frame, so the
+  // banner would briefly overlap the Map/List toggle it exists to clear.
+  useLayoutEffect(() => {
     const el = cardRef.current;
     const root = document.documentElement;
     if (!show || !el) return;

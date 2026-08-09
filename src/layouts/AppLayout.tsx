@@ -37,7 +37,7 @@ const AppLayout = () => {
           up, page content is pushed clear of it rather than sliding under. */}
       <main
         className="pb-[calc(110px+var(--endz-update-banner-h)+env(safe-area-inset-bottom))]
-                   lg:pb-[var(--endz-update-banner-h)] lg:pl-20"
+                   lg:pb-[calc(1rem+var(--endz-update-banner-h))] lg:pl-20"
       >
         <Outlet />
       </main>

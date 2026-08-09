@@ -20,7 +20,7 @@
 - **Tests run in a node environment and only match `src/**/*.test.ts`** (see `vite.config.ts` → `test`). `.tsx` component tests are not executed at all, so all logic worth testing must live in a plain `.ts` module with `fetch` injected.
 - **No new runtime dependencies.** Everything here uses what is already installed.
 - Banner copy is exactly: `New version available — tap to update` (em dash, not a hyphen).
-- Run the full suite with `npm test` (`vitest run`). The baseline before this work is **382 tests passing**.
+- Run the full suite with `npm test` (`vitest run`). The baseline before this work is **391 tests passing**.
 
 ---
 
@@ -429,7 +429,7 @@ git add vite.config.ts src/vite-env.d.ts scripts/check-build-id.mjs package.json
 git commit -m "feat(update): emit one build id into both the bundle and version.json"
 ```
 
-Expected: 0 type errors, 393 tests passing (382 baseline + 11 from Task 1).
+Expected: 0 type errors, 402 tests passing (391 baseline + 11 from Task 1).
 
 ---
 
@@ -677,7 +677,7 @@ Only now is this safe — `__BUILD_ID__` finally has a consumer, so the id is ac
 cd <worktree> && npx tsc --noEmit -p tsconfig.app.json && npm test && npm run build
 ```
 
-Expected: 0 type errors, 393 tests passing, and the build ending in `PASS: build id <id> matches in version.json and the bundle.`
+Expected: 0 type errors, 402 tests passing, and the build ending in `PASS: build id <id> matches in version.json and the bundle.`
 
 - [ ] **Step 6: Prove the banner renders, then revert the proof**
 
@@ -726,7 +726,7 @@ Expected: **no output at all.** Any output is a spec violation — revert it.
 cd <worktree> && npx tsc --noEmit -p tsconfig.app.json && npm test && npm run build && npm run check:schema
 ```
 
-Expected: 0 type errors; 393 tests passing; the build ending in `PASS: build id <id> matches...` (that is `postbuild` — `check:build-id` no longer needs invoking by hand); schema guard PASS. Record the real numbers — do not claim these without seeing them.
+Expected: 0 type errors; 402 tests passing; the build ending in `PASS: build id <id> matches...` (that is `postbuild` — `check:build-id` no longer needs invoking by hand); schema guard PASS. Record the real numbers — do not claim these without seeing them.
 
 `npm run lint` fails repo-wide on pre-existing debt in files this branch never touches, so lint the changed files only:
 
