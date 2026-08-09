@@ -50,6 +50,15 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
               e.stopPropagation();
               setLightboxUrl(venue.image_url!);
             }}
+            onKeyDown={(e) => {
+              // The card root's onKeyDown fires onClick (opens the venue) on
+              // Enter/Space regardless of which descendant is focused. Stop
+              // it here so focusing this button and pressing Enter only
+              // opens the photo, not the venue too.
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+              }
+            }}
             className="block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`View photo of ${venue.title}`}
           >

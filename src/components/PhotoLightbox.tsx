@@ -18,21 +18,28 @@ type Props = {
 };
 
 const PhotoLightbox = ({ url, onClose, alt = "" }: Props) => (
-  <Dialog open={!!url} onOpenChange={(open) => !open && onClose()}>
-    <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
-      <DialogTitle className="sr-only">Photo</DialogTitle>
-      {url && (
-        <img
-          src={url}
-          alt={alt}
-          className="max-h-[85vh] w-full rounded-2xl object-contain"
-          // If the full-size image fails, close rather than leaving a broken
-          // image inside a modal the user then has to dismiss.
-          onError={onClose}
-        />
-      )}
-    </DialogContent>
-  </Dialog>
+  // React bubbles portal content along the React tree, not the DOM tree, so a
+  // click on the (portalled) overlay or content still reaches whatever
+  // clickable ancestor rendered this component — e.g. a BarCard row. Radix's
+  // own outside-click dismissal is a separate native listener and still
+  // fires; this only stops the click's own onward journey once it gets here.
+  <div onClick={(e) => e.stopPropagation()}>
+    <Dialog open={!!url} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
+        <DialogTitle className="sr-only">Photo</DialogTitle>
+        {url && (
+          <img
+            src={url}
+            alt={alt}
+            className="max-h-[85vh] w-full rounded-2xl object-contain"
+            // If the full-size image fails, close rather than leaving a broken
+            // image inside a modal the user then has to dismiss.
+            onError={onClose}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  </div>
 );
 
 export default PhotoLightbox;
