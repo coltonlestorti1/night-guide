@@ -28,7 +28,7 @@ import { PageHeader, EmptyState, ErrorNote } from "../components/AdminKit";
 import { fetchAdminVenues, updateAdminVenue, type AdminVenueRow } from "../data/venues";
 import VenueEditSheet from "../components/VenueEditSheet";
 import BulkPhotoPanel from "../components/BulkPhotoPanel";
-import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
+import { uploadVenuePhoto, deleteVenuePhotoByUrl, withTimeout, UPLOAD_TIMEOUT_MS } from "@/lib/venuePhotos";
 import { PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
 import PhotoLightbox from "@/components/PhotoLightbox";
 
@@ -73,9 +73,23 @@ const AdminVenues = () => {
   // closes both paths at once.
   const isFrozen = tableDragActive || dragOverRowId !== null || uploadingRowIds.size > 0;
 
+  // safeRefetch (below) can be called from a closure created several
+  // renders ago — e.g. a bulk-run's onDone, or a row-drop's async
+  // continuation — that captured `isFrozen` as it stood at click time, not
+  // as it stands now (round 2 finding B). A ref is mutable and shared
+  // across renders, so reading `.current` here always reflects the CURRENT
+  // freeze state no matter how stale the closure calling safeRefetch is.
+  const isFrozenRef = useRef(isFrozen);
+  isFrozenRef.current = isFrozen;
+
   // A refetch requested while frozen is deferred rather than dropped —
   // flushed once dragging/uploading is fully idle (see the effect below).
-  const pendingRefetchRef = useRef(false);
+  // useState, not useRef: setting this must itself trigger a render so the
+  // flush effect re-runs even when isFrozen has no NEW transition left to
+  // fire on (e.g. a bulk run's onDone landing well after the freeze already
+  // lifted) — a ref write alone would set the flag with nothing left to
+  // ever read it.
+  const [pendingRefetch, setPendingRefetch] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-venues"],
@@ -88,25 +102,40 @@ const AdminVenues = () => {
   });
 
   useEffect(() => {
-    if (!isFrozen && pendingRefetchRef.current) {
-      pendingRefetchRef.current = false;
+    if (!isFrozen && pendingRefetch) {
+      setPendingRefetch(false);
       refetch();
     }
-  }, [isFrozen, refetch]);
+  }, [isFrozen, pendingRefetch, refetch]);
 
   // Use this instead of calling refetch() directly from any row-drop path —
   // it defers the fetch instead of letting it land mid-drag and reorder the
-  // list under a still-moving cursor.
+  // list under a still-moving cursor. Reads isFrozenRef, not the `isFrozen`
+  // closed over by whichever render defined this particular safeRefetch
+  // instance — see the comment on isFrozenRef above.
   const safeRefetch = () => {
-    if (isFrozen) {
-      pendingRefetchRef.current = true;
+    if (isFrozenRef.current) {
+      setPendingRefetch(true);
       return;
     }
     refetch();
   };
 
+  // FINDING A (round 2): freeze `data` — the server row order — not the
+  // filtered `venues` list. Freezing the already-filtered list meant Search
+  // and the filter buttons visibly did nothing during an upload, while the
+  // count badges (built straight from `data`) kept changing — the table
+  // looked broken. Search/activeFilter are the admin's own deliberate
+  // action and must always respond; only the set of rows and their order
+  // coming back from the server needs to hold still under the cursor.
+  const frozenDataRef = useRef<AdminVenueRow[] | undefined>(data);
+  if (!isFrozen) {
+    frozenDataRef.current = data;
+  }
+  const baseData = isFrozen ? frozenDataRef.current : data;
+
   const venues = useMemo(() => {
-    const rows = data ?? [];
+    const rows = baseData ?? [];
     const q = search.trim().toLowerCase();
     return rows.filter((v) => {
       if (activeFilter === "active" && !v.is_active) return false;
@@ -119,18 +148,7 @@ const AdminVenues = () => {
         (v.music ?? "").toLowerCase().includes(q)
       );
     });
-  }, [data, search, activeFilter]);
-
-  // The other half of C1: even with refetch suppressed, `venues` above is
-  // still recomputed from whatever `data` currently is. Freeze the actual
-  // rendered array too, so the DOM rows (and the venue objects the row
-  // handlers close over) cannot move or change identity mid-drag. Only
-  // re-sync the frozen copy once nothing is dragging or uploading.
-  const frozenVenuesRef = useRef<AdminVenueRow[]>(venues);
-  if (!isFrozen) {
-    frozenVenuesRef.current = venues;
-  }
-  const displayVenues = isFrozen ? frozenVenuesRef.current : venues;
+  }, [baseData, search, activeFilter]);
 
   const counts = useMemo(() => {
     const rows = data ?? [];
@@ -180,6 +198,42 @@ const AdminVenues = () => {
     setTableDragActive(false);
   };
 
+  // FINDING C (round 2), part 1: clearing dragOverRowId/tableDragActive
+  // otherwise depends entirely on the browser delivering a dragleave or a
+  // drop to one of our own elements. Drag a file in, then release it
+  // outside the browser window (or switch apps mid-drag) and neither ever
+  // fires — the table would stay frozen forever with no drag actually in
+  // progress. `dragend` fires on drag-and-drop's *source*, which for an
+  // OS-level file drag is outside our DOM and thus outside React's
+  // synthetic event system, so this has to be a real `window` listener, not
+  // a JSX prop. `drop` is included too, as a second rescue for a drop that
+  // somehow lands outside every element we handle. Does not touch
+  // uploadingRowIds — that half of the freeze is governed by the actual
+  // upload's lifecycle, not by drag gestures, and must keep holding until
+  // the upload itself settles.
+  useEffect(() => {
+    const resetDragState = () => {
+      setDragOverRowId(null);
+      setTableDragActive(false);
+    };
+    window.addEventListener("dragend", resetDragState);
+    window.addEventListener("drop", resetDragState);
+    return () => {
+      window.removeEventListener("dragend", resetDragState);
+      window.removeEventListener("drop", resetDragState);
+    };
+  }, []);
+
+  // Round 2 "ALSO": resolve from the live query cache by id rather than
+  // trusting whatever (possibly frozen, per C1) row object the caller has
+  // in hand. Same class of bug as I2 — while any row's upload is in
+  // flight, the rendered rows can be a frozen snapshot; opening the sheet
+  // on that frozen object risks showing an image_url whose storage file a
+  // just-finished upload already deleted.
+  const openEditor = (venueId: string) => {
+    setEditing((data ?? []).find((v) => v.id === venueId) ?? null);
+  };
+
   const handleRowDrop = (e: React.DragEvent<HTMLTableRowElement>, venue: AdminVenueRow) => {
     e.preventDefault();
     // A drop event never fires a click, so this can't and doesn't stop the
@@ -206,7 +260,18 @@ const AdminVenues = () => {
     void (async () => {
       try {
         const url = await uploadVenuePhoto(image, venue.id);
-        await updateAdminVenue(venue.id, { image_url: url });
+        // FINDING C (round 2), part 2: uploadVenuePhoto already races
+        // against UPLOAD_TIMEOUT_MS, but this write didn't — and this row's
+        // entry in uploadingRowIds (part of `isFrozen`) only ever clears in
+        // the `finally` below, once this promise settles one way or the
+        // other. A DB write that hangs with no timeout would freeze the
+        // whole table indefinitely, not just this row. Same timeout budget
+        // as the upload it follows.
+        await withTimeout(
+          updateAdminVenue(venue.id, { image_url: url }),
+          UPLOAD_TIMEOUT_MS,
+          `Saving ${venue.name}'s photo timed out after ${UPLOAD_TIMEOUT_MS / 1000}s. Check your connection and try again.`,
+        );
         // Only now that the row points at the new URL — the reverse order
         // 404s the live photo if the write fails.
         if (previousUrl && previousUrl !== url) {
@@ -301,7 +366,7 @@ const AdminVenues = () => {
             <Card className="p-8 text-center text-sm text-muted-foreground">
               Loading venues…
             </Card>
-          ) : displayVenues.length === 0 ? (
+          ) : venues.length === 0 ? (
             <EmptyState title="No venues match" icon={Store}>
               {counts.all === 0
                 ? "The venues table came back empty. Check that the Supabase project is awake — the free tier pauses after 7 days of no traffic."
@@ -324,7 +389,7 @@ const AdminVenues = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody onDragOver={handleTableDragOver} onDragLeave={handleTableDragLeave}>
-                  {displayVenues.map((v) => (
+                  {venues.map((v) => (
                     <TableRow
                       key={v.id}
                       className={cn(
@@ -332,7 +397,7 @@ const AdminVenues = () => {
                         dragOverRowId === v.id &&
                           "bg-primary/10 outline outline-2 outline-dashed outline-primary outline-offset-[-2px]",
                       )}
-                      onClick={() => setEditing(v)}
+                      onClick={() => openEditor(v.id)}
                       onDragOver={(e) => handleRowDragOver(e, v.id)}
                       onDragLeave={(e) => handleRowDragLeave(e, v.id)}
                       onDrop={(e) => handleRowDrop(e, v)}
@@ -405,7 +470,7 @@ const AdminVenues = () => {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setEditing(v);
+                            openEditor(v.id);
                           }}
                         >
                           Edit
