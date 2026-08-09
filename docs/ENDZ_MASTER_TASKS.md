@@ -494,6 +494,64 @@ zoom · sheets panning sideways · splash screen · desktop date picker.
   identity change can flash a stale RLS-filtered list. Fixed for
   `profile-posts`; the same weak pattern exists elsewhere.
 
+### Build update check — SHIPPED 2026-08-09 (branch `feat/build-update-check`)
+
+Spec `docs/superpowers/specs/2026-08-09-build-update-check-design.md`, plan
+`docs/superpowers/plans/2026-08-09-build-update-check.md`. Merged @ `58ac936`,
+confirmed on device, 410 tests.
+
+**⚠️ This corrects a claim recorded twice in this file.** The 2026-07-21 entry
+below logs the gotcha "app SW (`/sw.js`) serves stale JS — unregister before
+live-testing edits," and the 2026-08-09 session carried the same belief into
+its notes. **The service worker was never the cause.** `public/sw.js` is a
+nine-line network passthrough whose `fetch` listener never calls
+`respondWith`, so it caches nothing, and it has a single commit in its whole
+history — no older caching version was ever installed on any device either.
+Vercel already served `/` with `cache-control: public, max-age=0,
+must-revalidate`; both were verified against production before any code was
+written. Unregistering the SW "fixing" it was coincidence: unregistering
+forces a reload, and **the reload** was doing the work.
+
+The actual gap: **nothing in the app ever checked whether a new build
+existed.** No `updatefound`, no build stamp, no reload path anywhere. An SPA
+runs its bundle until the page reloads, and an iOS home-screen PWA resumed
+from the app switcher fires no navigation and never re-requests `index.html`.
+That is why grepping the deployed bundle proved the code had shipped while the
+phone disagreed — the server was fine, the client was stale. Whether a given
+user was on the current build was luck.
+
+**What shipped:** one build id per build (`VERCEL_GIT_COMMIT_SHA` → git SHA →
+timestamp), computed **once** and published twice — into the bundle as
+`__BUILD_ID__` via Vite `define`, and to `dist/version.json`.
+`src/lib/buildVersion.ts` compares them, `useBuildUpdate` checks at start and
+on foreground return, and a dismissable banner offers the reload.
+`scripts/check-build-id.mjs` runs as a `postbuild` hook so drift fails the
+Vercel deploy. **`sw.js` is untouched** — no Workbox, no `vite-plugin-pwa`, no
+caching. Adding real caching to fix a staleness bug was the trap.
+
+**No auto-reload, deliberately:** the iOS photo picker backgrounds the app, so
+foreground-return is exactly when an auto-reload would fire, and it would
+discard a half-written post. Every check failure — network error, non-200,
+malformed JSON, missing `buildId` — is silent; a flaky connection must never
+nag someone about a version they already have.
+
+**⚠️ `--endz-update-banner-h` is now a cross-file contract.** Final review
+caught the banner covering and swallowing taps on the Map/List toggle: it had
+been placed above `BottomTabs` and checked only against `BottomTabs`, while
+`MapPage` has floating controls at `bottom-96px` and `bottom-148px` and
+`OutTonightPrompt` sits at `210px`, all at the same `z-40`. The banner now
+joins the stack and publishes its measured height as that CSS custom property,
+which `AppLayout` and all three map controls add to their offsets. **Anything
+new that positions against the bottom stack must add it too**
+(`rg -n -g '*.tsx' "fixed.*bottom-\[" src/`). It must be published from
+`useLayoutEffect`, not `useEffect` — a passive effect left one painted frame at
+`0px` that reproduced the collision.
+
+**Standing limitation, not a bug:** this deploy is invisible to every already-
+stale client. An old bundle has no checker, so it keeps running until it
+happens to reload; the feature protects each user only from their next organic
+reload onward.
+
 ### Deletion + retention — SHIPPED 2026-08-09 (branch `fix/deletion-retention`)
 
 Spec `docs/superpowers/specs/2026-08-09-deletion-retention-design.md`. Grew
