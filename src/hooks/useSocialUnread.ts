@@ -4,8 +4,8 @@
  * Runs app-wide, because the whole point is seeing "3 new" while you are on the
  * map. A badge you only see once you are already on Social tells you nothing.
  */
-import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
 import { useMyFriendships } from "@/hooks/useFriends";
 import { deriveIncoming } from "@/lib/friends";
@@ -48,20 +48,38 @@ export function useSocialUnread(): number {
  * Called from the Social page rather than from a route listener: mounting the
  * page IS the definition of "seen" that Colton chose.
  */
-export function useMarkSocialSeen(): void {
+export function useMarkSocialSeen(): string | null {
   const userId = useAuthStore((s) => s.session?.user.id);
   const qc = useQueryClient();
-  const mark = useMutation({
-    mutationFn: () => markSocialSeen(userId!),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["social-unread", userId] }),
-  });
-  const run = mark.mutate;
+  // The watermark AS IT WAS when this page mounted. Held for the life of the
+  // mount, because the stamp below immediately overwrites it — without this,
+  // opening Activity would find lastSeen === now and nothing would ever be
+  // marked new.
+  const [previous, setPrevious] = useState<string | null>(null);
+  // Keyed to the user, not a boolean: a bare latch would skip the effect
+  // entirely if the same mount ever saw a different signed-in user, leaving
+  // their badge permanently unstamped.
+  const done = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
-    // Fire once per mount. A failure here is silent on purpose — not stamping
-    // leaves a badge up, which is a far better outcome than an error toast
-    // over a feature nobody asked to be interrupted by.
-    run(undefined, { onError: () => {} });
-  }, [userId, run]);
+    if (!userId || done.current === userId) return;
+    done.current = userId;
+    (async () => {
+      try {
+        setPrevious(await getLastSeen(userId));
+      } catch {
+        // Fall through to stamping anyway — a missing watermark costs a
+        // highlight, not correctness.
+      }
+      try {
+        await markSocialSeen(userId);
+        qc.invalidateQueries({ queryKey: ["social-unread", userId] });
+      } catch {
+        // Silent on purpose: failing to stamp leaves a badge up, which is a
+        // far better outcome than an error toast nobody asked for.
+      }
+    })();
+  }, [userId, qc]);
+
+  return previous;
 }

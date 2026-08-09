@@ -15,7 +15,7 @@
  */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, MapPin, Plus, Users } from "lucide-react";
+import { Bell, CalendarClock, MapPin, Plus, Users } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { deriveFriends, deriveIncoming } from "@/lib/friends";
 import { useFriendsOutTonight, useMyFriendships } from "@/hooks/useFriends";
@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import SectionCard from "@/components/social/SectionCard";
 import OutTonightRow from "@/components/social/OutTonightRow";
 import FriendsSheet from "@/components/social/FriendsSheet";
+import ActivitySheet from "@/components/social/ActivitySheet";
 import PlansSheet from "@/components/social/PlansSheet";
 import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 import RecapCard from "@/components/night/RecapCard";
@@ -48,7 +49,10 @@ const Social = () => {
   // Opening this page IS "seen" (Colton, 2026-08-09) — so stamp it here rather
   // than from a route listener, which would also fire for a redirect through
   // /social that the user never actually looked at.
-  useMarkSocialSeen();
+  // Returns the watermark as it was BEFORE this mount stamped it, so Activity
+  // can highlight what arrived since you last looked.
+  const lastSeen = useMarkSocialSeen();
+  const [activityOpen, setActivityOpen] = useState(false);
 
   const openInvites = (planItems ?? []).filter((p) => p.invitedNoResponse).length;
   const requestCount = (pendingRequests ?? []).length;
@@ -83,6 +87,15 @@ const Social = () => {
 
       {status === "signedIn" && (
         <div className="flex shrink-0 items-center gap-2 mt-1">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-10 w-10 rounded-full"
+            aria-label="Activity — likes and comments on your nights"
+            onClick={() => setActivityOpen(true)}
+          >
+            <Bell className="h-4 w-4" aria-hidden="true" />
+          </Button>
           <Button
             size="icon"
             className="h-10 w-10 rounded-full"
@@ -195,6 +208,7 @@ const Social = () => {
 
       <CreatePlanSheet open={createOpen} onOpenChange={setCreateOpen} surface="social" />
       <FriendsSheet open={friendsOpen} onOpenChange={setFriendsOpen} />
+      <ActivitySheet open={activityOpen} onOpenChange={setActivityOpen} lastSeen={lastSeen} />
       <PlansSheet
         open={plansOpen}
         onOpenChange={setPlansOpen}
