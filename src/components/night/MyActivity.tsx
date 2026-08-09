@@ -29,7 +29,7 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
   const userId = useAuthStore((s) => s.session?.user.id);
   const { data: venues } = useVenues({});
 
-  const { data: posts, isLoading } = useQuery<FeedPost[]>({
+  const { data: posts, isLoading, isError } = useQuery<FeedPost[]>({
     queryKey: ["my-activity", userId, limit],
     queryFn: () => (userId ? listMyPosts(userId, limit) : Promise.resolve([])),
     enabled: !!userId && !!getSupabase(),
@@ -48,6 +48,20 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
   const tags = tagsByPost(tagRows ?? []);
 
   if (isLoading) return null;
+
+  // "No nights posted yet." is a claim about the viewer's OWN history. Made
+  // from a failed request it is simply false, and it is the one person who
+  // would know it is false — so it reads as data loss, not a network blip.
+  if (isError) {
+    return (
+      <div className="rounded-2xl border border-border bg-card/60 p-6 text-center">
+        <p className="text-sm font-medium">Couldn&apos;t load your nights.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          They&apos;re still there — check your connection and try again.
+        </p>
+      </div>
+    );
+  }
 
   if (!posts?.length) {
     return (
