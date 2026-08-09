@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import BottomTabs from "@/components/layout/BottomTabs";
+import BuildUpdateBanner from "@/components/BuildUpdateBanner";
 import { useAuthStore } from "@/store/auth";
 import { subscribeActivity } from "@/lib/checkins";
 
@@ -34,6 +35,7 @@ const AppLayout = () => {
       <main className="pb-[calc(110px+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-20">
         <Outlet />
       </main>
+      <BuildUpdateBanner />
       <BottomTabs />
     </div>
   );
