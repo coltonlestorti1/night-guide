@@ -38,6 +38,7 @@ import PublishSheet from "@/components/night/PublishSheet";
 import type { CommentPreview as CommentPreviewData } from "@/lib/night/comments";
 import type { LikeSummary } from "@/lib/night/likes";
 import { useCanCommentOn } from "@/hooks/useComments";
+import { withLine, type PostTag } from "@/lib/night/tags";
 
 /** Beli-style ring: warmer as the score climbs, muted when there is none. */
 function ScoreRing({ score }: { score: number | null }) {
@@ -67,6 +68,7 @@ export default function PostCard({
   photos = [],
   commentPreview,
   likes,
+  tags,
 }: {
   post: FeedPost;
   venue?: Venue;
@@ -74,6 +76,8 @@ export default function PostCard({
   photos?: { id: string; url: string | null }[];
   commentPreview?: CommentPreviewData;
   likes?: LikeSummary;
+  /** Accepted tags on this post ('tag' | 'collab'), for the "with Sam" line. */
+  tags?: PostTag[];
 }) {
   const myId = useAuthStore((s) => s.session?.user.id);
   const remove = useDeletePost();
@@ -119,6 +123,10 @@ export default function PostCard({
               <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
               {venue.neighborhood}
             </p>
+          )}
+
+          {withLine(tags) && (
+            <p className="mt-1 text-xs text-muted-foreground break-words">{withLine(tags)}</p>
           )}
 
           {post.note && (

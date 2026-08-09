@@ -13,6 +13,79 @@ import { useVenues } from "@/hooks/useVenues";
 import ProfileAvatar from "@/components/social/ProfileAvatar";
 import { nightLabel } from "@/lib/night/nightLabel";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/auth";
+import { useMyPendingTags, useRemoveTag, useSetTagState } from "@/hooks/useTags";
+import type { PendingTag } from "@/lib/night/tags";
+import { toast } from "sonner";
+
+/**
+ * One tag awaiting the caller's decision. ACTIONABLE, unlike the reaction
+ * rows below it — it persists until the caller acts, and is never gated on
+ * `lastSeen`. A like clears when you see it; a name on a post does not clear
+ * itself just because you scrolled past it.
+ */
+function PendingTagRow({ tag, venueName }: { tag: PendingTag; venueName: string | undefined }) {
+  const myId = useAuthStore((s) => s.session?.user.id);
+  const setState = useSetTagState();
+  const remove = useRemoveTag();
+  const busy = setState.isPending || remove.isPending;
+  const who = tag.author.display_name || tag.author.username;
+
+  const act = async (run: () => Promise<unknown>) => {
+    try {
+      await run();
+    } catch {
+      toast.error("Couldn't update that tag. Try again.");
+    }
+  };
+
+  return (
+    <li className="rounded-xl bg-primary-soft/40 px-2 py-2.5">
+      <div className="flex items-start gap-3">
+        <ProfileAvatar profile={tag.author} className="h-9 w-9 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm leading-snug break-words">
+            <span className="font-semibold">{who}</span>{" "}
+            <span className="text-muted-foreground">
+              tagged you{venueName ? " at " : ""}
+            </span>
+            {venueName && <span className="font-semibold">{venueName}</span>}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{nightLabel(tag.nightDate)}</p>
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          className="h-8 rounded-lg"
+          disabled={busy}
+          onClick={() => act(() => setState.mutateAsync({ postId: tag.postId, state: "collab" }))}
+        >
+          Share with my friends
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-8 rounded-lg"
+          disabled={busy}
+          onClick={() => act(() => setState.mutateAsync({ postId: tag.postId, state: "tag" }))}
+        >
+          Just a tag
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 rounded-lg text-muted-foreground"
+          disabled={busy || !myId}
+          onClick={() => myId && act(() => remove.mutateAsync({ postId: tag.postId, taggedUserId: myId }))}
+        >
+          Remove
+        </Button>
+      </div>
+    </li>
+  );
+}
 
 function Row({
   item,
@@ -67,6 +140,7 @@ export default function ActivitySheet({
   lastSeen: string | null;
 }) {
   const { data: items, isLoading, isError } = useActivity(open);
+  const { data: pendingTags } = useMyPendingTags();
   const { data: venues } = useVenues({});
   // undefined while venues are still loading — the row then omits the
   // venue clause entirely rather than briefly asserting "a spot".
@@ -80,6 +154,21 @@ export default function ActivitySheet({
           Likes and comments on your nights.
         </DrawerDescription>
         <div className="px-2 pt-2 pb-8 max-w-lg mx-auto w-full overflow-y-auto overflow-x-hidden">
+          {/* Own group, own heading, above the reactions — and never emptied
+              by isNew/lastSeen the way the rows below are. */}
+          {pendingTags?.length ? (
+            <div className="mb-3">
+              <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Waiting on you
+              </p>
+              <ul className="space-y-1.5">
+                {pendingTags.map((t) => (
+                  <PendingTagRow key={t.postId} tag={t} venueName={nameFor(t.venueId)} />
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {isError ? (
             // A failed query must NOT look like an empty inbox. Showing
             // "Nothing yet." for a network failure tells the user their

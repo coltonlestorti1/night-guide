@@ -19,8 +19,10 @@ import PostCard from "@/components/night/PostCard";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
 import { useCommentPreviews } from "@/hooks/useComments";
 import { usePostLikes } from "@/hooks/useLikes";
+import { usePostTags } from "@/hooks/useTags";
 import { reduceCommentPreviews } from "@/lib/night/comments";
 import { summarizeLikes } from "@/lib/night/likes";
+import { tagsByPost } from "@/lib/night/tags";
 import { listMyPosts } from "@/lib/night/posts";
 
 export default function MyActivity({ limit = 20 }: { limit?: number }) {
@@ -42,6 +44,8 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
   const previews = reduceCommentPreviews(commentRows ?? []);
   const { data: likeRows } = usePostLikes((posts ?? []).map((p) => p.id));
   const likes = summarizeLikes(likeRows ?? [], userId);
+  const { data: tagRows } = usePostTags((posts ?? []).map((p) => p.id));
+  const tags = tagsByPost(tagRows ?? []);
 
   if (isLoading) return null;
 
@@ -67,6 +71,7 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
           photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
           commentPreview={previews.get(post.id)}
           likes={likes.get(post.id)}
+          tags={tags.get(post.id)}
         />
       ))}
     </div>

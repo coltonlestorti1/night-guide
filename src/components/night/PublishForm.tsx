@@ -17,6 +17,10 @@ import { useAuthStore } from "@/store/auth";
 import { useMyPostsForNight, postFor } from "@/hooks/useNightFeed";
 import { useMyRatings, ratingFor } from "@/hooks/useMyRatings";
 import { useDeletePost, usePublishPost } from "@/hooks/usePublishPost";
+import { useMyFriendships } from "@/hooks/useFriends";
+import { deriveFriends } from "@/lib/friends";
+import { useAddTag } from "@/hooks/useTags";
+import ProfileAvatar from "@/components/social/ProfileAvatar";
 import {
   AUDIENCE_LABELS,
   AUDIENCE_SHORT,
@@ -77,16 +81,24 @@ export default function PublishForm({
   const [rateAfterPost, setRateAfterPost] = useState(false);
   const [note, setNote] = useState("");
   const [audience, setAudience] = useState<Audience>(defaultAudience(collegeSlug));
+  // Who to tag on THIS publish. Tags can only be written once the post has an
+  // id, so this stays local state and turns into addTag calls after publish
+  // succeeds — see doPublish.
+  const [taggedIds, setTaggedIds] = useState<string[]>([]);
 
   // Seed once per venue. Seeding on every render would wipe what the user is
   // typing the moment the posts query refetches.
   useEffect(() => {
     setNote(existing?.note ?? "");
     setAudience(existing?.visibility ?? defaultAudience(collegeSlug));
+    setTaggedIds([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venue.id, nightDate]);
 
   const userId = useAuthStore((s) => s.session?.user.id);
+  const { data: friendshipRows } = useMyFriendships();
+  const friends = userId && friendshipRows ? deriveFriends(friendshipRows, userId) : [];
+  const addTag = useAddTag();
 
   /**
    * Open the file dialog behind a guard.
@@ -144,6 +156,19 @@ export default function PublishForm({
       });
       if (pending.length) {
         await attachPhotos(postId, pending.map((p) => p.path));
+      }
+      if (taggedIds.length) {
+        // Tags need a post id, so they can only happen after publish
+        // succeeds — a failed tag must not undo or block the post itself,
+        // it's just reported so the author knows to retry it.
+        const results = await Promise.allSettled(
+          taggedIds.map((id) =>
+            addTag.mutateAsync({ postId, taggedUserId: id, isPrivatePost: audience === "nobody" }),
+          ),
+        );
+        if (results.some((r) => r.status === "rejected")) {
+          toast.error("Posted, but couldn't tag everyone. Try tagging them again.");
+        }
       }
       logEvent("night_post_published", {
         venue_id: venue.id,
@@ -274,6 +299,50 @@ export default function PublishForm({
           </button>
         ))}
       </div>
+
+      {friends.length > 0 && (
+        <>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+            Tag people you were with
+          </p>
+          <div className="flex flex-wrap gap-2 mb-5">
+            {friends.map((f) => {
+              const selected = taggedIds.includes(f.profile.id);
+              return (
+                <button
+                  key={f.profile.id}
+                  type="button"
+                  onClick={() =>
+                    setTaggedIds((cur) =>
+                      selected ? cur.filter((id) => id !== f.profile.id) : [...cur, f.profile.id],
+                    )
+                  }
+                  aria-pressed={selected}
+                  aria-label={`Tag ${f.profile.display_name || f.profile.username}`}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full border pl-1.5 pr-3 py-1.5 text-sm transition-all",
+                    selected
+                      ? "bg-primary text-primary-foreground border-transparent"
+                      : "bg-secondary border-border hover:bg-secondary/70",
+                  )}
+                >
+                  <ProfileAvatar profile={f.profile} className="h-6 w-6 shrink-0" />
+                  {/* Bounded width + truncate rather than break-words: a
+                      wrapping chip in a flex-wrap row has no shrink target to
+                      wrap against (min-w-0 only helps inside a flex row that
+                      is itself constrained), so an unbroken long name would
+                      widen the chip past the sheet instead of breaking — the
+                      same page-scroll bug class, blocked here by a hard cap
+                      instead. */}
+                  <span className="max-w-[9rem] truncate">
+                    {f.profile.display_name || f.profile.username}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <Button
