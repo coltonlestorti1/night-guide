@@ -33,7 +33,10 @@ export default function ProfilePosts({
 }) {
   const myId = useAuthStore((s) => s.session?.user.id);
   const { data: posts, isLoading, isError } = useQuery<FeedPost[]>({
-    queryKey: ["profile-posts", userId],
+    // Keyed on the VIEWER as well as the profile owner. What comes back is
+    // RLS-filtered per viewer, so a key that ignores who is asking can flash
+    // one person's permitted list to another before the refetch lands.
+    queryKey: ["profile-posts", userId, myId],
     queryFn: () => listProfilePosts(userId),
     enabled: !!userId,
   });
