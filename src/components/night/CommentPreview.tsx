@@ -33,7 +33,7 @@ export default function CommentPreview({
           onClick={onOpen}
           // Tap target extended via absolutely-positioned pseudo-element,
           // which does not participate in layout or trigger margin collapse.
-          className="relative text-sm text-muted-foreground hover:text-foreground before:absolute before:inset-x-0 before:-inset-y-3 before:content-['']"
+          className="relative text-sm text-muted-foreground hover:text-foreground before:absolute before:inset-x-0 before:-top-1 before:-bottom-3 before:content-['']"
         >
           Add a comment
         </button>
@@ -49,7 +49,7 @@ export default function CommentPreview({
         <button
           type="button"
           onClick={onOpen}
-          className="relative block text-sm text-muted-foreground hover:text-foreground before:absolute before:inset-x-0 before:-inset-y-3 before:content-['']"
+          className="relative block text-sm text-muted-foreground hover:text-foreground before:absolute before:inset-x-0 before:-top-1 before:-bottom-3 before:content-['']"
         >
           View all {preview.count} comments
         </button>

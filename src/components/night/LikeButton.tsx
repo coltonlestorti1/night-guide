@@ -35,12 +35,17 @@ export default function LikeButton({
     <button
       type="button"
       onClick={onTap}
+      disabled={toggle.isPending}
       // The hit area is grown by a pseudo-element rather than padding, so the
       // visible row does not shift. Negative margins collapse through a plain
       // block parent — that shipped a 2px overlap once already.
       className={cn(
         "relative inline-flex items-center gap-1.5 text-sm transition-colors",
-        "before:absolute before:-inset-y-3 before:-inset-x-2 before:content-['']",
+        // Asymmetric on purpose. A symmetric 12px zone overlapped the comment
+        // row's own 12px zone by 13.5px (measured) across a 10.5px visible gap,
+        // and CommentPreview paints later — so a tap at the bottom of the heart
+        // opened the thread instead. Generous upward, tight downward.
+        "before:absolute before:-top-3 before:-bottom-1 before:-inset-x-2 before:content-['']",
         liked ? "text-rose-600" : "text-muted-foreground hover:text-foreground",
       )}
       aria-pressed={liked}

@@ -41,8 +41,7 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
   const { data: commentRows } = useCommentPreviews((posts ?? []).map((p) => p.id));
   const previews = reduceCommentPreviews(commentRows ?? []);
   const { data: likeRows } = usePostLikes((posts ?? []).map((p) => p.id));
-  const myId = useAuthStore((s) => s.session?.user.id);
-  const likes = summarizeLikes(likeRows ?? [], myId);
+  const likes = summarizeLikes(likeRows ?? [], userId);
 
   if (isLoading) return null;
 

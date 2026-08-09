@@ -26,6 +26,28 @@ export function usePostLikes(postIds: string[]) {
  * result. On failure the cache is rolled back to the exact snapshot taken
  * before the mutation, so a failed like cannot leave a filled heart behind.
  */
+
+/**
+ * Add or remove one like across every cached page of likes.
+ *
+ * `removing` mirrors the button's prior state: true means the user had liked
+ * it and is now unliking. Written as a standalone helper so the optimistic
+ * write and its inverse cannot drift apart.
+ */
+function apply(
+  qc: ReturnType<typeof useQueryClient>,
+  userId: string,
+  postId: string,
+  removing: boolean,
+) {
+  for (const [key, rows] of qc.getQueriesData<LikeRow[]>({ queryKey: ["post-likes"] })) {
+    if (!rows) continue;
+    const without = rows.filter((r) => !(r.postId === postId && r.userId === userId));
+    // Guard against double-adding if two optimistic writes race.
+    qc.setQueryData<LikeRow[]>(key, removing ? without : [...without, { postId, userId }]);
+  }
+}
+
 export function useToggleLike() {
   const userId = useAuthStore((s) => s.session?.user.id);
   const qc = useQueryClient();
@@ -38,22 +60,16 @@ export function useToggleLike() {
     onMutate: async ({ postId, liked }) => {
       if (!userId) return;
       await qc.cancelQueries({ queryKey: ["post-likes"] });
-      const snapshots = qc.getQueriesData<LikeRow[]>({ queryKey: ["post-likes"] });
-      for (const [key, rows] of snapshots) {
-        if (!rows) continue;
-        qc.setQueryData<LikeRow[]>(
-          key,
-          liked
-            ? rows.filter((r) => !(r.postId === postId && r.userId === userId))
-            : [...rows, { postId, userId }],
-        );
-      }
-      return { snapshots };
+      apply(qc, userId, postId, liked);
     },
-    onError: (_e, _v, ctx) => {
-      // Put back exactly what was there — not a refetch, which could race the
-      // failed write and briefly show the wrong state.
-      ctx?.snapshots?.forEach(([key, rows]) => qc.setQueryData(key, rows));
+    onError: (_e, { postId, liked }) => {
+      if (!userId) return;
+      // Invert THIS toggle rather than restoring a snapshot of the whole cache.
+      // A snapshot taken before this mutation also predates any other toggle
+      // still in flight, so restoring it would wipe their optimistic writes
+      // too — tapping two hearts quickly and having one fail would visibly
+      // un-toggle the other.
+      apply(qc, userId, postId, !liked);
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["post-likes"] }),
   });
