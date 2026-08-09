@@ -92,7 +92,7 @@ export default function AddNightSheet({
     <Drawer open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
       <DrawerContent
         onInteractOutside={(e) => picking && e.preventDefault()}
-        className="bg-card border-border max-h-[88vh]">
+        className="bg-card border-border sheet-h-88">
         <DrawerTitle className="sr-only">Add a night</DrawerTitle>
         <DrawerDescription className="sr-only">
           Pick a night and a spot, then write your post.
