@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:schema": "node scripts/check-schema.mjs",
+    "check:build-id": "node scripts/check-build-id.mjs",
     "hooks:install": "node scripts/install-hooks.mjs"
   },
   "dependencies": {
