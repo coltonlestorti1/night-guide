@@ -23,6 +23,7 @@ import { Venue } from "@/data/types";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NightDateField from "@/components/night/NightDateField";
 import { useVenues } from "@/hooks/useVenues";
 import { lastCompletedNightDate, nightDateOf } from "@/lib/night/window";
 import { normalize } from "@/lib/normalize";
@@ -65,13 +66,6 @@ export default function AddNightSheet({
   const { data: venues } = useVenues({});
   const [q, setQ] = useState("");
   const [nightDate, setNightDate] = useState(() => lastCompletedNightDate());
-  // The date field needs its OWN string state. A native date input reports
-  // value === "" while you are part-way through typing MM/DD/YYYY, and a
-  // controlled input bound straight to nightDate would reject that empty
-  // intermediate and immediately write the old date back — which reads as the
-  // field being broken. Mobile never showed it because the native picker
-  // returns one complete value.
-  const [dateDraft, setDateDraft] = useState(nightDate);
   const [venue, setVenue] = useState<Venue | null>(null);
   const choices = useMemo(() => nightChoices(), []);
   const today = isoDate(new Date());
@@ -129,7 +123,7 @@ export default function AddNightSheet({
                   <button
                     key={c.value}
                     type="button"
-                    onClick={() => { setNightDate(c.value); setDateDraft(c.value); }}
+                    onClick={() => setNightDate(c.value)}
                     aria-pressed={nightDate === c.value}
                     className={cn(
                       "rounded-full border px-3.5 py-1.5 text-sm transition-all",
@@ -145,35 +139,10 @@ export default function AddNightSheet({
 
               {/* Any earlier night, for anything older than the quick chips.
                   max=today because you cannot have been out tomorrow. */}
-              <Input
-                type="date"
-                // iOS renders this as a NATIVE control with an intrinsic
-                // minimum width that Chrome does not reproduce. Without
-                // min-w-0 it can push the sheet wider than the screen.
-                style={{ minWidth: 0, maxWidth: "100%" }}
-                value={dateDraft}
+              <NightDateField
+                value={nightDate}
                 max={today}
-                // The draft takes EVERY keystroke, including the empty string
-                // a half-typed date produces. Only a complete, in-range date
-                // is committed. Never write nightDate back into the field
-                // mid-edit — that is what made this feel dead on desktop.
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setDateDraft(next);
-                  if (next && next <= today) setNightDate(next);
-                }}
-                // If they wander off having typed something unusable, snap the
-                // field back to the night actually selected rather than
-                // leaving a blank that posts to the wrong date.
-                onBlur={() => setDateDraft(nightDate)}
-                // NOT adding a vaul interact-outside guard here. The desktop
-                // calendar popup does not blur the window, so there would be no
-                // reliable release and the drawer could become un-closable —
-                // a worse bug than the one being fixed, and the exact failure
-                // the file-dialog fix had to correct. Revisit only with
-                // evidence that the popup is actually being swallowed.
-                className="mb-5"
-                aria-label="Or pick a date"
+                onChange={setNightDate}
               />
 
               <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Where?</p>
