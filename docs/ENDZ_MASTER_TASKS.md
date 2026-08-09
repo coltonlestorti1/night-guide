@@ -494,6 +494,49 @@ zoom · sheets panning sideways · splash screen · desktop date picker.
   identity change can flash a stale RLS-filtered list. Fixed for
   `profile-posts`; the same weak pattern exists elsewhere.
 
+### Deletion + retention — SHIPPED 2026-08-09 (branch `fix/deletion-retention`)
+
+Spec `docs/superpowers/specs/2026-08-09-deletion-retention-design.md`. Grew
+from the review's two findings to four after the audit; Colton approved all
+four as one slice because they share a DDL paste and the escalation could not
+be fixed without the storage work.
+
+**The escalation, which nobody had scoped.** `night_post_photos` INSERT
+checked that the POST was yours and never that `storage_path` was. The unique
+index on `storage_path` looks like it prevents re-use — but deleting a post
+FREES that index entry, and nothing deleted the file. So a friend who read the
+path out of the feed could attach a deleted friends-only photo to their own
+`everyone` post and the storage read policy would join through *their* post.
+**Proved closed against the live DB**, 6/6 role-impersonated scenarios,
+`scripts/2026-08-09-photo-path-rls-test.sql`. Rejections return 42501, so the
+policy fires ahead of the unique index in every case.
+
+**Also fixed:** files stranded by an abandoned composer (the confirmed source
+of both live orphans), by post deletion, and by account deletion; avatars
+surviving account deletion in the PUBLIC bucket while the consent dialog
+claimed otherwise; `reports` cascading away when either party deleted, which
+turned the Guideline 5.1.1(v) delete button into an eraser for the Guideline
+1.2 record. Reports now keep a `reported_username`/`reported_display_name`
+snapshot written by a trigger, with both FKs `on delete set null`.
+
+**New:** `/admin → Storage`, an orphan sweep reading
+`list_orphaned_storage()`. Deliberately NO admin SELECT policy on
+`night-photos` — that would have made the page trivial and handed the operator
+every friends-only photo on the app. The delete policy is scoped to
+unreferenced paths, so the screen cannot remove a live photo.
+
+**Deferred from this work, none blocking:**
+
+- `MAX_PHOTOS_PER_POST = 3` is client-only. No constraint on
+  `night_post_photos`, so the limit is advisory against a direct API call.
+- The night-photos policies still restate the audience predicate that
+  `night_posts` already enforces. Policy inheritance was proved on 2026-08-07,
+  so the copy is redundant — but it is a shipped security boundary and needs
+  its own verification pass, not a drive-by edit.
+- Avatar files whose profile still exists but whose `avatar_url` points
+  elsewhere are not counted as orphans. `cleanupOldAvatars` prunes stale
+  versions on replace, so this only matters if that call fails.
+
 ### Night feed — requested 2026-08-07, NOT specced, NOT approved
 
 Colton listed these while slice 2 and photos were shipping. The three small ones

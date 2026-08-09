@@ -24,6 +24,9 @@ import { Label } from "@/components/ui/label";
 
 export default function DeleteAccountDialog({ username }: { username: string }) {
   const signOut = useAuthStore((s) => s.signOut);
+  // Needed to clear the user's storage folders before the RPC kills the JWT —
+  // see deleteOwnAccount.
+  const userId = useAuthStore((s) => s.session?.user.id);
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,9 +35,17 @@ export default function DeleteAccountDialog({ username }: { username: string }) 
 
   const doDelete = async () => {
     if (!confirmed || busy) return;
+    // A missing id must NOT return silently. This is the Guideline 5.1.1(v)
+    // flow — a Delete button that does nothing at all, with no error, is worse
+    // than one that fails loudly, and it is the same silent-no-op that made
+    // submitReport claim success for a discarded row.
+    if (!userId) {
+      toast.error("Couldn't confirm who you're signed in as. Reload and try again.");
+      return;
+    }
     setBusy(true);
     try {
-      await deleteOwnAccount();
+      await deleteOwnAccount(userId);
       // The session belongs to a user who no longer exists — sign out before
       // anything can refetch against it. Navigation follows from auth state.
       await signOut();

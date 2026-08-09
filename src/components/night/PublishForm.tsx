@@ -35,6 +35,7 @@ import RateSteps from "@/components/night/RateSteps";
 import {
   MAX_PHOTOS_PER_POST,
   attachPhotos,
+  removeStoredPhotos,
   uploadNightPhoto,
 } from "@/lib/night/photos";
 
@@ -86,12 +87,44 @@ export default function PublishForm({
   // succeeds — see doPublish.
   const [taggedIds, setTaggedIds] = useState<string[]>([]);
 
+  /**
+   * A photo is uploaded the instant it is picked, so `pending` holds REAL
+   * FILES in the bucket that no row points at yet.
+   *
+   * If the user walks away — taps X, switches venue, closes the sheet —
+   * nothing else will ever delete them. No night_post_photos row exists, so
+   * neither the post-delete path nor the account-delete cascade knows they are
+   * there. This is where every confirmed orphan in the bucket came from.
+   *
+   * The ref exists because the unmount cleanup below runs with the state as it
+   * was when the effect was created, which is empty.
+   */
+  const pendingRef = useRef<{ path: string; preview: string }[]>([]);
+  pendingRef.current = pending;
+
+  const discardPending = (items: { path: string; preview: string }[]) => {
+    if (!items.length) return;
+    // The previews are object URLs; dropping the state alone leaks them.
+    items.forEach((p) => URL.revokeObjectURL(p.preview));
+    void removeStoredPhotos(items.map((p) => p.path));
+  };
+
+  useEffect(() => {
+    return () => discardPending(pendingRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Seed once per venue. Seeding on every render would wipe what the user is
   // typing the moment the posts query refetches.
   useEffect(() => {
     setNote(existing?.note ?? "");
     setAudience(existing?.visibility ?? defaultAudience(collegeSlug));
     setTaggedIds([]);
+    // Photos are per-post as well: carrying them to another venue would attach
+    // them to the wrong night. Discard the files, not just the state — on the
+    // first run pendingRef is empty, so this is a no-op on mount.
+    discardPending(pendingRef.current);
+    setPending([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venue.id, nightDate]);
 
@@ -156,6 +189,12 @@ export default function PublishForm({
       });
       if (pending.length) {
         await attachPhotos(postId, pending.map((p) => p.path));
+        // Attached: a row now points at these files, so they are no longer the
+        // unmount cleanup's problem. Clearing here is what stops it deleting
+        // photos that were successfully posted. If attachPhotos THREW, pending
+        // deliberately survives and the cleanup collects the strays.
+        pending.forEach((p) => URL.revokeObjectURL(p.preview));
+        setPending([]);
       }
       if (taggedIds.length) {
         // Tags need a post id, so they can only happen after publish
@@ -245,7 +284,10 @@ export default function PublishForm({
             <img src={p.preview} alt="" className="h-full w-full object-cover" />
             <button
               type="button"
-              onClick={() => setPending((cur) => cur.filter((x) => x.path !== p.path))}
+              onClick={() => {
+                setPending((cur) => cur.filter((x) => x.path !== p.path));
+                discardPending([p]);
+              }}
               className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/90 text-foreground"
               aria-label="Remove photo"
             >

@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Store,
   ClipboardCheck,
+  HardDrive,
   Flag,
   CalendarDays,
   Wine,
@@ -30,6 +31,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard },
   { to: "/admin/venues", label: "Venues", icon: Store },
   { to: "/admin/quality", label: "Data quality", icon: ClipboardCheck },
+  { to: "/admin/storage", label: "Storage", icon: HardDrive },
 ];
 
 export const ADMIN_NAV_DEFERRED: AdminNavItem[] = [
@@ -37,7 +39,11 @@ export const ADMIN_NAV_DEFERRED: AdminNavItem[] = [
     to: "/admin/moderation",
     label: "Moderation",
     icon: Flag,
-    blockedOn: "No reports table, and no strangers can sign in yet.",
+    // The reports table has existed since 2026-08-05 (App Store Guideline 1.2)
+    // and triage runs through the Supabase dashboard on the service role, which
+    // is why there is still no screen here.
+    blockedOn:
+      "Reports exist but have no client-side triage policy — they are worked from the Supabase dashboard. No strangers can sign in yet either.",
   },
   {
     to: "/admin/events",
