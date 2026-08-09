@@ -86,7 +86,7 @@ const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => 
               if (e.key === "Enter" && results.length > 0) pick(results[0]);
               if (e.key === "Escape") setFocused(false);
             }}
-            placeholder="Search spots — bars, clubs, lounges…"
+            placeholder="Search bars, clubs, lounges…"
             className="pl-9 h-10 rounded-xl bg-card/80 backdrop-blur-xl border-border/60 transition-shadow focus-visible:shadow-glow focus-visible:border-primary/50"
             aria-label="Search venues"
             role="combobox"
