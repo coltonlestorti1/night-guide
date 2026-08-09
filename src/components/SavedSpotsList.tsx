@@ -62,7 +62,7 @@ const SavedSpotsList = () => {
         {saved.map((venue) => (
           <li
             key={venue.id}
-            className="flex w-full items-center p-0 transition-colors hover:bg-secondary/40"
+            className="flex w-full p-0 transition-colors hover:bg-secondary/40"
           >
             {hasRealPhoto(venue) && (
               <button
