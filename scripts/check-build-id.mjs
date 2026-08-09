@@ -24,14 +24,23 @@ if (typeof buildId !== "string" || buildId.length === 0) {
   process.exit(1);
 }
 
+// Guarded like the version.json read above: this now runs as `postbuild`, on
+// Vercel, on every deploy. An unguarded readdir on a missing dist/assets would
+// fail the deploy with an unhandled-rejection stack trace instead of the one
+// line that says what to do about it.
 const assets = path.join(dist, "assets");
-const js = (await readdir(assets)).filter((f) => f.endsWith(".js"));
 let found = false;
-for (const file of js) {
-  if ((await readFile(path.join(assets, file), "utf8")).includes(buildId)) {
-    found = true;
-    break;
+try {
+  const js = (await readdir(assets)).filter((f) => f.endsWith(".js"));
+  for (const file of js) {
+    if ((await readFile(path.join(assets, file), "utf8")).includes(buildId)) {
+      found = true;
+      break;
+    }
   }
+} catch {
+  console.error("FAIL: dist/assets could not be read. Run `npm run build` first.");
+  process.exit(1);
 }
 
 if (!found) {

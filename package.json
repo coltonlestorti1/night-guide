@@ -7,6 +7,7 @@
     "postinstall": "node scripts/install-hooks.mjs",
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node scripts/check-build-id.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
