@@ -83,11 +83,21 @@ const Profile = () => {
     setAgeBand(band);
   };
 
+  // Disabled while in flight. The store's sequence guard keeps a stale
+  // response from repainting the toggle, but it cannot control which write
+  // lands last in the DATABASE — and "older write wins" can leave the switch
+  // reading hidden while the policies still see false. One request at a time
+  // removes that possibility instead of trying to reconcile it.
+  const [ghostBusy, setGhostBusy] = useState(false);
+
   const handleGhostToggle = async (next: boolean) => {
+    setGhostBusy(true);
     try {
       await setGhostMode(next);
     } catch {
       toast.error("Couldn't update ghost mode. Try again.");
+    } finally {
+      setGhostBusy(false);
     }
   };
 
@@ -268,6 +278,7 @@ const Profile = () => {
             <Switch
               checked={!!profile?.ghost_mode}
               onCheckedChange={handleGhostToggle}
+              disabled={ghostBusy}
               aria-label="Ghost mode"
               className="mt-1.5"
             />
