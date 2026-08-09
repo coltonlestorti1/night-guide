@@ -249,7 +249,7 @@ export default function CreatePlanSheet({
           </div>
         ) : (
           /* ── Form step ── */
-          <div className="p-5 pb-8 space-y-4 overflow-y-auto sheet-h-80">
+          <div className="p-5 pb-8 space-y-4 overflow-y-auto overflow-x-hidden sheet-h-80">
             <p className="font-display text-lg font-bold">
               {editItem ? "Edit plan" : "Make a plan"}
             </p>

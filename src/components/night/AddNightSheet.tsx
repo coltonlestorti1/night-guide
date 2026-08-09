@@ -98,7 +98,7 @@ export default function AddNightSheet({
           Pick a night and a spot, then write your post.
         </DrawerDescription>
 
-        <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full overflow-y-auto">
+        <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full overflow-y-auto overflow-x-hidden">
           {venue ? (
             <PublishForm
               onPickingChange={setPicking}
@@ -140,6 +140,10 @@ export default function AddNightSheet({
                   max=today because you cannot have been out tomorrow. */}
               <Input
                 type="date"
+                // iOS renders this as a NATIVE control with an intrinsic
+                // minimum width that Chrome does not reproduce. Without
+                // min-w-0 it can push the sheet wider than the screen.
+                style={{ minWidth: 0, maxWidth: "100%" }}
                 value={nightDate}
                 max={today}
                 onChange={(e) => e.target.value && setNightDate(e.target.value)}

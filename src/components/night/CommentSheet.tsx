@@ -121,7 +121,7 @@ export default function CommentSheet({
           The comment thread on {authorName}'s post.
         </DrawerDescription>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3">
           {isLoading ? (
             <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
           ) : comments?.length ? (

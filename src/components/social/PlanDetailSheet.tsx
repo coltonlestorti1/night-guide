@@ -297,7 +297,7 @@ export default function PlanDetailSheet({
           Event details, guest list, and RSVP.
         </DialogDescription>
 
-        <div className="p-5 space-y-4 overflow-y-auto max-h-[80vh]">
+        <div className="p-5 space-y-4 overflow-y-auto overflow-x-hidden max-h-[80vh]">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
