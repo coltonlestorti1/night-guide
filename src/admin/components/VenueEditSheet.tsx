@@ -146,7 +146,13 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const handlePhotoDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
-    if (uploading) return;
+    if (uploading) {
+      // Without this the drop is accepted (preventDefault already ran) and
+      // then silently discarded — the admin sees nothing happen and has no
+      // way to tell "ignored" from "still working" (M5).
+      toast.error("Still uploading — try again once it finishes.");
+      return;
+    }
     const dropped = Array.from(e.dataTransfer.files);
     const image = dropped.find((f) => ACCEPTED_IMAGE_TYPES.has(f.type));
     if (!image) {
