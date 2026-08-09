@@ -65,8 +65,12 @@ export default function VenuePreview({
   // carry over. Reset per venue so defaultExpanded actually governs each one.
   // useLayoutEffect, not useEffect: a passive effect lets one frame paint with
   // the new venue still expanded before collapsing.
+  // lightboxUrl resets here too, for the same reason: without it, swapping
+  // venue.id while the lightbox is open would leave it showing the previous
+  // venue's photo under the new venue's alt text.
   useLayoutEffect(() => {
     setExpanded(defaultExpanded);
+    setLightboxUrl(null);
   }, [venue.id, defaultExpanded]);
 
   return (
