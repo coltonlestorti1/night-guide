@@ -14,6 +14,18 @@ import { reencodeImage } from "@/lib/imageEncode";
 const BUCKET = "venue-photos";
 
 /**
+ * Extensions accepted as a fallback ONLY when the browser reported no MIME
+ * type at all (some drag sources hand over a `File` with `type === ""`).
+ * Includes heic/heif deliberately: those must still reach reencodeImage and
+ * fail there with the specific "convert to JPEG first" message, rather than
+ * being turned away here as "not an image" — an honest, actionable error
+ * beats a wrong one.
+ */
+const IMAGE_EXTENSIONS = new Set([
+  "jpg", "jpeg", "png", "webp", "avif", "gif", "bmp", "heic", "heif",
+]);
+
+/**
  * Whether the browser can plausibly decode this as an image at all — the
  * single gate shared by the file-picker `accept` attribute and every manual
  * drag-and-drop filter in admin (a drop isn't gated by <input accept>, so
@@ -30,9 +42,20 @@ const BUCKET = "venue-photos";
  * actually decode it in Chrome — that failure is caught and given a
  * specific, actionable message in reencodeImage rather than being filtered
  * out here, so the admin finds out why at the moment it actually fails.
+ *
+ * The MIME type is the primary signal and, when present, is the ONLY
+ * signal — a non-image type is rejected even if the filename has an image
+ * extension. The extension is a fallback used only when `type` is empty or
+ * missing, since some drag sources hand over a `File` with no MIME type at
+ * all; a genuine photo dropped that way shouldn't be refused just because
+ * the OS didn't label it.
  */
-export function isAcceptedImage(file: { type: string }): boolean {
-  return file.type.startsWith("image/");
+export function isAcceptedImage(file: { type: string; name?: string }): boolean {
+  if (file.type) return file.type.startsWith("image/");
+  const name = file.name ?? "";
+  const dot = name.lastIndexOf(".");
+  if (dot === -1) return false;
+  return IMAGE_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
 }
 
 /** The `accept` attribute for a photo `<input type="file">` — matches
