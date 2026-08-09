@@ -1,6 +1,8 @@
 /**
- * Bulk venue photos: choose multiple photo files at once, review every
- * match, then write. (Multi-select file input only — no drag-and-drop.)
+ * Bulk venue photos: choose multiple photo files at once (via the file
+ * picker or by dragging a selection of files onto the panel), review every
+ * match, then write. (Folder drops are not supported — only a selection of
+ * files.)
  *
  * Lives in /admin rather than scripts/ for two reasons, both checked:
  * only the publishable (anon) key exists on disk, so a CLI script could not
@@ -18,11 +20,17 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { matchFileToVenues } from "../data/photoMatch";
 import { updateAdminVenue, type AdminVenueRow } from "../data/venues";
 import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
 
 const UNASSIGNED = "__none__";
+
+// Mirrors the file input's `accept` attribute — a drop isn't gated by the
+// browser the way <input accept> is, so dropped files need the same
+// filtering applied by hand.
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 // `id` — not `fileName` — is the identity used for the React key and for
 // assign(): two dropped files can share a name ("IMG_0001.jpg" is the
@@ -33,6 +41,12 @@ const UNASSIGNED = "__none__";
 // mutated after staging — only `venueId` (the user's current selection)
 // changes. That keeps an ambiguous file's dropdown narrowed to its real
 // candidates even after Colton picks "Skip this file" and reopens it.
+// `source` is per-row: it is seeded from the batch field at stage() time,
+// then edited in place. Editing the batch field afterwards DOES reach back
+// into already-staged rows (I3) — but only rows whose source still equals
+// the batch field's previous value, i.e. rows nobody has hand-typed into.
+// A row the user has edited by hand is left alone. See handleSourceChange
+// below for the exact rule.
 type Staged = {
   id: number;
   fileName: string;
@@ -41,6 +55,7 @@ type Staged = {
   venueId: string | null;
   file: File;
   previewUrl: string;
+  source: string;
 };
 
 const BulkPhotoPanel = ({
@@ -53,8 +68,14 @@ const BulkPhotoPanel = ({
   const [staged, setStaged] = useState<Staged[]>([]);
   const [source, setSource] = useState("");
   const [running, setRunning] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const nextId = useRef(0);
+  // The batch field's value as of the last time it changed (or "" at
+  // mount). Used by handleSourceChange (I3) to tell "a row whose source
+  // still matches the old batch value" — i.e. never hand-edited — from a
+  // row Colton typed into on purpose.
+  const prevSourceRef = useRef("");
 
   // Kept in sync every render so the unmount-only effect below can revoke
   // whatever is staged at the moment of unmount, not whatever was staged
@@ -72,14 +93,23 @@ const BulkPhotoPanel = ({
     };
   }, []);
 
-  const stage = (files: FileList | null) => {
+  // Shared by both the file input and drag-and-drop — the FileList vs File[]
+  // difference is just where the files came from, and both must go through
+  // the same match-then-id pipeline.
+  //
+  // APPENDS rather than replaces (M7): the natural workflow here is several
+  // small drops, typing a source after each. Earlier this replaced the
+  // whole list on every stage() call, which silently threw away every
+  // hand-typed source the moment a second batch of files was dropped.
+  // Existing rows (and their preview URLs) are left untouched — nothing
+  // displayed is revoked here, only Clear/run/unmount do that — and `id`
+  // keeps coming from the same monotonic counter, so ids stay unique across
+  // every stage() call for the life of the panel.
+  const stage = (files: FileList | File[] | null) => {
     if (!files) return;
-    // Revoke any previously staged previews before replacing the list —
-    // otherwise re-choosing a batch (or choosing again after an earlier
-    // batch) leaks one object URL per discarded file.
-    staged.forEach((s) => URL.revokeObjectURL(s.previewUrl));
-    setStaged(
-      Array.from(files).map((file) => {
+    setStaged((prev) => [
+      ...prev,
+      ...Array.from(files).map((file) => {
         const match = matchFileToVenues(file.name, venues);
         return {
           id: nextId.current++,
@@ -89,9 +119,16 @@ const BulkPhotoPanel = ({
           venueId: match.venueId,
           file,
           previewUrl: URL.createObjectURL(file),
+          // Seeded from the batch field as it stands at stage time, then
+          // independent of it until handleSourceChange (I3) decides this
+          // row still matches the old batch value.
+          source,
         };
       }),
-    );
+    ]);
+    // So re-picking the same filename in a later batch still fires
+    // onChange — matches the reset already done after Clear and run().
+    if (fileInput.current) fileInput.current.value = "";
   };
 
   const clear = () => {
@@ -108,6 +145,63 @@ const BulkPhotoPanel = ({
           : item,
       ),
     );
+
+  const setRowSource = (id: number, value: string) =>
+    setStaged((s) =>
+      s.map((item) => (item.id === id ? { ...item, source: value } : item)),
+    );
+
+  // I3: the batch field only did something at stage() time — typing into it
+  // after files were already staged (drag-then-type is the natural order
+  // here) silently went nowhere, so the takedown-mitigation field ended up
+  // empty on every row in practice. Propagate the new value only to rows
+  // whose source still equals the PREVIOUS batch value: that's the signal a
+  // row was never hand-edited (setRowSource would have changed it away from
+  // that value). Rows Colton typed into by hand keep whatever he typed.
+  const handleSourceChange = (value: string) => {
+    const prev = prevSourceRef.current;
+    setStaged((s) =>
+      s.map((item) => (item.source === prev ? { ...item, source: value } : item)),
+    );
+    prevSourceRef.current = value;
+    setSource(value);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    // Without this the browser's default is to navigate to/open the
+    // dropped file instead of firing onDrop.
+    e.preventDefault();
+    if (running) return;
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // Only clear if the pointer truly left the drop zone, not just moved
+    // over a child element within it (which also fires dragleave on the
+    // parent before the child's own dragenter) — matches VenueEditSheet /
+    // AdminVenues; without this the highlight flickered on every child
+    // boundary crossed.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (running) {
+      toast.error("Still uploading this batch — try again once it finishes.");
+      return;
+    }
+    const dropped = Array.from(e.dataTransfer.files);
+    if (dropped.length === 0) return;
+    const images = dropped.filter((f) => ACCEPTED_IMAGE_TYPES.has(f.type));
+    if (images.length === 0) {
+      toast.error("Only JPEG, PNG, and WebP images can be staged.");
+      return;
+    }
+    stage(images);
+  };
 
   const ready = staged.filter((s) => s.venueId);
 
@@ -135,7 +229,7 @@ const BulkPhotoPanel = ({
         const url = await uploadVenuePhoto(item.file, item.venueId!);
         await updateAdminVenue(item.venueId!, {
           image_url: url,
-          ...(source.trim() ? { image_source: source.trim() } : {}),
+          ...(item.source.trim() ? { image_source: item.source.trim() } : {}),
         });
         ok++;
         // Keep the local snapshot current: if a second staged row targets
@@ -177,7 +271,15 @@ const BulkPhotoPanel = ({
   };
 
   return (
-    <Card className="mb-4 p-4">
+    <Card
+      className={cn(
+        "mb-4 p-4 transition-colors",
+        dragOver && "border-dashed border-primary bg-primary/5",
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           ref={fileInput}
@@ -199,12 +301,14 @@ const BulkPhotoPanel = ({
         </Button>
         <Input
           value={source}
-          onChange={(e) => setSource(e.target.value)}
-          placeholder="Source for this batch, e.g. venue Instagram"
+          onChange={(e) => handleSourceChange(e.target.value)}
+          placeholder="Default source for new files, e.g. venue Instagram"
+          disabled={running}
           className="min-w-[240px] flex-1"
         />
         <span className="text-xs text-muted-foreground">
-          Name each file after the venue: <code>amor-y-amargo.jpg</code>
+          Name each file after the venue (<code>amor-y-amargo.jpg</code>), or
+          drag files onto this panel.
         </span>
       </div>
 
@@ -245,6 +349,13 @@ const BulkPhotoPanel = ({
                         </SelectContent>
                       </Select>
                     )}
+                    <Input
+                      value={item.source}
+                      onChange={(e) => setRowSource(item.id, e.target.value)}
+                      placeholder="Source"
+                      disabled={running}
+                      className="w-[160px] flex-shrink-0"
+                    />
                   </div>
                   {isDuplicateTarget && (
                     <p className="mt-1.5 flex items-center gap-1.5 pl-[60px] text-xs font-medium text-amber-600 dark:text-amber-400">

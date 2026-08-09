@@ -36,6 +36,7 @@ import {
 import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
 import { PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import { cn } from "@/lib/utils";
 
 type Props = {
   venue: AdminVenueRow | null;
@@ -45,6 +46,11 @@ type Props = {
 
 /** Sentinel for "no price set". Radix Select rejects an empty-string value. */
 const NO_PRICE = "__none__";
+
+// Mirrors the file input's `accept` attribute — a drop isn't gated by the
+// browser the way <input accept> is, so dropped files need the same
+// filtering applied by hand. Matches BulkPhotoPanel's set.
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const [draft, setDraft] = useState<AdminVenueRow | null>(venue);
@@ -57,6 +63,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   // pick before saving, or a pick-then-Remove never orphans a bucket file.
   const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   // The venue this mounted sheet instance is currently showing, kept fresh
   // every render. VenueEditSheet is never remounted between venues — the
   // parent just swaps the `venue` prop — so an upload's async continuation
@@ -114,6 +121,45 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
     }
+  };
+
+  // Dropping onto the photo area goes through the same pickPhoto() as the
+  // file input — the canvas re-encode, upload timeout, captured-venue-id
+  // check, and orphan cleanup all live there and must not be bypassed.
+  const handlePhotoDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    // Without this the browser's default is to navigate to the dropped
+    // image instead of firing onDrop.
+    e.preventDefault();
+    if (uploading) return;
+    setDragOver(true);
+  };
+
+  const handlePhotoDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // Only clear if the pointer truly left the drop zone, not just moved
+    // over a child element within it (which also fires dragleave on the
+    // parent before the child's own dragenter).
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setDragOver(false);
+  };
+
+  const handlePhotoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (uploading) {
+      // Without this the drop is accepted (preventDefault already ran) and
+      // then silently discarded — the admin sees nothing happen and has no
+      // way to tell "ignored" from "still working" (M5).
+      toast.error("Still uploading — try again once it finishes.");
+      return;
+    }
+    const dropped = Array.from(e.dataTransfer.files);
+    const image = dropped.find((f) => ACCEPTED_IMAGE_TYPES.has(f.type));
+    if (!image) {
+      toast.error("Only JPEG, PNG, and WebP images can be dropped here.");
+      return;
+    }
+    void pickPhoto(image);
   };
 
   // Cancel and the sheet's own close (X / Escape / overlay click) both land
@@ -196,7 +242,15 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
             label="Photo"
             hint="Venue-owned photos only (their Instagram or site). Not Google Maps, not press sites."
           >
-            <div className="flex gap-3">
+            <div
+              onDragOver={handlePhotoDragOver}
+              onDragLeave={handlePhotoDragLeave}
+              onDrop={handlePhotoDrop}
+              className={cn(
+                "flex gap-3 rounded-lg border border-transparent p-2 transition-colors",
+                dragOver && "border-dashed border-primary bg-primary/5",
+              )}
+            >
               {hasRealPhoto(draft) ? (
                 <button
                   type="button"
