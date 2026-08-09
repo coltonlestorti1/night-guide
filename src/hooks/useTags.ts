@@ -52,6 +52,11 @@ function useInvalidateTags() {
     qc.invalidateQueries({ queryKey: ["post-tags"] });
     qc.invalidateQueries({ queryKey: ["pending-tags"] });
     qc.invalidateQueries({ queryKey: ["night-feed"] });
+    // Accepting a collab makes the post appear on a PROFILE too, so that list
+    // has to be invalidated with the feed. Missing this meant a profile page
+    // already mounted elsewhere kept showing the old list until something
+    // unrelated forced a refetch.
+    qc.invalidateQueries({ queryKey: ["profile-posts"] });
   };
 }
 

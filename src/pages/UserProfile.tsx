@@ -8,6 +8,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, GraduationCap, MapPin, UserX } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useFriendsOutTonight, useProfileByUsername } from "@/hooks/useFriends";
+import ProfilePosts from "@/components/night/ProfilePosts";
 import { timeAgo } from "@/lib/format";
 import { collegeLabel } from "@/data/colleges";
 import { Button } from "@/components/ui/button";
@@ -148,6 +149,14 @@ const UserProfile = () => {
           </span>
         </Link>
       )}
+
+      <div className="mt-6">
+        <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Nights</p>
+        <ProfilePosts
+          userId={profile.id}
+          name={profile.display_name || `@${profile.username}`}
+        />
+      </div>
     </section>
   );
 };
