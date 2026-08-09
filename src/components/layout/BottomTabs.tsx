@@ -1,7 +1,9 @@
 import { NavLink } from "react-router-dom";
 import { Compass, Map, Users, UserRound } from "lucide-react";
+import { useSocialUnread } from "@/hooks/useSocialUnread";
+import { badgeLabel } from "@/lib/social/unread";
 
-const Tab = ({ to, label, Icon }: { to: string; label: string; Icon: any }) => {
+const Tab = ({ to, label, Icon, badge = 0 }: { to: string; label: string; Icon: any; badge?: number }) => {
   return (
     <NavLink
       to={to}
@@ -15,15 +17,31 @@ const Tab = ({ to, label, Icon }: { to: string; label: string; Icon: any }) => {
             : "text-muted-foreground hover:text-foreground lg:hover:bg-secondary",
         ].join(" ")
       }
-      aria-label={label}
+      aria-label={badge > 0 ? `${label} — ${badge} new` : label}
     >
-      <Icon className="h-5 w-5" aria-hidden="true" />
+      {/* relative wraps the ICON only, so the pill tracks the glyph rather
+          than the whole tab column, which would put it out over the label. */}
+      <span className="relative">
+        <Icon className="h-5 w-5" aria-hidden="true" />
+        {badge > 0 && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center
+                       rounded-full bg-primary px-1 text-[10px] font-bold leading-none
+                       text-primary-foreground"
+          >
+            {badgeLabel(badge)}
+          </span>
+        )}
+      </span>
       <span>{label}</span>
     </NavLink>
   );
 };
 
 const BottomTabs = () => {
+  const unread = useSocialUnread();
+
   return (
     <nav
       className="fixed z-50 bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-border
@@ -39,7 +57,7 @@ const BottomTabs = () => {
                       lg:flex-col lg:max-w-none lg:px-3 lg:gap-2">
         <Tab to="/" label="Map" Icon={Map} />
         <Tab to="/discover" label="Discover" Icon={Compass} />
-        <Tab to="/social" label="Social" Icon={Users} />
+        <Tab to="/social" label="Social" Icon={Users} badge={unread} />
         <Tab to="/profile" label="Profile" Icon={UserRound} />
       </div>
     </nav>
