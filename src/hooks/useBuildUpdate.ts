@@ -34,23 +34,32 @@ export function useBuildUpdate(): { show: boolean; dismiss: () => void } {
       setUpdateReady(true);
     };
 
-    const onForeground = () => {
+    const onVisibilityChange = () => {
       if (document.visibilityState !== "visible") return;
       // Coming back is a fresh chance to offer it to someone who waved it away.
       setDismissed(false);
       void run();
     };
 
+    const onPageShow = (event: PageTransitionEvent) => {
+      // event.persisted is true only for a bfcache restore. Without this
+      // gate, pageshow also fires once after every normal load — including
+      // the very first one, before START_DELAY_MS has had a chance to
+      // elapse — which defeats the deferral above.
+      if (!event.persisted) return;
+      setDismissed(false);
+      void run();
+    };
+
     const timer = window.setTimeout(() => void run(), START_DELAY_MS);
-    document.addEventListener("visibilitychange", onForeground);
-    // pageshow covers a bfcache restore, which can fire no visibilitychange.
-    window.addEventListener("pageshow", onForeground);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onForeground);
-      window.removeEventListener("pageshow", onForeground);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", onPageShow);
     };
   }, []);
 
