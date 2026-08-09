@@ -42,6 +42,22 @@ export class PlanGoneError extends Error {
   }
 }
 
+/**
+ * Thrown on 409 — you already asked to join this plan and the host hasn't
+ * answered yet.
+ *
+ * This needs its own type because the generic handler says "try again", and
+ * retrying will never work: only the host can move a 'requested' row to
+ * 'going'. Telling someone to retry a permanent refusal is the same lie as an
+ * error state that renders as an empty one.
+ */
+export class PlanRequestPendingError extends Error {
+  constructor() {
+    super("Your request is waiting on the host");
+    this.name = "PlanRequestPendingError";
+  }
+}
+
 const storageKey = (token: string) => `endz:plan-guest:${token}`;
 
 export function getStoredGuestRsvp(token: string): StoredGuestRsvp | null {
@@ -95,6 +111,7 @@ export async function submitTokenRsvp(input: {
     }),
   });
   if (res.status === 410) throw new PlanGoneError();
+  if (res.status === 409) throw new PlanRequestPendingError();
   if (!res.ok) throw new Error(`rsvp failed (${res.status})`);
   const body = (await res.json()) as {
     as_user?: boolean;

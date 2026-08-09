@@ -18,7 +18,7 @@ import { summarizeLikes } from "@/lib/night/likes";
 import { tagsByPost } from "@/lib/night/tags";
 
 export default function FeedList() {
-  const { data: posts, isLoading } = useNightFeed();
+  const { data: posts, isLoading, isError } = useNightFeed();
   const { data: venues } = useVenues({});
   const { data: photos } = usePostPhotos((posts ?? []).map((p) => p.id));
   const { data: commentRows } = useCommentPreviews((posts ?? []).map((p) => p.id));
@@ -30,6 +30,22 @@ export default function FeedList() {
   const tags = tagsByPost(tagRows ?? []);
 
   if (isLoading) return null;
+
+  // A failed load must NOT render as "nobody posted". The 42P17 policy
+  // recursion that took this feed down on 2026-08-09 returned a 400, which
+  // landed here as `posts === undefined` and rendered the calm empty state
+  // below — so the outage looked exactly like a quiet night and nobody
+  // reported it. Same rule ProfilePosts.tsx already follows.
+  if (isError) {
+    return (
+      <div className="rounded-2xl border border-border bg-card/60 p-6 text-center">
+        <p className="text-sm font-medium">Couldn&apos;t load the feed.</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Check your connection and pull to refresh.
+        </p>
+      </div>
+    );
+  }
 
   if (!posts?.length) {
     // Measured 2026-08-06: 11 profiles, largest school cohort 2. This empty
