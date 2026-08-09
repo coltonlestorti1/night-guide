@@ -15,8 +15,19 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -29,9 +40,13 @@ import {
 import { FieldRow } from "./AdminKit";
 import {
   updateAdminVenue,
+  fetchVenueDeleteImpact,
+  deleteAdminVenue,
+  totalDestroyed,
   EDITABLE_FIELDS,
   type AdminVenueRow,
   type VenuePatch,
+  type VenueDeleteImpact,
 } from "../data/venues";
 import {
   uploadVenuePhoto,
@@ -53,6 +68,34 @@ type Props = {
 /** Sentinel for "no price set". Radix Select rejects an empty-string value. */
 const NO_PRICE = "__none__";
 
+/** Human labels for the impact fields that are actually destroyed (CASCADE)
+ *  by a delete — same set `totalDestroyed` sums over. Order here is the
+ *  order they read in the confirmation sentence. */
+const DESTROYED_LABELS: Array<{
+  key: keyof VenueDeleteImpact;
+  singular: string;
+  plural: string;
+}> = [
+  { key: "check_ins", singular: "check-in", plural: "check-ins" },
+  { key: "venue_ratings", singular: "rating", plural: "ratings" },
+  { key: "night_posts", singular: "night post", plural: "night posts" },
+  { key: "plans", singular: "plan", plural: "plans" },
+  { key: "venue_saves", singular: "saved spot", plural: "saved spots" },
+  { key: "venue_hour_stats", singular: "hourly stat", plural: "hourly stats" },
+];
+
+/** "14 check-ins, 3 ratings and 2 night posts" — only the non-zero counts,
+ *  in DESTROYED_LABELS order, joined with a trailing "and" rather than an
+ *  Oxford comma list. Returns "" if nothing would be destroyed. */
+function describeDestroyed(impact: VenueDeleteImpact): string {
+  const parts = DESTROYED_LABELS.filter(({ key }) => impact[key] > 0).map(
+    ({ key, singular, plural }) => `${impact[key]} ${impact[key] === 1 ? singular : plural}`,
+  );
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
 const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const [draft, setDraft] = useState<AdminVenueRow | null>(venue);
   const [saving, setSaving] = useState(false);
@@ -65,6 +108,15 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  // Delete flow. `deleteImpact` is null until the impact fetch resolves;
+  // the dialog renders its loading state off that, not off `loadingImpact`
+  // alone, so a stale impact from a previous open can never flash before
+  // the fresh fetch lands.
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteImpact, setDeleteImpact] = useState<VenueDeleteImpact | null>(null);
+  const [loadingImpact, setLoadingImpact] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
   // The venue this mounted sheet instance is currently showing, kept fresh
   // every render. VenueEditSheet is never remounted between venues — the
   // parent just swaps the `venue` prop — so an upload's async continuation
@@ -76,6 +128,9 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   useEffect(() => {
     setDraft(venue);
     setLightboxUrl(null);
+    setDeleteOpen(false);
+    setDeleteImpact(null);
+    setConfirmName("");
   }, [venue]);
 
   // Hooks above run unconditionally; everything below may read `venue`.
@@ -175,7 +230,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   // saved row is deleted — fire-and-forget, so a slow or failed delete
   // can't block the sheet from closing.
   const handleClose = () => {
-    if (uploading) return;
+    if (uploading || deleting) return;
     if (pendingUploadUrl) void deleteVenuePhotoByUrl(pendingUploadUrl);
     setPendingUploadUrl(null);
     onClose();
@@ -228,6 +283,62 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
       toast.error((e as Error).message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const destroyed = deleteImpact ? totalDestroyed(deleteImpact) : 0;
+  // Below some threshold there's nothing to lose and a single click is
+  // enough; above it, typing the exact name is required. Case-sensitive,
+  // untrimmed-on-the-right-only-by-trim(): fast enough to defeat a mis-tap,
+  // not so exact it punishes a trailing space from autocomplete.
+  const deleteConfirmed = destroyed === 0 || confirmName.trim() === venue.name.trim();
+
+  const openDeleteDialog = async () => {
+    if (saving || uploading || deleting) return;
+    const targetVenueId = venue.id;
+    setDeleteOpen(true);
+    setConfirmName("");
+    setDeleteImpact(null);
+    setLoadingImpact(true);
+    try {
+      const result = await fetchVenueDeleteImpact(targetVenueId);
+      // The sheet may have moved on to a different venue while this was in
+      // flight (same race pickPhoto guards against above) — a stale impact
+      // count is the one thing that must never land in this dialog.
+      if (latestVenueId.current !== targetVenueId) return;
+      setDeleteImpact(result);
+    } catch (e) {
+      // Verbatim, same convention as save()/pickPhoto(): a raw Postgres/RPC
+      // message is more useful here than a friendly rewrite.
+      toast.error((e as Error).message);
+      if (latestVenueId.current === targetVenueId) setDeleteOpen(false);
+    } finally {
+      if (latestVenueId.current === targetVenueId) setLoadingImpact(false);
+    }
+  };
+
+  const doDelete = async () => {
+    if (!deleteImpact || deleting || !deleteConfirmed) return;
+    const targetVenueId = venue.id;
+    const targetVenueName = venue.name;
+    setDeleting(true);
+    try {
+      await deleteAdminVenue(targetVenueId);
+      toast.success(`Deleted ${targetVenueName}.`);
+      setDeleteOpen(false);
+      // Reuse onSaved rather than adding an onDeleted prop: at every call
+      // site its actual contract is "something happened to this venue, close
+      // the sheet and refetch the list" — true of a delete exactly as much
+      // as a save. A second prop would just re-wire the identical
+      // close-and-refetch behavior under a different name.
+      onSaved();
+    } catch (e) {
+      // Verbatim: if this venue ever fulfilled a venue request, that FK is
+      // NO ACTION (not CASCADE) and blocks the delete outright. The raw
+      // Postgres message is the only thing that says so — a friendly
+      // rewrite would hide the one actionable fact.
+      toast.error((e as Error).message);
+      setDeleting(false);
     }
   };
 
@@ -454,7 +565,115 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
             onClose={() => setLightboxUrl(null)}
             alt={draft.name}
           />
+
+          <div className="border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={openDeleteDialog}
+              disabled={saving || uploading || deleting}
+              className="flex w-full items-start gap-3 rounded-lg p-2 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <Trash2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>
+                Delete venue
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                  Permanently removes this venue. Some attached activity may be
+                  destroyed along with it — the next screen shows exactly what.
+                </span>
+              </span>
+            </button>
+          </div>
         </div>
+
+        <AlertDialog
+          open={deleteOpen}
+          onOpenChange={(open) => {
+            // Same rule as the sheet's own close: a delete in flight can't be
+            // walked away from mid-request.
+            if (!open && deleting) return;
+            setDeleteOpen(open);
+          }}
+        >
+          <AlertDialogContent className="max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {venue.name}?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2 text-left">
+                  {loadingImpact || !deleteImpact ? (
+                    <p className="flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Checking what&apos;s attached to this venue…
+                    </p>
+                  ) : (
+                    <>
+                      {destroyed > 0 ? (
+                        <p>
+                          This permanently deletes{" "}
+                          <span className="font-medium text-foreground">
+                            {describeDestroyed(deleteImpact)}
+                          </span>
+                          .
+                        </p>
+                      ) : (
+                        <p>
+                          Nothing is attached to this venue — there&apos;s no user
+                          data to lose.
+                        </p>
+                      )}
+                      {deleteImpact.events > 0 && (
+                        <p>
+                          {deleteImpact.events} event
+                          {deleteImpact.events === 1 ? "" : "s"} will lose their
+                          venue but won&apos;t be deleted.
+                        </p>
+                      )}
+                      <p>This can&apos;t be undone.</p>
+                    </>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            {deleteImpact && destroyed > 0 && (
+              <div className="space-y-1.5">
+                <Label htmlFor="confirm-venue-name" className="text-xs">
+                  Type <span className="font-semibold text-foreground">{venue.name}</span> to
+                  confirm
+                </Label>
+                <Input
+                  id="confirm-venue-name"
+                  value={confirmName}
+                  onChange={(e) => setConfirmName(e.target.value)}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  disabled={deleting}
+                />
+              </div>
+            )}
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Keep venue</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  doDelete();
+                }}
+                disabled={!deleteImpact || deleting || !deleteConfirmed}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Deleting…
+                  </>
+                ) : (
+                  "Delete venue"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <div className="sticky bottom-0 flex gap-2 border-t border-border bg-background py-3">
           <Button
@@ -465,7 +684,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {dirty ? `Save ${Object.keys(changed).length} change${Object.keys(changed).length === 1 ? "" : "s"}` : "No changes"}
           </Button>
-          <Button variant="outline" onClick={handleClose} disabled={saving || uploading}>
+          <Button variant="outline" onClick={handleClose} disabled={saving || uploading || deleting}>
             Cancel
           </Button>
         </div>
