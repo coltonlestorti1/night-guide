@@ -23,14 +23,15 @@ import {
 import { cn } from "@/lib/utils";
 import { matchFileToVenues } from "../data/photoMatch";
 import { updateAdminVenue, type AdminVenueRow } from "../data/venues";
-import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
+import {
+  uploadVenuePhoto,
+  deleteVenuePhotoByUrl,
+  isAcceptedImage,
+  describeFileType,
+  PHOTO_ACCEPT_ATTR,
+} from "@/lib/venuePhotos";
 
 const UNASSIGNED = "__none__";
-
-// Mirrors the file input's `accept` attribute — a drop isn't gated by the
-// browser the way <input accept> is, so dropped files need the same
-// filtering applied by hand.
-const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 // `id` — not `fileName` — is the identity used for the React key and for
 // assign(): two dropped files can share a name ("IMG_0001.jpg" is the
@@ -195,9 +196,9 @@ const BulkPhotoPanel = ({
     }
     const dropped = Array.from(e.dataTransfer.files);
     if (dropped.length === 0) return;
-    const images = dropped.filter((f) => ACCEPTED_IMAGE_TYPES.has(f.type));
+    const images = dropped.filter((f) => isAcceptedImage(f));
     if (images.length === 0) {
-      toast.error("Only JPEG, PNG, and WebP images can be staged.");
+      toast.error(`${describeFileType(dropped[0])} isn't an image — drop photo files instead.`);
       return;
     }
     stage(images);
@@ -285,7 +286,7 @@ const BulkPhotoPanel = ({
           ref={fileInput}
           type="file"
           multiple
-          accept="image/jpeg,image/png,image/webp"
+          accept={PHOTO_ACCEPT_ATTR}
           className="hidden"
           disabled={running}
           onChange={(e) => stage(e.target.files)}

@@ -33,7 +33,13 @@ import {
   type AdminVenueRow,
   type VenuePatch,
 } from "../data/venues";
-import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
+import {
+  uploadVenuePhoto,
+  deleteVenuePhotoByUrl,
+  isAcceptedImage,
+  describeFileType,
+  PHOTO_ACCEPT_ATTR,
+} from "@/lib/venuePhotos";
 import { PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
 import PhotoLightbox from "@/components/PhotoLightbox";
 import { cn } from "@/lib/utils";
@@ -46,11 +52,6 @@ type Props = {
 
 /** Sentinel for "no price set". Radix Select rejects an empty-string value. */
 const NO_PRICE = "__none__";
-
-// Mirrors the file input's `accept` attribute — a drop isn't gated by the
-// browser the way <input accept> is, so dropped files need the same
-// filtering applied by hand. Matches BulkPhotoPanel's set.
-const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const [draft, setDraft] = useState<AdminVenueRow | null>(venue);
@@ -154,9 +155,13 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
       return;
     }
     const dropped = Array.from(e.dataTransfer.files);
-    const image = dropped.find((f) => ACCEPTED_IMAGE_TYPES.has(f.type));
+    const image = dropped.find((f) => isAcceptedImage(f));
     if (!image) {
-      toast.error("Only JPEG, PNG, and WebP images can be dropped here.");
+      toast.error(
+        dropped.length > 0
+          ? `${describeFileType(dropped[0])} isn't an image — drop a photo file instead.`
+          : "Drop a photo file to add one.",
+      );
       return;
     }
     void pickPhoto(image);
@@ -275,7 +280,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
                 <input
                   ref={fileInput}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept={PHOTO_ACCEPT_ATTR}
                   className="hidden"
                   onChange={(e) => pickPhoto(e.target.files?.[0])}
                 />

@@ -13,6 +13,66 @@ import { reencodeImage } from "@/lib/imageEncode";
 
 const BUCKET = "venue-photos";
 
+/**
+ * Extensions accepted as a fallback ONLY when the browser reported no MIME
+ * type at all (some drag sources hand over a `File` with `type === ""`).
+ * Includes heic/heif deliberately: those must still reach reencodeImage and
+ * fail there with the specific "convert to JPEG first" message, rather than
+ * being turned away here as "not an image" — an honest, actionable error
+ * beats a wrong one.
+ */
+const IMAGE_EXTENSIONS = new Set([
+  "jpg", "jpeg", "png", "webp", "avif", "gif", "bmp", "heic", "heif",
+]);
+
+/**
+ * Whether the browser can plausibly decode this as an image at all — the
+ * single gate shared by the file-picker `accept` attribute and every manual
+ * drag-and-drop filter in admin (a drop isn't gated by <input accept>, so
+ * dropped files need the same check applied by hand). Deliberately
+ * permissive rather than an allowlist of three formats: every accepted file
+ * gets canvas re-encoded to JPEG before it's ever stored (see
+ * uploadVenuePhoto) and the storage bucket only ever receives that JPEG, so
+ * the input format only has to be something the browser can decode, not
+ * something Supabase storage allows directly.
+ *
+ * Chrome decodes JPEG/PNG/WebP/AVIF/GIF this way, so all of them pass here.
+ * HEIC/HEIF (what an iPhone saves by default) reports as image/heic or
+ * image/heif and also passes this check, but createImageBitmap can't
+ * actually decode it in Chrome — that failure is caught and given a
+ * specific, actionable message in reencodeImage rather than being filtered
+ * out here, so the admin finds out why at the moment it actually fails.
+ *
+ * The MIME type is the primary signal and, when present, is the ONLY
+ * signal — a non-image type is rejected even if the filename has an image
+ * extension. The extension is a fallback used only when `type` is empty or
+ * missing, since some drag sources hand over a `File` with no MIME type at
+ * all; a genuine photo dropped that way shouldn't be refused just because
+ * the OS didn't label it.
+ */
+export function isAcceptedImage(file: { type: string; name?: string }): boolean {
+  if (file.type) return file.type.startsWith("image/");
+  const name = file.name ?? "";
+  const dot = name.lastIndexOf(".");
+  if (dot === -1) return false;
+  return IMAGE_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
+}
+
+/** The `accept` attribute for a photo `<input type="file">` — matches
+ *  isAcceptedImage's "any image the browser will try to decode" policy. */
+export const PHOTO_ACCEPT_ATTR = "image/*";
+
+/**
+ * A short human-readable label for a rejected drop, for a toast telling the
+ * admin what didn't work. Falls back to the file extension when the OS
+ * didn't supply a MIME type at all (some drags of unusual formats do this).
+ */
+export function describeFileType(file: File): string {
+  if (file.type) return file.type;
+  const dot = file.name.lastIndexOf(".");
+  return dot === -1 ? `"${file.name}"` : file.name.slice(dot);
+}
+
 /** Hero renders at 176px tall, the card thumbnail at 112px. 1200 covers
  *  retina with headroom and keeps egress cheap on the free tier. */
 export const VENUE_PHOTO_MAX_EDGE = 1200;

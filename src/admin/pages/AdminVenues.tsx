@@ -28,16 +28,18 @@ import { PageHeader, EmptyState, ErrorNote } from "../components/AdminKit";
 import { fetchAdminVenues, updateAdminVenue, type AdminVenueRow } from "../data/venues";
 import VenueEditSheet from "../components/VenueEditSheet";
 import BulkPhotoPanel from "../components/BulkPhotoPanel";
-import { uploadVenuePhoto, deleteVenuePhotoByUrl, withTimeout, UPLOAD_TIMEOUT_MS } from "@/lib/venuePhotos";
+import {
+  uploadVenuePhoto,
+  deleteVenuePhotoByUrl,
+  withTimeout,
+  UPLOAD_TIMEOUT_MS,
+  isAcceptedImage,
+  describeFileType,
+} from "@/lib/venuePhotos";
 import { PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
 import PhotoLightbox from "@/components/PhotoLightbox";
 
 type ActiveFilter = "all" | "active" | "dormant" | "no photo";
-
-// Mirrors the file input's `accept` attribute used elsewhere in admin — a
-// drop isn't gated by the browser the way <input accept> is, so dropped
-// files need the same filtering applied by hand.
-const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const AdminVenues = () => {
   const [search, setSearch] = useState("");
@@ -266,9 +268,13 @@ const AdminVenues = () => {
       return;
     }
     const dropped = Array.from(e.dataTransfer.files);
-    const image = dropped.find((f) => ACCEPTED_IMAGE_TYPES.has(f.type));
+    const image = dropped.find((f) => isAcceptedImage(f));
     if (!image) {
-      toast.error("Only JPEG, PNG, and WebP images can be dropped here.");
+      toast.error(
+        dropped.length > 0
+          ? `${describeFileType(dropped[0])} isn't an image — drop a photo file instead.`
+          : "Drop a photo file to add one.",
+      );
       return;
     }
 
