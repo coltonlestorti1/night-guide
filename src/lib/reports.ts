@@ -48,6 +48,13 @@ export type MyReport = {
   created_at: string;
 };
 
+/** Whether the report actually became a row.
+ *
+ *  `already-reported` is NOT a failure — the dedupe index is doing its job.
+ *  It exists so the UI can stop claiming a report was filed when it was not.
+ *  See the note on the 23505 branch below for when this is reachable. */
+export type ReportOutcome = "filed" | "already-reported";
+
 export async function submitReport(input: {
   reporterId: string;
   reportedUserId: string;
@@ -55,7 +62,7 @@ export async function submitReport(input: {
   details?: string;
   context?: ReportContext;
   contextId?: string | null;
-}): Promise<void> {
+}): Promise<ReportOutcome> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
   const { error } = await supabase.from("reports").insert({
@@ -66,9 +73,24 @@ export async function submitReport(input: {
     context: input.context ?? "profile",
     context_id: input.contextId ?? null,
   });
-  // 23505 = the one-open-report-per-target unique constraint. Tapping report
-  // twice is not an error worth surfacing; the user's intent already landed.
-  if (error && error.code !== "23505") throw error;
+  // 23505 = the dedupe index. Report it back rather than swallowing it.
+  //
+  // This is reachable in two very different situations and the caller has to
+  // be able to tell the user the truth in both:
+  //   - Double-tapping report on the same thing. Harmless.
+  //   - Reporting the same PROFILE a second time for a DIFFERENT reason.
+  //     Profile reports carry context_id = null, so reports_dedupe_no_ctx
+  //     allows exactly ONE per (reporter, reported, 'profile') ever.
+  //
+  // Returning void here meant the UI showed "Thanks — we review reports within
+  // 24 hours" for a row that was discarded. For a flow Apple requires to work,
+  // silently discarding a report while claiming success is the worst of the
+  // available behaviours.
+  if (error) {
+    if (error.code === "23505") return "already-reported";
+    throw error;
+  }
+  return "filed";
 }
 
 /** Reports the caller has filed, so the UI can say "Reported" rather than

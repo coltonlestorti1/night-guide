@@ -50,7 +50,7 @@ export default function ReportDialog({
     if (!myId || !reason || busy) return;
     setBusy(true);
     try {
-      await submitReport({
+      const outcome = await submitReport({
         reporterId: myId,
         reportedUserId: profile.id,
         reason,
@@ -64,7 +64,14 @@ export default function ReportDialog({
         try {
           await blockUser.mutateAsync(profile);
         } catch {
-          toast.error("Reported, but couldn't block them. Try blocking from their profile.");
+          // Must branch on outcome too. Saying "Reported" here when the row
+          // was a discarded duplicate is the same false success this fix
+          // exists to remove — just on the block-failed path.
+          toast.error(
+            outcome === "already-reported"
+              ? `You'd already reported ${name}, and we couldn't block them. Try blocking from their profile.`
+              : `Reported, but couldn't block them. Try blocking from their profile.`,
+          );
           setOpen(false);
           reset();
           return;
@@ -72,10 +79,14 @@ export default function ReportDialog({
       }
       setOpen(false);
       reset();
+      // Say what actually happened. A duplicate is not an error, but claiming
+      // a report was filed when the row was discarded is a lie in exactly the
+      // flow that must be trustworthy.
+      const blocked = alsoBlock ? ` ${name} is blocked.` : "";
       toast.success(
-        alsoBlock
-          ? `Thanks — we review reports within 24 hours. ${name} is blocked.`
-          : "Thanks — we review reports within 24 hours."
+        outcome === "already-reported"
+          ? `You've already reported ${name} — it's still under review.${blocked}`
+          : `Thanks — we review reports within 24 hours.${blocked}`,
       );
     } catch {
       toast.error("Couldn't send that report. Try again.");
