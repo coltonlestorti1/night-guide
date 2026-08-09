@@ -26,7 +26,8 @@ import { PageHeader, EmptyState, ErrorNote } from "../components/AdminKit";
 import { fetchAdminVenues, type AdminVenueRow } from "../data/venues";
 import VenueEditSheet from "../components/VenueEditSheet";
 import BulkPhotoPanel from "../components/BulkPhotoPanel";
-import { PLACEHOLDER } from "@/lib/venueImages";
+import { PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
+import PhotoLightbox from "@/components/PhotoLightbox";
 
 type ActiveFilter = "all" | "active" | "dormant" | "no photo";
 
@@ -35,6 +36,8 @@ const AdminVenues = () => {
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [editing, setEditing] = useState<AdminVenueRow | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState("");
 
   const configured = Boolean(getSupabase());
 
@@ -158,11 +161,31 @@ const AdminVenues = () => {
                       onClick={() => setEditing(v)}
                     >
                       <TableCell>
-                        <img
-                          src={v.image_url || PLACEHOLDER[v.type] || PLACEHOLDER.bar}
-                          alt=""
-                          className="h-10 w-10 rounded object-cover"
-                        />
+                        {hasRealPhoto(v) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              // The row's onClick opens the edit sheet.
+                              e.stopPropagation();
+                              setLightboxUrl(v.image_url!);
+                              setLightboxAlt(v.name);
+                            }}
+                            className="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-label={`View photo of ${v.name}`}
+                          >
+                            <img
+                              src={v.image_url!}
+                              alt=""
+                              className="h-10 w-10 rounded object-cover"
+                            />
+                          </button>
+                        ) : (
+                          <img
+                            src={PLACEHOLDER[v.type] || PLACEHOLDER.bar}
+                            alt=""
+                            className="h-10 w-10 rounded object-cover"
+                          />
+                        )}
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-1.5">
@@ -224,6 +247,7 @@ const AdminVenues = () => {
           refetch();
         }}
       />
+      <PhotoLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} alt={lightboxAlt} />
     </>
   );
 };

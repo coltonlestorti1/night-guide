@@ -11,3 +11,17 @@ export const PLACEHOLDER: Record<string, string> = {
 export function venueImageSrc(venue: Pick<Venue, "image_url" | "category">): string {
   return venue.image_url || PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
 }
+
+/**
+ * Does this venue have a real photograph, as opposed to a category placeholder?
+ *
+ * Gates every tap-to-expand affordance. Expanding a placeholder would show a
+ * large grey rectangle, and refusing to expand it is also what keeps the photo
+ * from stealing taps on rows that are already tappable.
+ *
+ * Structurally typed rather than taking a `Venue`, so the admin's
+ * `AdminVenueRow` satisfies it too.
+ */
+export function hasRealPhoto(v: { image_url?: string | null }): boolean {
+  return Boolean(v.image_url);
+}

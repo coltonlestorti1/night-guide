@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bookmark, ChevronRight } from "lucide-react";
 import { useVenues } from "@/hooks/useVenues";
 import { useSaves } from "@/hooks/useSaves";
-import { venueImageSrc, PLACEHOLDER } from "@/lib/venueImages";
+import { venueImageSrc, PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
 import { Skeleton } from "@/components/ui/skeleton";
+import PhotoLightbox from "@/components/PhotoLightbox";
 
 const EmptyState = () => (
   <div className="glass rounded-2xl p-6 text-center">
@@ -22,6 +24,8 @@ const SavedSpotsList = () => {
   const navigate = useNavigate();
   const ids = useSaves().ids;
   const { data: venues, isLoading, isError } = useVenues({});
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState("");
 
   if (ids.length === 0) return <EmptyState />;
 
@@ -53,35 +57,68 @@ const SavedSpotsList = () => {
   if (saved.length === 0) return <EmptyState />;
 
   return (
-    <ul className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">
-      {saved.map((venue) => (
-        <li key={venue.id}>
-          <button
-            type="button"
-            onClick={() => navigate(`/venue/${venue.id}`)}
-            className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <>
+      <ul className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">
+        {saved.map((venue) => (
+          <li
+            key={venue.id}
+            className="flex w-full p-0 transition-colors hover:bg-secondary/40"
           >
-            <img
-              src={venueImageSrc(venue)}
-              alt=""
-              className="h-11 w-11 rounded-xl object-cover shrink-0"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
-              }}
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">{venue.title}</span>
-              {venue.neighborhood && (
-                <span className="block truncate text-xs text-muted-foreground">
-                  {venue.neighborhood}
-                </span>
+            {hasRealPhoto(venue) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLightboxUrl(venue.image_url!);
+                  setLightboxAlt(venue.title);
+                }}
+                className="shrink-0 rounded-xl py-3 pl-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`View photo of ${venue.title}`}
+              >
+                <img
+                  src={venueImageSrc(venue)}
+                  alt=""
+                  className="h-11 w-11 rounded-xl object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
+                  }}
+                />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => navigate(`/venue/${venue.id}`)}
+              className="flex min-w-0 flex-1 items-center gap-3 py-3 pr-3 pl-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {!hasRealPhoto(venue) && (
+                <img
+                  src={venueImageSrc(venue)}
+                  alt=""
+                  className="h-11 w-11 rounded-xl object-cover shrink-0"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
+                  }}
+                />
               )}
-            </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          </button>
-        </li>
-      ))}
-    </ul>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{venue.title}</span>
+                {venue.neighborhood && (
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {venue.neighborhood}
+                  </span>
+                )}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <PhotoLightbox
+        url={lightboxUrl}
+        onClose={() => setLightboxUrl(null)}
+        alt={lightboxAlt}
+      />
+    </>
   );
 };
 
