@@ -16,35 +16,18 @@
  *    Signing happens only after RLS has already returned the row.
  */
 import { getSupabase } from "@/lib/supabase";
+import { reencodeImage } from "@/lib/imageEncode";
 
 const BUCKET = "night-photos";
-const MAX_EDGE = 1600;
 const SIGNED_TTL_SECONDS = 60 * 60;
 export const MAX_PHOTOS_PER_POST = 3;
 
 /**
  * Downscale to ≤1600px JPEG. Larger than an avatar because a feed photo is
  * looked at rather than glanced at, small enough to stay well under the
- * bucket's 5 MB cap.
+ * bucket's 5 MB cap. The redraw is also the EXIF strip — see imageEncode.ts.
  */
-async function reencode(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("Couldn't process that image."))),
-      "image/jpeg",
-      0.85,
-    ),
-  );
-}
+const reencode = (file: File) => reencodeImage(file, { maxEdge: 1600 });
 
 /** Upload one photo and return its storage path (never a URL — see above). */
 export async function uploadNightPhoto(file: File, userId: string): Promise<string> {

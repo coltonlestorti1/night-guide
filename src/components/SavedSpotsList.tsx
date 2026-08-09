@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Bookmark, ChevronRight } from "lucide-react";
 import { useVenues } from "@/hooks/useVenues";
 import { useSaves } from "@/hooks/useSaves";
-import { venueImageSrc } from "@/lib/venueImages";
+import { venueImageSrc, PLACEHOLDER } from "@/lib/venueImages";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const EmptyState = () => (
@@ -65,6 +65,9 @@ const SavedSpotsList = () => {
               src={venueImageSrc(venue)}
               alt=""
               className="h-11 w-11 rounded-xl object-cover shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
+              }}
             />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{venue.title}</span>

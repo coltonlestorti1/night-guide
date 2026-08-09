@@ -5,9 +5,9 @@
  * clobber each other, and a save that changes nothing is a no-op rather than a
  * full-row rewrite.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ImagePlus, Trash2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -33,6 +33,8 @@ import {
   type AdminVenueRow,
   type VenuePatch,
 } from "../data/venues";
+import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
+import { PLACEHOLDER } from "@/lib/venueImages";
 
 type Props = {
   venue: AdminVenueRow | null;
@@ -46,13 +48,82 @@ const NO_PRICE = "__none__";
 const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   const [draft, setDraft] = useState<AdminVenueRow | null>(venue);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  // A photo uploaded during this open session that hasn't yet been committed
+  // by a successful save. Cleaned up on close (Cancel/X) or, if it wasn't
+  // the value that ended up saved, right after save — so a Cancel, a second
+  // pick before saving, or a pick-then-Remove never orphans a bucket file.
+  const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
+  // The venue this mounted sheet instance is currently showing, kept fresh
+  // every render. VenueEditSheet is never remounted between venues — the
+  // parent just swaps the `venue` prop — so an upload's async continuation
+  // needs a way to notice the sheet moved on to someone else while it was
+  // in flight. A plain closure over `venue` can't do that; a ref that's
+  // reassigned on every render can.
+  const latestVenueId = useRef<string | null>(null);
 
   useEffect(() => setDraft(venue), [venue]);
 
+  // Hooks above run unconditionally; everything below may read `venue`.
   if (!venue || !draft) return null;
+
+  latestVenueId.current = venue.id;
+
+  // The photo the venue had when the sheet opened. If the draft now points
+  // somewhere else, this file is superseded and gets deleted after a
+  // successful save — never before.
+  const supersededUrl = venue.image_url;
 
   const set = <K extends keyof AdminVenueRow>(key: K, value: AdminVenueRow[K]) =>
     setDraft((d) => (d ? { ...d, [key]: value } : d));
+
+  const pickPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    const pickedForVenueId = venue.id;
+    setUploading(true);
+    try {
+      const url = await uploadVenuePhoto(file, pickedForVenueId);
+      if (latestVenueId.current !== pickedForVenueId) {
+        // The sheet has since moved on to a different venue. Closing
+        // mid-upload is blocked below, so this needs another path to have
+        // happened — treat it as possible anyway: the upload belongs to
+        // nobody's draft now, so delete it and touch no state, rather than
+        // writing venue A's photo into venue B's draft via the functional
+        // setDraft updater below (which reads whatever draft is current,
+        // not whatever draft was current when this closure was created).
+        void deleteVenuePhotoByUrl(url);
+        return;
+      }
+      // Picking again before ever saving orphans the previous pick — clean
+      // it up now rather than waiting for close. Best-effort; never awaited
+      // so a slow delete can't stall the new upload from landing.
+      if (pendingUploadUrl) void deleteVenuePhotoByUrl(pendingUploadUrl);
+      setPendingUploadUrl(url);
+      set("image_url", url);
+    } catch (e) {
+      // Verbatim: while the bucket is missing, the Postgres/storage message
+      // names the real cause and a friendly rewrite would hide it.
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
+
+  // Cancel and the sheet's own close (X / Escape / overlay click) both land
+  // here. Blocked while an upload is in flight — closing mid-upload is
+  // exactly what lets a later-resolving upload get attributed to whatever
+  // venue the admin opens next, so it's refused outright rather than raced
+  // against. Any photo uploaded this session that never made it into a
+  // saved row is deleted — fire-and-forget, so a slow or failed delete
+  // can't block the sheet from closing.
+  const handleClose = () => {
+    if (uploading) return;
+    if (pendingUploadUrl) void deleteVenuePhotoByUrl(pendingUploadUrl);
+    setPendingUploadUrl(null);
+    onClose();
+  };
 
   const changed: VenuePatch = {};
   for (const field of EDITABLE_FIELDS) {
@@ -73,7 +144,27 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
     setSaving(true);
     try {
       await updateAdminVenue(venue.id, changed);
+      // Only now that the row points at the new URL. The reverse order 404s
+      // the live photo if the write fails.
+      let staleFileRemains = false;
+      if (supersededUrl && supersededUrl !== draft.image_url) {
+        if (!(await deleteVenuePhotoByUrl(supersededUrl))) staleFileRemains = true;
+      }
+      // A photo uploaded this session that isn't the value just saved (e.g.
+      // picked, then Removed, before hitting Save) is orphaned the same way.
+      if (pendingUploadUrl && pendingUploadUrl !== draft.image_url) {
+        if (!(await deleteVenuePhotoByUrl(pendingUploadUrl))) staleFileRemains = true;
+      }
+      setPendingUploadUrl(null);
       toast.success(`Saved ${draft.name}.`);
+      // Separate toast, never folded into the success one above: the save
+      // itself worked, but the old photo file is still sitting in the
+      // public bucket and may still be reachable at its old URL.
+      if (staleFileRemains) {
+        toast.warning(
+          "The old photo could not be deleted and may still be publicly reachable at its old URL.",
+        );
+      }
       onSaved();
     } catch (e) {
       // Verbatim, not a friendly rewrite: the likely cause is the missing
@@ -85,7 +176,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   };
 
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
+    <Sheet open onOpenChange={(open) => !open && handleClose()}>
       <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-lg">
         <SheetHeader className="pb-4">
           <SheetTitle>{venue.name}</SheetTitle>
@@ -96,6 +187,70 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
         </SheetHeader>
 
         <div className="flex-1 space-y-4 pb-4">
+          <FieldRow
+            label="Photo"
+            hint="Venue-owned photos only (their Instagram or site). Not Google Maps, not press sites."
+          >
+            <div className="flex gap-3">
+              <img
+                src={draft.image_url || PLACEHOLDER[draft.type] || PLACEHOLDER.bar}
+                alt=""
+                className="h-20 w-20 flex-shrink-0 rounded-lg border border-border object-cover"
+              />
+              <div className="flex flex-col justify-center gap-2">
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => pickPhoto(e.target.files?.[0])}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => fileInput.current?.click()}
+                >
+                  {uploading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="mr-2 h-4 w-4" />
+                  )}
+                  {draft.image_url ? "Replace" : "Add photo"}
+                </Button>
+                {draft.image_url && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => {
+                      // Clear both — leaving image_source behind points
+                      // provenance at a photo that no longer exists.
+                      set("image_url", null);
+                      set("image_source", null);
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+          </FieldRow>
+
+          <FieldRow
+            label="Photo source"
+            hint="Where it came from. Makes a takedown a 30-second edit."
+          >
+            <Input
+              value={draft.image_source ?? ""}
+              onChange={(e) => set("image_source", e.target.value)}
+              placeholder="instagram.com/venuehandle"
+            />
+          </FieldRow>
+
           <FieldRow label="Name">
             <Input value={draft.name} onChange={(e) => set("name", e.target.value)} />
           </FieldRow>
@@ -219,13 +374,13 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
         <div className="sticky bottom-0 flex gap-2 border-t border-border bg-background py-3">
           <Button
             onClick={save}
-            disabled={!dirty || saving || coordsInvalid}
+            disabled={!dirty || saving || uploading || coordsInvalid}
             className="flex-1"
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {dirty ? `Save ${Object.keys(changed).length} change${Object.keys(changed).length === 1 ? "" : "s"}` : "No changes"}
           </Button>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+          <Button variant="outline" onClick={handleClose} disabled={saving || uploading}>
             Cancel
           </Button>
         </div>

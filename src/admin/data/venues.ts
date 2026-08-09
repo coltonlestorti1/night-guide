@@ -26,6 +26,8 @@ export type AdminVenueRow = {
   lat: number;
   lng: number;
   neighborhood: string | null;
+  image_url: string | null;
+  image_source: string | null;
   is_college_scene: boolean;
   has_rooftop: boolean;
   has_outdoor: boolean;
@@ -44,6 +46,8 @@ export const EDITABLE_FIELDS = [
   "lat",
   "lng",
   "neighborhood",
+  "image_url",
+  "image_source",
   "is_college_scene",
   "has_rooftop",
   "has_outdoor",
@@ -67,6 +71,8 @@ export function normalizeRow(row: Record<string, unknown>): AdminVenueRow {
     lat: Number(row.lat ?? 0),
     lng: Number(row.lng ?? 0),
     neighborhood: (row.neighborhood as string | null) ?? null,
+    image_url: (row.image_url as string | null) ?? null,
+    image_source: (row.image_source as string | null) ?? null,
     is_college_scene: Boolean(row.is_college_scene),
     has_rooftop: Boolean(row.has_rooftop),
     has_outdoor: Boolean(row.has_outdoor),
