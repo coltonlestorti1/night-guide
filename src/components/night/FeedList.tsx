@@ -6,11 +6,14 @@
  * would be a second copy of the policy that can silently disagree with it.
  */
 import { useNightFeed } from "@/hooks/useNightFeed";
+import { useAuthStore } from "@/store/auth";
 import { useVenues } from "@/hooks/useVenues";
 import PostCard from "@/components/night/PostCard";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
 import { useCommentPreviews } from "@/hooks/useComments";
+import { usePostLikes } from "@/hooks/useLikes";
 import { reduceCommentPreviews } from "@/lib/night/comments";
+import { summarizeLikes } from "@/lib/night/likes";
 
 export default function FeedList() {
   const { data: posts, isLoading } = useNightFeed();
@@ -18,6 +21,9 @@ export default function FeedList() {
   const { data: photos } = usePostPhotos((posts ?? []).map((p) => p.id));
   const { data: commentRows } = useCommentPreviews((posts ?? []).map((p) => p.id));
   const previews = reduceCommentPreviews(commentRows ?? []);
+  const { data: likeRows } = usePostLikes((posts ?? []).map((p) => p.id));
+  const myId = useAuthStore((s) => s.session?.user.id);
+  const likes = summarizeLikes(likeRows ?? [], myId);
 
   if (isLoading) return null;
 
@@ -44,6 +50,7 @@ export default function FeedList() {
           venue={venues?.find((v) => v.id === post.venueId)}
           photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
           commentPreview={previews.get(post.id)}
+          likes={likes.get(post.id)}
         />
       ))}
     </div>

@@ -18,7 +18,9 @@ import type { FeedPost } from "@/lib/night/posts";
 import PostCard from "@/components/night/PostCard";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
 import { useCommentPreviews } from "@/hooks/useComments";
+import { usePostLikes } from "@/hooks/useLikes";
 import { reduceCommentPreviews } from "@/lib/night/comments";
+import { summarizeLikes } from "@/lib/night/likes";
 import { listMyPosts } from "@/lib/night/posts";
 
 export default function MyActivity({ limit = 20 }: { limit?: number }) {
@@ -38,6 +40,8 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
   // comments" and their own Activity tab shows "Add a comment".
   const { data: commentRows } = useCommentPreviews((posts ?? []).map((p) => p.id));
   const previews = reduceCommentPreviews(commentRows ?? []);
+  const { data: likeRows } = usePostLikes((posts ?? []).map((p) => p.id));
+  const likes = summarizeLikes(likeRows ?? [], userId);
 
   if (isLoading) return null;
 
@@ -62,6 +66,7 @@ export default function MyActivity({ limit = 20 }: { limit?: number }) {
           venue={venues?.find((v) => v.id === post.venueId)}
           photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
           commentPreview={previews.get(post.id)}
+          likes={likes.get(post.id)}
         />
       ))}
     </div>

@@ -32,9 +32,11 @@ import { nightLabel } from "@/lib/night/nightLabel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import CommentPreview from "@/components/night/CommentPreview";
+import LikeButton from "@/components/night/LikeButton";
 import CommentSheet from "@/components/night/CommentSheet";
 import PublishSheet from "@/components/night/PublishSheet";
 import type { CommentPreview as CommentPreviewData } from "@/lib/night/comments";
+import type { LikeSummary } from "@/lib/night/likes";
 import { useCanCommentOn } from "@/hooks/useComments";
 
 /** Beli-style ring: warmer as the score climbs, muted when there is none. */
@@ -64,12 +66,14 @@ export default function PostCard({
   venue,
   photos = [],
   commentPreview,
+  likes,
 }: {
   post: FeedPost;
   venue?: Venue;
   /** Signed URLs for this post, already filtered by the caller. */
   photos?: { id: string; url: string | null }[];
   commentPreview?: CommentPreviewData;
+  likes?: LikeSummary;
 }) {
   const myId = useAuthStore((s) => s.session?.user.id);
   const remove = useDeletePost();
@@ -203,7 +207,11 @@ export default function PostCard({
         </div>
       )}
 
-      <p className="mt-3 text-xs text-muted-foreground">{nightLabel(post.nightDate)}</p>
+      {/* Night label and the heart share a row — the card is already tall. */}
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">{nightLabel(post.nightDate)}</p>
+        <LikeButton postId={post.id} summary={likes} />
+      </div>
 
       <CommentPreview
         preview={commentPreview}
