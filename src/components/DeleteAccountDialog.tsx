@@ -24,6 +24,9 @@ import { Label } from "@/components/ui/label";
 
 export default function DeleteAccountDialog({ username }: { username: string }) {
   const signOut = useAuthStore((s) => s.signOut);
+  // Needed to clear the user's storage folders before the RPC kills the JWT —
+  // see deleteOwnAccount.
+  const userId = useAuthStore((s) => s.session?.user.id);
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -31,10 +34,10 @@ export default function DeleteAccountDialog({ username }: { username: string }) 
   const confirmed = typed.trim().toLowerCase() === username.trim().toLowerCase();
 
   const doDelete = async () => {
-    if (!confirmed || busy) return;
+    if (!confirmed || busy || !userId) return;
     setBusy(true);
     try {
-      await deleteOwnAccount();
+      await deleteOwnAccount(userId);
       // The session belongs to a user who no longer exists — sign out before
       // anything can refetch against it. Navigation follows from auth state.
       await signOut();

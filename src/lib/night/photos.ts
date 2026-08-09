@@ -99,6 +99,78 @@ export async function listPhotosForPosts(postIds: string[]): Promise<PostPhoto[]
   }));
 }
 
+/**
+ * Does this storage path belong to this user?
+ *
+ * The same rule the INSERT policy enforces in SQL
+ * (`split_part(storage_path, '/', 1) = auth.uid()`), stated once here so the
+ * client and the database cannot drift. The policy is the boundary; this is
+ * only for catching mistakes before a round trip.
+ *
+ * Why the policy exists at all: the unique index on storage_path stops you
+ * re-using another user's path, but DELETING A POST FREES THAT INDEX ENTRY.
+ * With files retained, a friend who read the path out of the feed could attach
+ * a deleted friends-only photo to their own 'everyone' post and widen it to
+ * the whole app.
+ */
+export function ownsPhotoPath(storagePath: string, userId: string): boolean {
+  if (!userId) return false;
+  return storagePath.split("/")[0] === userId;
+}
+
+/**
+ * Delete files from the bucket and report what did NOT go.
+ *
+ * Returns the paths still present. Callers decide how loud to be: a failure
+ * during account deletion is swallowed (you do not get to keep someone's
+ * account open because S3 hiccuped), while a failure in the composer is worth
+ * a retry. Either way the admin sweep is the backstop — see
+ * list_orphaned_storage() in scripts/2026-08-09-deletion-retention-ddl.sql.
+ *
+ * The old code ignored this result entirely, so a failed delete was silent.
+ */
+export async function removeStoredPhotos(paths: string[]): Promise<string[]> {
+  const supabase = getSupabase();
+  if (!supabase || paths.length === 0) return [];
+
+  const { data, error } = await supabase.storage.from(BUCKET).remove(paths);
+  // An error covers the whole call, so nothing is confirmed gone.
+  if (error) return paths;
+
+  const removed = new Set((data ?? []).map((o) => o.name));
+  return paths.filter((p) => !removed.has(p));
+}
+
+/** The storage paths attached to a post, for deleting the files behind it. */
+export async function listPhotoPathsForPost(postId: string): Promise<string[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("night_post_photos")
+    .select("storage_path")
+    .eq("post_id", postId);
+  if (error) throw error;
+  return (data ?? []).map((r) => (r as { storage_path: string }).storage_path);
+}
+
+/**
+ * Every night photo the user owns, by folder.
+ *
+ * Used on account deletion, where the post rows are about to cascade away and
+ * take the only record of which paths existed with them. Reads the FOLDER
+ * rather than the table for exactly that reason — it also catches files
+ * stranded by an abandoned composer, which never had a row at all.
+ */
+export async function listAllPhotoPathsForUser(userId: string): Promise<string[]> {
+  const supabase = getSupabase();
+  if (!supabase || !userId) return [];
+
+  const { data, error } = await supabase.storage.from(BUCKET).list(userId, { limit: 1000 });
+  if (error) return [];
+  return (data ?? []).filter((f) => f.id !== null).map((f) => `${userId}/${f.name}`);
+}
+
 /** Remove a photo: the row first, then the file. */
 export async function deleteNightPhoto(photoId: string, storagePath: string): Promise<void> {
   const supabase = getSupabase();
@@ -109,5 +181,5 @@ export async function deleteNightPhoto(photoId: string, storagePath: string): Pr
   // Row first, file second: a deleted row with an orphaned file is invisible
   // and cheap, whereas a deleted file with a live row renders as a broken image
   // for everyone who can see the post.
-  await supabase.storage.from(BUCKET).remove([storagePath]);
+  await removeStoredPhotos([storagePath]);
 }

@@ -13,6 +13,7 @@
 import { getSupabase } from "@/lib/supabase";
 import type { Audience } from "@/lib/night/audience";
 import type { FriendProfile } from "@/lib/friends";
+import { listPhotoPathsForPost, removeStoredPhotos } from "@/lib/night/photos";
 
 const AUTHOR_COLS = "id, username, display_name, avatar_url";
 
@@ -158,8 +159,20 @@ export async function publishPost(input: {
 export async function deletePost(postId: string): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
+
+  // Read the paths BEFORE deleting. night_post_photos cascades off night_posts,
+  // so the moment the post is gone there is no record of which files belonged
+  // to it and they are stranded in the bucket permanently.
+  const paths = await listPhotoPathsForPost(postId);
+
   const { error } = await supabase.from("night_posts").delete().eq("id", postId);
   if (error) throw error;
+
+  // Files last, and a failure here does not fail the delete: a retained file
+  // with no row is invisible and the admin sweep collects it, whereas a
+  // deleted file with a live row is a broken image for everyone who can see
+  // the post.
+  if (paths.length) await removeStoredPhotos(paths);
 }
 
 

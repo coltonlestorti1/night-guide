@@ -25,6 +25,28 @@ export async function uploadAvatar(file: File, userId: string): Promise<string> 
 }
 
 /**
+ * Best-effort removal of EVERY avatar the user has, for account deletion.
+ *
+ * The avatars bucket is PUBLIC, so a file left behind here is not a private
+ * orphan like a night photo — it stays served at a stable public URL forever,
+ * while the confirm dialog told the user their photo was removed. That made
+ * DELETION_REMOVES a false statement until this existed.
+ *
+ * Must run BEFORE delete_own_account(), which invalidates the JWT this needs.
+ */
+export async function removeAllAvatars(userId: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase || !userId) return;
+  try {
+    const { data: files } = await supabase.storage.from("avatars").list(userId);
+    const paths = (files ?? []).filter((f) => f.id !== null).map((f) => `${userId}/${f.name}`);
+    if (paths.length) await supabase.storage.from("avatars").remove(paths);
+  } catch {
+    /* best-effort only — see deleteOwnAccount */
+  }
+}
+
+/**
  * Best-effort removal of every avatar file except the one keepUrl points at.
  * Call fire-and-forget AFTER profiles.avatar_url has been updated — never
  * before, or a failed profile write would leave the account pointing at a
