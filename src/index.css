@@ -92,6 +92,20 @@
     border-top-color: hsl(0 0% 100% / 0.95);
     box-shadow: 0 8px 30px -14px hsl(var(--shadow-color) / 0.35);
   }
+  /* Sheet heights for drawers that contain a TEXT INPUT.
+     iOS does not shrink `vh` when the software keyboard opens: the sheet stays
+     88% of the FULL screen while the visible area roughly halves, so its bottom
+     sits under the keyboard and the page becomes pannable — you can drag the
+     whole thing around. `dvh` tracks the keyboard. The `vh` line is the
+     fallback: a browser that cannot parse `dvh` discards that declaration and
+     keeps the one above it, so there is never an uncapped sheet.
+
+     Only used by the input-bearing sheets. Plans / Friends / Plan-detail open
+     no keyboard, so they keep plain vh and stay untouched. */
+  .sheet-h-88 { max-height: 88vh; max-height: 88dvh; }
+  .sheet-h-85 { max-height: 85vh; max-height: 85dvh; }
+  .sheet-h-80 { max-height: 80vh; max-height: 80dvh; }
+
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }

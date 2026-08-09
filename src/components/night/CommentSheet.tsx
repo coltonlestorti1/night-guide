@@ -115,7 +115,7 @@ export default function CommentSheet({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="sheet-h-85">
         <DrawerTitle className="px-4 pt-2 text-base font-semibold">Comments</DrawerTitle>
         <DrawerDescription className="sr-only">
           The comment thread on {authorName}'s post.
