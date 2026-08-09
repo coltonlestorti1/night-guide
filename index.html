@@ -38,6 +38,63 @@
   </head>
 
   <body>
+    <!-- Static splash, painted from HTML before any JavaScript runs.
+         #root is empty until React mounts AND the two web fonts resolve, which
+         on a cold 5G load left a blank WHITE screen for seconds — Colton caught
+         it on video 2026-08-08. The Suspense fallback inside App.tsx cannot
+         help: it only exists once React is already running.
+
+         Background is the app's own --background (#F7F7F4) rather than the dark
+         theme-color, so there is no colour flash when the real UI takes over.
+         Removed by src/main.tsx after the first render. -->
+    <div id="endz-splash" aria-hidden="true">
+      <div class="endz-splash-mark">
+        <span class="endz-splash-pulse"></span>
+        <span class="endz-splash-dot"></span>
+      </div>
+      <p class="endz-splash-word">ENDZ</p>
+    </div>
+    <style>
+      #endz-splash {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 18px;
+        background: #F7F7F4;
+        transition: opacity 220ms ease;
+      }
+      #endz-splash.endz-splash-out { opacity: 0; pointer-events: none; }
+      .endz-splash-mark {
+        position: relative; width: 14px; height: 14px;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .endz-splash-dot {
+        width: 14px; height: 14px; border-radius: 999px;
+        background: #6C45FF;
+      }
+      .endz-splash-pulse {
+        position: absolute; width: 14px; height: 14px; border-radius: 999px;
+        background: #6C45FF; opacity: 0.35;
+        animation: endz-splash-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      /* Deliberately the same motion as the live "someone is out" dot on the
+         map, so the first thing you see is the app's own visual language. */
+      @keyframes endz-splash-pulse {
+        0%   { transform: scale(0.85); opacity: 0.35; }
+        70%  { transform: scale(2.6);  opacity: 0; }
+        100% { transform: scale(2.6);  opacity: 0; }
+      }
+      .endz-splash-word {
+        margin: 0;
+        font-family: "Space Grotesk Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+        font-size: 13px; font-weight: 700;
+        letter-spacing: 0.34em; text-indent: 0.34em;
+        color: #707070;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .endz-splash-pulse { animation: none; opacity: 0.25; }
+        #endz-splash { transition: none; }
+      }
+    </style>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

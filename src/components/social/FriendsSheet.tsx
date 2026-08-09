@@ -51,7 +51,7 @@ export default function FriendsSheet({
           Requests, finding people, your friends and blocked accounts.
         </DrawerDescription>
 
-        <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full overflow-y-auto">
+        <div className="px-4 pt-2 pb-8 max-w-lg mx-auto w-full overflow-y-auto overflow-x-hidden">
           {(incoming.length > 0 || outgoing.length > 0) && (
             <SectionCard
               title="Requests"
