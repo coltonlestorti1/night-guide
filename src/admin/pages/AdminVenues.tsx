@@ -294,7 +294,7 @@ const AdminVenues = () => {
           </div>
 
           {bulkOpen && (
-            <BulkPhotoPanel venues={data ?? []} onDone={() => refetch()} />
+            <BulkPhotoPanel venues={data ?? []} onDone={() => safeRefetch()} />
           )}
 
           {isLoading ? (
@@ -425,7 +425,7 @@ const AdminVenues = () => {
         onClose={() => setEditing(null)}
         onSaved={() => {
           setEditing(null);
-          refetch();
+          safeRefetch();
         }}
       />
       <PhotoLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} alt={lightboxAlt} />
