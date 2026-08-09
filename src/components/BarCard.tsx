@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronRight, Bookmark, Flame, Star, Building2, Trees } from "lucide-react";
 import { hasOutdoorSeating, hasRooftop, outdoorKind } from "@/lib/venueTraits";
 import { Venue } from "@/data/types";
@@ -7,14 +8,16 @@ import { useVenueActivity } from "@/hooks/useCheckIns";
 import { getEnrichment, computeOpenState } from "@/data/enrichment";
 import { useLocationStore } from "@/store/location";
 import { haversineMiles, formatMiles } from "@/lib/distance";
-import { PLACEHOLDER, venueImageSrc } from "@/lib/venueImages";
+import { PLACEHOLDER, venueImageSrc, hasRealPhoto } from "@/lib/venueImages";
 import { cn } from "@/lib/utils";
+import PhotoLightbox from "@/components/PhotoLightbox";
 
 const crowdLabel: Record<string, string> = { low: "Chill", medium: "Lively", high: "Packed" };
 const crowdDot: Record<string, string> = { low: "bg-emerald-400", medium: "bg-amber-400", high: "bg-rose-500" };
 
 export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: () => void }) {
   const imgSrc = venueImageSrc(venue);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const { ids, toggle } = useSaves();
   const saved = ids.includes(venue.id);
   const { data: friendSaves } = useFriendSaves();
@@ -38,13 +41,35 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
       aria-label={`${venue.title} details`}
     >
       <div className="relative w-28 h-28 flex-shrink-0 bg-secondary">
-        <img
-          src={imgSrc}
-          alt={venue.title}
-          loading="lazy"
-          className="w-full h-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar; }}
-        />
+        {hasRealPhoto(venue) ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              // Without this the tap bubbles to the card root and opens the
+              // venue instead of the photo.
+              e.stopPropagation();
+              setLightboxUrl(venue.image_url!);
+            }}
+            className="block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`View photo of ${venue.title}`}
+          >
+            <img
+              src={imgSrc}
+              alt={venue.title}
+              loading="lazy"
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar; }}
+            />
+          </button>
+        ) : (
+          <img
+            src={imgSrc}
+            alt={venue.title}
+            loading="lazy"
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar; }}
+          />
+        )}
         {venue.hot_tonight && (
           <span className="absolute top-1.5 left-1.5 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-rose-500/95 text-white shadow">
             <Flame className="h-3 w-3" /> Hot
@@ -110,6 +135,11 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
         </button>
         <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
       </div>
+      <PhotoLightbox
+        url={lightboxUrl}
+        onClose={() => setLightboxUrl(null)}
+        alt={venue.title}
+      />
     </div>
   );
 }
