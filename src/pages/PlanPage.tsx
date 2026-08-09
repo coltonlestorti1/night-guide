@@ -24,6 +24,7 @@ import { directionsUrl } from "@/lib/directions";
 import { PlanRsvpValue } from "@/lib/plans";
 import {
   PlanGoneError,
+  PlanRequestPendingError,
   TokenPlanView,
   fetchPlanByToken,
   getStoredGuestRsvp,
@@ -127,6 +128,10 @@ const PlanPage = () => {
       if (e instanceof PlanGoneError) {
         toast.error("This plan is over");
         queryClient.invalidateQueries({ queryKey: ["plan-token", token] });
+      } else if (e instanceof PlanRequestPendingError) {
+        // Deliberately NOT "try again" — only the host can approve a join
+        // request, so retrying is guaranteed to fail again.
+        toast.error("You've already asked to join — waiting on the host");
       } else {
         toast.error("Couldn't save that — try again");
       }

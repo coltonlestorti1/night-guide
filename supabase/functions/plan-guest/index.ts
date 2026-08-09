@@ -164,13 +164,46 @@ async function handlePost(req: Request): Promise<Response> {
   const userId = await userIdFromAuth(req);
   if (userId) {
     // Signed-in user arriving via link — RSVP as themselves (acceptance #3).
-    const { error } = await supabase
+    //
+    // ⚠️ A PENDING 'requested' ROW IS THE HOST'S DECISION, NOT THE CALLER'S.
+    // The database refuses requested -> going from the person who asked, in TWO
+    // places: the "users update own rsvp" policy (prev.rsvp is distinct from
+    // 'requested') and set_my_rsvp(), which raises 42501. Both are RLS-level.
+    // THIS FUNCTION HOLDS THE SERVICE ROLE, so neither applies to it, and the
+    // previous `upsert(..., onConflict)` — an INSERT ... ON CONFLICT DO UPDATE —
+    // overwrote rsvp unconditionally. Anyone who had asked to join an opted-in
+    // map plan and also had the share link could approve themselves.
+    // is_plan_member() deliberately excludes 'requested', so this is exactly the
+    // line between "pending" and "member".
+    //
+    // Written as a guarded UPDATE then an INSERT rather than read-then-upsert:
+    // both statements are evaluated by Postgres, so there is no window between
+    // checking and writing. A read-then-upsert would still lose a race against
+    // the caller creating their own 'requested' row through the normal RLS path.
+    const updated = await supabase
       .from("plan_rsvps")
-      .upsert(
-        { plan_id: plan.id, user_id: userId, rsvp },
-        { onConflict: "plan_id,user_id" }
-      );
-    if (error) return json(500, { error: "Something broke" });
+      .update({ rsvp })
+      .eq("plan_id", plan.id)
+      .eq("user_id", userId)
+      // `rsvp is distinct from 'requested'`, spelled out. A plain neq would be
+      // NULL-unsafe and silently skip invited rows, whose rsvp is null.
+      .or("rsvp.is.null,rsvp.in.(going,maybe,no)")
+      .select("id");
+    if (updated.error) return json(500, { error: "Something broke" });
+    if (updated.data && updated.data.length > 0) return json(201, { as_user: true });
+
+    // Nothing updated: either there is no row yet, or there is one and it is
+    // 'requested'. unique (plan_id, user_id) tells the two apart.
+    const inserted = await supabase
+      .from("plan_rsvps")
+      .insert({ plan_id: plan.id, user_id: userId, rsvp })
+      .select("id");
+    if (inserted.error) {
+      if ((inserted.error as { code?: string }).code === "23505") {
+        return json(409, { error: "Your request is waiting on the host" });
+      }
+      return json(500, { error: "Something broke" });
+    }
     return json(201, { as_user: true });
   }
 
