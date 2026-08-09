@@ -93,16 +93,18 @@ const SavedSpotsList = () => {
             <button
               type="button"
               onClick={() => navigate(`/venue/${venue.id}`)}
-              className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span className="block truncate text-sm font-semibold">{venue.title}</span>
-              {venue.neighborhood && (
-                <span className="block truncate text-xs text-muted-foreground">
-                  {venue.neighborhood}
-                </span>
-              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{venue.title}</span>
+                {venue.neighborhood && (
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {venue.neighborhood}
+                  </span>
+                )}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             </button>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           </li>
         ))}
       </ul>
