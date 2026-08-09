@@ -20,6 +20,23 @@ const AUTHOR_COLS = "id, username, display_name, avatar_url";
 const POST_SELECT = `id, venue_id, night_date, note, visibility, score, created_at,
    author:profiles!night_posts_user_id_fkey(${AUTHOR_COLS})`;
 
+/**
+ * The same columns as POST_SELECT plus the tag join, written out rather than
+ * composed from it.
+ *
+ * This duplication is deliberate and load-bearing. The schema drift guard
+ * resolves ONE level of interpolation, so `${AUTHOR_COLS}` is fine but
+ * `${POST_SELECT}` — which itself contains an interpolation — comes back as
+ * "unresolved interpolation" and the whole query is silently DROPPED from
+ * drift checking. A query the guard skips is exactly the one that breaks in
+ * production after a column rename.
+ *
+ * If you add a column to POST_SELECT, add it here too.
+ */
+const PROFILE_TAGGED_SELECT = `id, venue_id, night_date, note, visibility, score, created_at,
+   author:profiles!night_posts_user_id_fkey(${AUTHOR_COLS}),
+   tag:night_post_tags!inner(tagged_user_id, state)`;
+
 export type FeedPost = {
   id: string;
   venueId: string;
@@ -174,7 +191,7 @@ export async function listProfilePosts(profileUserId: string, limit = 20): Promi
     // tag embed rather than only the tagged ones.
     supabase
       .from("night_posts")
-      .select(`${POST_SELECT}, tag:night_post_tags!inner(tagged_user_id, state)`)
+      .select(PROFILE_TAGGED_SELECT)
       .eq("tag.tagged_user_id", profileUserId)
       .in("tag.state", ["tag", "collab"])
       .order("night_date", { ascending: false })
