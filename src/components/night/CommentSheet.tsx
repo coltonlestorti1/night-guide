@@ -86,7 +86,7 @@ export default function CommentSheet({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
-  const { data: comments, isLoading } = useCommentThread(open ? post.id : null);
+  const { data: comments, isLoading, isError } = useCommentThread(open ? post.id : null);
   const canComment = useCanCommentOn(post.author.id);
   const add = useAddComment();
   const remove = useDeleteComment();
@@ -124,6 +124,12 @@ export default function CommentSheet({
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3">
           {isLoading ? (
             <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+          ) : isError ? (
+            // "No comments yet." on a failed load tells the author nobody
+            // replied. Wrong, and unrecoverable-looking — they close the sheet.
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Couldn&apos;t load the comments.
+            </p>
           ) : comments?.length ? (
             <ul className="space-y-4">
               {comments.map((c) => (
