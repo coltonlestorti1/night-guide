@@ -45,6 +45,40 @@ re-fetch and re-verify, never to force.
 Note `~/Documents/night-guide-b` is a separate long-lived worktree
 (`wt/session-b`) driven by another session.
 
+## Mobile bugs: ask for a screen recording FIRST
+
+**Before investigating any bug Colton reports on his phone, ask for a screen
+recording.** Do not start measuring in Chrome. This is not a nicety — the
+tooling here is structurally unable to see iOS behaviour:
+
+- Chrome DevTools emulates viewport SIZE, not the iOS rendering or touch stack.
+- `input[type=date]`, `type=file` and other native controls render at completely
+  different intrinsic sizes on iOS.
+- The software keyboard, `vh` behaviour, momentum scrolling and drag gestures
+  have no equivalent here.
+- macOS also refuses to size a real Chrome window below ~500px wide, so window
+  resizing silently leaves you at desktop width.
+
+**What that cost on 2026-08-08:** a sheet dragging sideways took four wrong
+diagnoses (input font-size, `vh` vs `dvh`, vaul's `shouldScaleBackground`,
+horizontal overflow measured as zero) and one speculatively shipped fix. Every
+Chrome measurement said the layout was fine. One 30-second recording showed the
+answer immediately — the sheet was visibly panned, with a horizontal scrollbar.
+
+**Reading a recording:**
+
+```bash
+swift scripts/frames.swift <video> <out-dir> [count]   # default 12 frames
+```
+
+Then Read the JPEGs. ffmpeg is NOT installed; that script uses AVFoundation,
+which ships with macOS. `qlmanage -t` only yields one frame and is not enough
+to see motion.
+
+**What the recording gives you that a screenshot does not:** the motion itself,
+the state before and after, and the parts of the screen you would not have
+thought to measure.
+
 ## Build gotchas
 
 - Typecheck with `npx tsc --noEmit -p tsconfig.app.json` (bare `npx tsc` is a silent no-op).
