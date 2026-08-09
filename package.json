@@ -7,12 +7,14 @@
     "postinstall": "node scripts/install-hooks.mjs",
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node scripts/check-build-id.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:schema": "node scripts/check-schema.mjs",
+    "check:build-id": "node scripts/check-build-id.mjs",
     "hooks:install": "node scripts/install-hooks.mjs"
   },
   "dependencies": {
