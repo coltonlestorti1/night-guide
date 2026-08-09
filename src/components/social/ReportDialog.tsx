@@ -64,7 +64,14 @@ export default function ReportDialog({
         try {
           await blockUser.mutateAsync(profile);
         } catch {
-          toast.error("Reported, but couldn't block them. Try blocking from their profile.");
+          // Must branch on outcome too. Saying "Reported" here when the row
+          // was a discarded duplicate is the same false success this fix
+          // exists to remove — just on the block-failed path.
+          toast.error(
+            outcome === "already-reported"
+              ? `You'd already reported ${name}, and we couldn't block them. Try blocking from their profile.`
+              : `Reported, but couldn't block them. Try blocking from their profile.`,
+          );
           setOpen(false);
           reset();
           return;
