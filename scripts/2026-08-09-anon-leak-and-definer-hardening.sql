@@ -1,3 +1,12 @@
+-- ⚠️⚠️ THIS SCRIPT DID NOT APPLY WHEN IT WAS RUN ON 2026-08-09. ⚠️⚠️
+-- Its `begin; ... rollback;` proof section at the bottom discarded the DDL at
+-- the top, because the Supabase editor wraps a whole script in ONE transaction
+-- so the `begin` was a no-op. The proof ran inside that transaction, saw the
+-- changes, and reported PASS on work that was thrown away seconds later.
+-- Everything here was re-applied by
+-- scripts/2026-08-09-saves-recursion-and-reapply.sql, which contains NO
+-- transaction control. DO NOT re-run this file as-is.
+--
 -- ============================================================================
 -- 2026-08-09 — anon 'everyone' leak + SECURITY DEFINER hardening
 --
