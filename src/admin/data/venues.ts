@@ -11,6 +11,7 @@
  * already been burned by (see the setVibe RLS bug, 2026-07-14).
  */
 import { getSupabase } from "@/lib/supabase";
+import { deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
 
 export type VenueType = "bar" | "club" | "lounge";
 export type PriceTier = "$" | "$$" | "$$$" | "$$$$";
@@ -123,4 +124,119 @@ export async function updateAdminVenue(
     );
   }
   return normalizeRow(data as Record<string, unknown>);
+}
+
+/**
+ * Row counts from every table that references `venues`, keyed by table name —
+ * the output shape of the `venue_delete_impact` RPC in
+ * scripts/2026-08-09-venue-delete-ddl.sql.
+ *
+ * `events` survives a venue delete (ON DELETE SET NULL — the row loses its
+ * venue rather than being destroyed). `venue_requests` counts rows where this
+ * venue is `fulfilled_venue_id`; that FK has NO ACTION, so a nonzero count
+ * here BLOCKS the delete outright rather than being destroyed by it. Every
+ * other field is ON DELETE CASCADE and is destroyed along with the venue.
+ */
+export type VenueDeleteImpact = {
+  check_ins: number;
+  venue_ratings: number;
+  night_posts: number;
+  plans: number;
+  venue_saves: number;
+  venue_hour_stats: number;
+  events: number;
+  venue_requests: number;
+};
+
+/** The VenueDeleteImpact fields that are actually destroyed (CASCADE) when a
+ *  venue is deleted. Excludes `events` (survives, venue_id -> null) and
+ *  `venue_requests` (not destroyed — a nonzero count there blocks the delete
+ *  entirely, it never reaches "destroyed"). */
+const DESTRUCTIVE_IMPACT_KEYS = [
+  "check_ins",
+  "venue_ratings",
+  "night_posts",
+  "plans",
+  "venue_saves",
+  "venue_hour_stats",
+] as const satisfies readonly (keyof VenueDeleteImpact)[];
+
+/**
+ * Sum of rows permanently destroyed by deleting this venue — the number a
+ * confirmation guard should key off of (e.g. one-click under some threshold,
+ * type-the-name-to-confirm above it). Deliberately excludes `events` (it
+ * survives with venue_id set to null) and `venue_requests` (it blocks the
+ * delete rather than being destroyed by it).
+ */
+export function totalDestroyed(impact: VenueDeleteImpact): number {
+  return DESTRUCTIVE_IMPACT_KEYS.reduce((sum, key) => sum + impact[key], 0);
+}
+
+/**
+ * Counts every row referencing this venue, computed INSIDE the database via
+ * the venue_delete_impact() RPC — never client-side. check_ins, venue_ratings
+ * and night_posts are RLS-protected, so a browser client only ever sees its
+ * own rows plus whatever's currently public; a client-side count would report
+ * 0 attached records for a venue with 14 other people's check-ins, and a
+ * confirmation guard built on that count would wave the delete through.
+ */
+export async function fetchVenueDeleteImpact(venueId: string): Promise<VenueDeleteImpact> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Supabase is not configured");
+
+  const { data, error } = await supabase.rpc("venue_delete_impact", {
+    p_venue_id: venueId,
+  });
+  if (error) throw error;
+
+  // The RPC returns a single-row table, so supabase-js hands back an array.
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    throw new Error(
+      "venue_delete_impact returned no row. The RPC is probably missing — paste scripts/2026-08-09-venue-delete-ddl.sql.",
+    );
+  }
+  return row as VenueDeleteImpact;
+}
+
+/**
+ * Deletes the venue row, then best-effort deletes its stored photo.
+ *
+ * `.select()` so a policy matching zero rows surfaces as an explicit error
+ * instead of a silent success — same convention as updateAdminVenue above,
+ * and the same reason: this project has been burned by a silent no-op write
+ * before (the setVibe RLS bug, 2026-07-14).
+ *
+ * Errors are surfaced verbatim, not rewritten. If venue_requests.fulfilled_venue_id
+ * points at this venue, Postgres blocks the delete with a foreign-key
+ * violation (that FK is NO ACTION, not CASCADE) and the raw Postgres message
+ * already names the real cause.
+ *
+ * Order matters: the row is deleted FIRST, then the photo file. The reverse
+ * order would leave a venue on screen with a 404ing image if the row delete
+ * then failed — the same ordering rule uploadVenuePhoto/deleteVenuePhotoByUrl
+ * already follow for exactly that reason.
+ */
+export async function deleteAdminVenue(venueId: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Supabase is not configured");
+
+  const { data, error } = await supabase
+    .from("venues")
+    .delete()
+    .eq("id", venueId)
+    .select("id, image_url")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) {
+    throw new Error(
+      "Delete matched no rows. The admin DELETE policy is probably missing — paste scripts/2026-08-09-venue-delete-ddl.sql.",
+    );
+  }
+
+  const imageUrl = (data as { image_url: string | null }).image_url;
+  if (imageUrl) {
+    await deleteVenuePhotoByUrl(imageUrl);
+  }
 }
