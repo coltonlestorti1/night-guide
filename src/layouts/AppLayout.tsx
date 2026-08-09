@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import BottomTabs from "@/components/layout/BottomTabs";
+import BuildUpdateBanner from "@/components/BuildUpdateBanner";
 import { useAuthStore } from "@/store/auth";
 import { subscribeActivity } from "@/lib/checkins";
 
@@ -31,9 +32,16 @@ const AppLayout = () => {
       className="min-h-screen bg-background text-foreground"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <main className="pb-[calc(110px+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-20">
+      {/* --endz-update-banner-h is 0px until BuildUpdateBanner shows, so this
+          is the same 110px reservation it has always been; while the banner is
+          up, page content is pushed clear of it rather than sliding under. */}
+      <main
+        className="pb-[calc(110px+var(--endz-update-banner-h)+env(safe-area-inset-bottom))]
+                   lg:pb-[calc(1rem+var(--endz-update-banner-h))] lg:pl-20"
+      >
         <Outlet />
       </main>
+      <BuildUpdateBanner />
       <BottomTabs />
     </div>
   );

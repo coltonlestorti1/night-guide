@@ -58,6 +58,15 @@
     --sidebar-accent-foreground: 253 60% 40%;
     --sidebar-border: 60 6% 90%;
     --sidebar-ring: 253 100% 64%;
+
+    /* Height the build-update banner is currently claiming in the bottom
+       stack, including the gap above it — 0px whenever it is not showing.
+       BuildUpdateBanner measures itself and writes this; AppLayout's content
+       padding and every fixed control on the map add it to their own offset,
+       so the whole stack rides up by exactly the banner's height instead of
+       being covered by it. Declared here so the calc()s stay valid before the
+       banner has ever mounted. Not a theme token — the same in dark mode. */
+    --endz-update-banner-h: 0px;
   }
 }
 

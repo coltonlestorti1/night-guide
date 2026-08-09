@@ -58,7 +58,7 @@ export default function OutTonightPrompt() {
     : [];
 
   return (
-    <div className="fixed left-1/2 -translate-x-1/2 z-50 w-[min(92vw,26rem)] bottom-[calc(210px_+_env(safe-area-inset-bottom))] lg:bottom-28">
+    <div className="fixed left-1/2 -translate-x-1/2 z-50 w-[min(92vw,26rem)] bottom-[calc(210px_+_var(--endz-update-banner-h)_+_env(safe-area-inset-bottom))] lg:bottom-[calc(7rem_+_var(--endz-update-banner-h))]">
       <div className="glass rounded-2xl p-4 shadow-glow animate-fade-in">
         <button
           onClick={() => { dismissPrompt(); setPickOther(false); }}
