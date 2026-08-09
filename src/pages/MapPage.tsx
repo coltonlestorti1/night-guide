@@ -406,8 +406,10 @@ const MapPage = () => {
         onPick={(v) => setSelected(v)}
       />
 
-      {/* "I'm out tonight" control — stacked above the Map/List toggle */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-40 bottom-[calc(148px_+_env(safe-area-inset-bottom))] lg:bottom-[4.75rem]">
+      {/* "I'm out tonight" control — stacked above the Map/List toggle.
+          --endz-update-banner-h is 0px unless the build-update banner is
+          showing, in which case the whole stack rides up by its height. */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-40 bottom-[calc(148px_+_var(--endz-update-banner-h)_+_env(safe-area-inset-bottom))] lg:bottom-[calc(4.75rem_+_var(--endz-update-banner-h))]">
         <OutTonightToggle />
       </div>
 
@@ -415,7 +417,7 @@ const MapPage = () => {
       <OutTonightPrompt />
 
       {/* Map / List toggle — above the mobile bottom nav; lower on desktop where the nav is a side rail */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-40 bottom-[calc(96px_+_env(safe-area-inset-bottom))] lg:bottom-6">
+      <div className="fixed left-1/2 -translate-x-1/2 z-40 bottom-[calc(96px_+_var(--endz-update-banner-h)_+_env(safe-area-inset-bottom))] lg:bottom-[calc(1.5rem_+_var(--endz-update-banner-h))]">
         <div className="relative flex rounded-full glass shadow-float overflow-hidden p-1">
           <span
             className="absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-full bg-primary transition-transform duration-200 ease-out"
