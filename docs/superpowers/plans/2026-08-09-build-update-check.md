@@ -392,13 +392,21 @@ In `package.json`, add to `"scripts"` immediately after the `"check:schema"` lin
     "check:build-id": "node scripts/check-build-id.mjs",
 ```
 
-- [ ] **Step 5: Build and verify both outputs agree**
+- [ ] **Step 5: Build, and confirm `version.json` is emitted**
 
 ```bash
-cd <worktree> && npm run build && npm run check:build-id
+cd <worktree> && npm run build && cat dist/version.json
 ```
 
-Expected: `PASS: build id <12 hex chars> matches in version.json and the bundle.`
+Expected: `{"buildId":"<12 chars>"}`.
+
+**`npm run check:build-id` will report FAIL at this point, and that is correct.**
+Vite's `define` is a substitution, not an injection: it only rewrites the
+identifier where source code actually mentions it, and nothing references
+`__BUILD_ID__` until Task 3 adds the hook. So the id is genuinely absent from
+the bundle until then. The `check:build-id` gate is asserted in Task 4 Step 2,
+after a consumer exists. *(Plan defect found during execution — this step
+originally demanded PASS here, which is unsatisfiable.)*
 
 - [ ] **Step 6: Verify the ID actually changes between builds**
 
