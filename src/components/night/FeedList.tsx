@@ -12,8 +12,10 @@ import PostCard from "@/components/night/PostCard";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
 import { useCommentPreviews } from "@/hooks/useComments";
 import { usePostLikes } from "@/hooks/useLikes";
+import { usePostTags } from "@/hooks/useTags";
 import { reduceCommentPreviews } from "@/lib/night/comments";
 import { summarizeLikes } from "@/lib/night/likes";
+import { tagsByPost } from "@/lib/night/tags";
 
 export default function FeedList() {
   const { data: posts, isLoading } = useNightFeed();
@@ -24,6 +26,8 @@ export default function FeedList() {
   const { data: likeRows } = usePostLikes((posts ?? []).map((p) => p.id));
   const myId = useAuthStore((s) => s.session?.user.id);
   const likes = summarizeLikes(likeRows ?? [], myId);
+  const { data: tagRows } = usePostTags((posts ?? []).map((p) => p.id));
+  const tags = tagsByPost(tagRows ?? []);
 
   if (isLoading) return null;
 
@@ -51,6 +55,7 @@ export default function FeedList() {
           photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
           commentPreview={previews.get(post.id)}
           likes={likes.get(post.id)}
+          tags={tags.get(post.id)}
         />
       ))}
     </div>
