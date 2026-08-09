@@ -13,7 +13,7 @@
  * component.
  */
 import { useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import PhotoLightbox from "@/components/PhotoLightbox";
 import { Lock, MapPin, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Venue } from "@/data/types";
 import type { FeedPost } from "@/lib/night/posts";
@@ -226,16 +226,7 @@ export default function PostCard({
         />
       )}
 
-      {/* Tap to expand. The signed URL is reused rather than re-minted — it is
-          already in memory and still valid for the life of this view. */}
-      <Dialog open={!!expanded} onOpenChange={(o) => !o && setExpanded(null)}>
-        <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
-          <DialogTitle className="sr-only">Photo</DialogTitle>
-          {expanded && (
-            <img src={expanded} alt="" className="max-h-[85vh] w-full rounded-2xl object-contain" />
-          )}
-        </DialogContent>
-      </Dialog>
+      <PhotoLightbox url={expanded} onClose={() => setExpanded(null)} />
 
       {confirming && (
         <div className="mt-3 flex items-center gap-2">
