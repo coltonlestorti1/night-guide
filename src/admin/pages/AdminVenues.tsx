@@ -8,7 +8,8 @@
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, MapPin, Store } from "lucide-react";
+import { toast } from "sonner";
+import { Search, MapPin, Store, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,14 +23,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getSupabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 import { PageHeader, EmptyState, ErrorNote } from "../components/AdminKit";
-import { fetchAdminVenues, type AdminVenueRow } from "../data/venues";
+import { fetchAdminVenues, updateAdminVenue, type AdminVenueRow } from "../data/venues";
 import VenueEditSheet from "../components/VenueEditSheet";
 import BulkPhotoPanel from "../components/BulkPhotoPanel";
+import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
 import { PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
 import PhotoLightbox from "@/components/PhotoLightbox";
 
 type ActiveFilter = "all" | "active" | "dormant" | "no photo";
+
+// Mirrors the file input's `accept` attribute used elsewhere in admin — a
+// drop isn't gated by the browser the way <input accept> is, so dropped
+// files need the same filtering applied by hand.
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const AdminVenues = () => {
   const [search, setSearch] = useState("");
@@ -38,6 +46,13 @@ const AdminVenues = () => {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState("");
+  // The row currently under a drag — highlighted so the drop target is
+  // unmistakable before release, the main guard against a mis-drop onto the
+  // wrong venue.
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+  // Keyed by venue id, not a single boolean — multiple rows can each have a
+  // drop-upload in flight at once.
+  const [uploadingRowIds, setUploadingRowIds] = useState<Set<string>>(new Set());
 
   const configured = Boolean(getSupabase());
 
@@ -72,6 +87,78 @@ const AdminVenues = () => {
       "no photo": rows.filter((v) => !v.image_url).length,
     };
   }, [data]);
+
+  // Fast path for photographing all 55+ venues: drop an image straight onto
+  // a table row and it's uploaded and saved to THAT venue immediately, no
+  // sheet, no Save step. Order below is non-negotiable — the row write must
+  // land before the superseded photo is deleted, or a failed write 404s a
+  // live photo.
+  const handleRowDragOver = (e: React.DragEvent<HTMLTableRowElement>, venueId: string) => {
+    // Without this the browser's default is to navigate to the dropped
+    // image instead of firing onDrop.
+    e.preventDefault();
+    if (uploadingRowIds.has(venueId)) return;
+    setDragOverRowId(venueId);
+  };
+
+  const handleRowDragLeave = (e: React.DragEvent<HTMLTableRowElement>, venueId: string) => {
+    e.preventDefault();
+    // Only clear if the pointer truly left the row, not just moved over a
+    // child cell within it (which also fires dragleave on the row before
+    // the child's own dragenter).
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setDragOverRowId((id) => (id === venueId ? null : id));
+  };
+
+  const handleRowDrop = (e: React.DragEvent<HTMLTableRowElement>, venue: AdminVenueRow) => {
+    e.preventDefault();
+    // The row's onClick opens the edit sheet — a drop must not also do that.
+    e.stopPropagation();
+    setDragOverRowId(null);
+    if (uploadingRowIds.has(venue.id)) return;
+    const dropped = Array.from(e.dataTransfer.files);
+    const image = dropped.find((f) => ACCEPTED_IMAGE_TYPES.has(f.type));
+    if (!image) {
+      toast.error("Only JPEG, PNG, and WebP images can be dropped here.");
+      return;
+    }
+
+    const previousUrl = venue.image_url;
+    setUploadingRowIds((ids) => new Set(ids).add(venue.id));
+
+    void (async () => {
+      try {
+        const url = await uploadVenuePhoto(image, venue.id);
+        await updateAdminVenue(venue.id, { image_url: url });
+        // Only now that the row points at the new URL — the reverse order
+        // 404s the live photo if the write fails.
+        if (previousUrl && previousUrl !== url) {
+          if (!(await deleteVenuePhotoByUrl(previousUrl))) {
+            toast.warning(
+              `${venue.name}: the old photo could not be deleted and may still be publicly reachable at its old URL.`,
+            );
+          }
+        }
+        toast.success(`Photo set on ${venue.name}`, {
+          action: {
+            label: "Add source",
+            onClick: () => setEditing(venue),
+          },
+        });
+        refetch();
+      } catch (err) {
+        // Verbatim: the real cause is usually a missing storage/DB policy
+        // and the raw Postgres/storage message names it.
+        toast.error((err as Error).message);
+      } finally {
+        setUploadingRowIds((ids) => {
+          const next = new Set(ids);
+          next.delete(venue.id);
+          return next;
+        });
+      }
+    })();
+  };
 
   return (
     <>
@@ -157,11 +244,22 @@ const AdminVenues = () => {
                   {venues.map((v) => (
                     <TableRow
                       key={v.id}
-                      className="cursor-pointer"
+                      className={cn(
+                        "cursor-pointer",
+                        dragOverRowId === v.id &&
+                          "bg-primary/10 outline outline-2 outline-dashed outline-primary outline-offset-[-2px]",
+                      )}
                       onClick={() => setEditing(v)}
+                      onDragOver={(e) => handleRowDragOver(e, v.id)}
+                      onDragLeave={(e) => handleRowDragLeave(e, v.id)}
+                      onDrop={(e) => handleRowDrop(e, v)}
                     >
                       <TableCell>
-                        {hasRealPhoto(v) ? (
+                        {uploadingRowIds.has(v.id) ? (
+                          <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : hasRealPhoto(v) ? (
                           <button
                             type="button"
                             onClick={(e) => {
