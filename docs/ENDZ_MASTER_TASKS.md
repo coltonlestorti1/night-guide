@@ -429,6 +429,71 @@ After a discussion is approved, Claude should:
 
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
+### Open after the 2026-08-09 session — NOT built, each needs its own gate
+
+**Shipped 2026-08-08/09 (for context):** comments · likes · Activity sheet ·
+unread badge · collab tags (all three slices) · posts on other people's
+profiles · edit-a-post from the feed · report false-success fix · iOS composer
+zoom · sheets panning sideways · splash screen · desktop date picker.
+
+**Blocked on Colton — a product decision, not work:**
+
+- **Share a post.** The mechanism exists (`navigator.share`, used twice
+  already). The unresolved part is audience: a `friends`-scoped post shared as
+  a link reaches exactly the people RLS refuses. Either the link only works for
+  people who could already see the post (nearly useless as a share), or sharing
+  silently widens the audience the author chose. **Do not build until this is
+  decided.**
+- **Apple Developer enrollment** (§31). Still the only thing gating the App
+  Store, and Sign in with Apple is the last hard blocker. No code moves it.
+
+**Unverified — needs two signed-in accounts, which Colton has:**
+
+- **The collab approve flow was never driven.** Tag `clsneaks01` from
+  `colton_lestorti`, sign in as the other account, and confirm "Waiting on you"
+  appears in Activity with Share-with-my-friends / Just-a-tag / Remove. Every
+  other part of collab is proved by RLS scenarios and direct API calls; this
+  one step is not.
+- **Soft-keyboard dismissal of the comment sheet.** A programmatic focus never
+  opens a keyboard, so this cannot be tested from here. Same class as the
+  file-dialog bug that already shipped once.
+- **A non-zero unread badge.** Every post in the DB is Colton's own and own
+  posts are excluded, so the count path has never produced a number in the
+  wild. It will exercise itself the first time someone else posts.
+
+**Known work, not started:**
+
+- **Cap `listCommentPreviews`.** It fetches every comment BODY for every post
+  on the feed just to count them. Fine at current volume; it is also the
+  pattern likes copied and the next feature will copy again. Cap it or move to
+  a count + lateral-newest read.
+- **Collapse the duplicated audience predicate in the night-photos policies.**
+  They restate `night_posts`' audience rule because policy inheritance was an
+  open question when they shipped; it is now proved, so the copy is redundant.
+  It is a shipped security boundary — needs its own verification pass, not a
+  drive-by edit.
+- **Tagged people contributing photos** (collab slice C as originally scoped).
+  Needs the photo policy widened from author-only.
+- **Managing existing tags from your profile.** Pending tags surface in
+  Activity, but there is no list of tags you have already accepted where you
+  could change your mind between `tag` and `collab`, or remove one later.
+  Colton asked for this on 2026-08-09; only the pending half was built.
+- **Fold friend requests and plan invites into Activity** (the "Option C" we
+  deliberately deferred). Chosen against on 2026-08-09 because a like clears
+  when seen and a request must not. Revisit if distribution widens and three
+  surfaces becomes friction. **A→C is a UI move, not a migration** — nothing is
+  stored either way.
+
+**Deferred minors logged during review, none blocking:**
+
+- `reduceCommentPreviews` resolves identical-timestamp ties by iteration order
+  while its docstring claims order-independence.
+- The comment sheet's loading spinner has no `role="status"` — silent for
+  screen readers. Matches existing patterns elsewhere.
+- `["profile-by-username"]` and similar keys do not include the viewer, so an
+  identity change can flash a stale RLS-filtered list. Fixed for
+  `profile-posts`; the same weak pattern exists elsewhere.
+
 ### Night feed — requested 2026-08-07, NOT specced, NOT approved
 
 Colton listed these while slice 2 and photos were shipping. The three small ones
