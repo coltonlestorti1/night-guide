@@ -56,11 +56,14 @@ export function useMarkSocialSeen(): string | null {
   // opening Activity would find lastSeen === now and nothing would ever be
   // marked new.
   const [previous, setPrevious] = useState<string | null>(null);
-  const done = useRef(false);
+  // Keyed to the user, not a boolean: a bare latch would skip the effect
+  // entirely if the same mount ever saw a different signed-in user, leaving
+  // their badge permanently unstamped.
+  const done = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!userId || done.current) return;
-    done.current = true;
+    if (!userId || done.current === userId) return;
+    done.current = userId;
     (async () => {
       try {
         setPrevious(await getLastSeen(userId));

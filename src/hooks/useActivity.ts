@@ -10,5 +10,7 @@ export function useActivity(enabled = true) {
     enabled: !!userId && enabled,
     queryFn: () => listActivity(userId!),
     staleTime: 60_000,
+    // retry once: a transient blip should not paint an error over an inbox.
+    retry: 1,
   });
 }

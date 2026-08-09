@@ -20,7 +20,7 @@ function Row({
   fresh,
 }: {
   item: ActivityItem;
-  venueName: string;
+  venueName: string | undefined;
   fresh: boolean;
 }) {
   const who = item.actor.display_name || item.actor.username;
@@ -32,12 +32,11 @@ function Row({
             and a missing one shipped a page-wide scroll bug on 2026-08-07. */}
         <p className="text-sm leading-snug break-words">
           <span className="font-semibold">{who}</span>{" "}
-          {item.kind === "like" ? (
-            <span className="text-muted-foreground">liked your night at </span>
-          ) : (
-            <span className="text-muted-foreground">commented on your night at </span>
-          )}
-          <span className="font-semibold">{venueName}</span>
+          <span className="text-muted-foreground">
+            {item.kind === "like" ? "liked your night" : "commented on your night"}
+            {venueName ? " at " : ""}
+          </span>
+          {venueName && <span className="font-semibold">{venueName}</span>}
         </p>
         {item.kind === "comment" && item.body && (
           <p className="mt-0.5 text-sm text-muted-foreground break-words line-clamp-2">
@@ -67,9 +66,11 @@ export default function ActivitySheet({
   /** Watermark from profiles.social_last_seen_at — highlights what is new. */
   lastSeen: string | null;
 }) {
-  const { data: items, isLoading } = useActivity(open);
+  const { data: items, isLoading, isError } = useActivity(open);
   const { data: venues } = useVenues({});
-  const nameFor = (id: string) => venues?.find((v) => v.id === id)?.title ?? "a spot";
+  // undefined while venues are still loading — the row then omits the
+  // venue clause entirely rather than briefly asserting "a spot".
+  const nameFor = (id: string) => venues?.find((v) => v.id === id)?.title;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -79,7 +80,17 @@ export default function ActivitySheet({
           Likes and comments on your nights.
         </DrawerDescription>
         <div className="px-2 pt-2 pb-8 max-w-lg mx-auto w-full overflow-y-auto overflow-x-hidden">
-          {isLoading ? (
+          {isError ? (
+            // A failed query must NOT look like an empty inbox. Showing
+            // "Nothing yet." for a network failure tells the user their
+            // friends ignored them when in fact nothing loaded.
+            <div className="px-4 py-10 text-center">
+              <p className="text-sm font-medium">Couldn't load your activity.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Check your connection and reopen this.
+              </p>
+            </div>
+          ) : isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
