@@ -19,6 +19,7 @@ import { CalendarClock, MapPin, Plus, Users } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { deriveFriends, deriveIncoming } from "@/lib/friends";
 import { useFriendsOutTonight, useMyFriendships } from "@/hooks/useFriends";
+import { useMarkSocialSeen } from "@/hooks/useSocialUnread";
 import { usePendingRequests, usePlanFeed } from "@/hooks/usePlans";
 import { Button } from "@/components/ui/button";
 import SectionCard from "@/components/social/SectionCard";
@@ -43,6 +44,11 @@ const Social = () => {
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [plansOpen, setPlansOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+
+  // Opening this page IS "seen" (Colton, 2026-08-09) — so stamp it here rather
+  // than from a route listener, which would also fire for a redirect through
+  // /social that the user never actually looked at.
+  useMarkSocialSeen();
 
   const openInvites = (planItems ?? []).filter((p) => p.invitedNoResponse).length;
   const requestCount = (pendingRequests ?? []).length;
