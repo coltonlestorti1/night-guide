@@ -34,7 +34,15 @@ export default function DeleteAccountDialog({ username }: { username: string }) 
   const confirmed = typed.trim().toLowerCase() === username.trim().toLowerCase();
 
   const doDelete = async () => {
-    if (!confirmed || busy || !userId) return;
+    if (!confirmed || busy) return;
+    // A missing id must NOT return silently. This is the Guideline 5.1.1(v)
+    // flow — a Delete button that does nothing at all, with no error, is worse
+    // than one that fails loudly, and it is the same silent-no-op that made
+    // submitReport claim success for a discarded row.
+    if (!userId) {
+      toast.error("Couldn't confirm who you're signed in as. Reload and try again.");
+      return;
+    }
     setBusy(true);
     try {
       await deleteOwnAccount(userId);
