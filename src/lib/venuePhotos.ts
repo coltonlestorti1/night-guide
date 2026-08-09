@@ -13,6 +13,43 @@ import { reencodeImage } from "@/lib/imageEncode";
 
 const BUCKET = "venue-photos";
 
+/**
+ * Whether the browser can plausibly decode this as an image at all — the
+ * single gate shared by the file-picker `accept` attribute and every manual
+ * drag-and-drop filter in admin (a drop isn't gated by <input accept>, so
+ * dropped files need the same check applied by hand). Deliberately
+ * permissive rather than an allowlist of three formats: every accepted file
+ * gets canvas re-encoded to JPEG before it's ever stored (see
+ * uploadVenuePhoto) and the storage bucket only ever receives that JPEG, so
+ * the input format only has to be something the browser can decode, not
+ * something Supabase storage allows directly.
+ *
+ * Chrome decodes JPEG/PNG/WebP/AVIF/GIF this way, so all of them pass here.
+ * HEIC/HEIF (what an iPhone saves by default) reports as image/heic or
+ * image/heif and also passes this check, but createImageBitmap can't
+ * actually decode it in Chrome — that failure is caught and given a
+ * specific, actionable message in reencodeImage rather than being filtered
+ * out here, so the admin finds out why at the moment it actually fails.
+ */
+export function isAcceptedImage(file: { type: string }): boolean {
+  return file.type.startsWith("image/");
+}
+
+/** The `accept` attribute for a photo `<input type="file">` — matches
+ *  isAcceptedImage's "any image the browser will try to decode" policy. */
+export const PHOTO_ACCEPT_ATTR = "image/*";
+
+/**
+ * A short human-readable label for a rejected drop, for a toast telling the
+ * admin what didn't work. Falls back to the file extension when the OS
+ * didn't supply a MIME type at all (some drags of unusual formats do this).
+ */
+export function describeFileType(file: File): string {
+  if (file.type) return file.type;
+  const dot = file.name.lastIndexOf(".");
+  return dot === -1 ? `"${file.name}"` : file.name.slice(dot);
+}
+
 /** Hero renders at 176px tall, the card thumbnail at 112px. 1200 covers
  *  retina with headroom and keeps egress cheap on the free tier. */
 export const VENUE_PHOTO_MAX_EDGE = 1200;
