@@ -253,7 +253,11 @@ begin
 end $$;
 
 -- LAST statement before rollback — the editor shows only this.
-select n, scenario, expected, actual, role_at_op, verdict
+--
+-- Verdict FIRST. The scenario text is long enough to push later columns off
+-- the right edge of the Supabase results grid, and a result you have to
+-- scroll sideways to read is a result that gets skimmed.
+select n, verdict, actual, expected, role_at_op, scenario
   from _res order by n, id;
 
 rollback;
