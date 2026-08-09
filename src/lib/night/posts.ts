@@ -144,3 +144,57 @@ export async function deletePost(postId: string): Promise<void> {
   const { error } = await supabase.from("night_posts").delete().eq("id", postId);
   if (error) throw error;
 }
+
+
+/**
+ * Someone else's nights, for their profile.
+ *
+ * Two sources, because a collab is meant to land here: posts they AUTHORED,
+ * and posts they were TAGGED in and accepted ('tag' or 'collab'). Without the
+ * second half, approving a collab would have no visible effect anywhere, which
+ * is the whole payoff of the feature.
+ *
+ * RLS does the filtering. Every row returned is one the CALLER is allowed to
+ * see, so this shows a different set to different viewers by design — a
+ * friends-only post is simply absent for a stranger. There is deliberately no
+ * client-side audience check to disagree with the policy.
+ */
+export async function listProfilePosts(profileUserId: string, limit = 20): Promise<FeedPost[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const [mine, tagged] = await Promise.all([
+    supabase
+      .from("night_posts")
+      .select(POST_SELECT)
+      .eq("user_id", profileUserId)
+      .order("night_date", { ascending: false })
+      .limit(limit),
+    // !inner so the join FILTERS. Without it every post comes back with a null
+    // tag embed rather than only the tagged ones.
+    supabase
+      .from("night_posts")
+      .select(`${POST_SELECT}, tag:night_post_tags!inner(tagged_user_id, state)`)
+      .eq("tag.tagged_user_id", profileUserId)
+      .in("tag.state", ["tag", "collab"])
+      .order("night_date", { ascending: false })
+      .limit(limit),
+  ]);
+  if (mine.error) throw mine.error;
+  if (tagged.error) throw tagged.error;
+
+  const rows = [
+    ...((mine.data ?? []) as unknown as DbPost[]),
+    ...((tagged.data ?? []) as unknown as DbPost[]),
+  ];
+  // A post can arrive from both queries only if someone tagged themselves,
+  // which the INSERT policy forbids — but dedupe anyway rather than trust it,
+  // because a duplicate here is a React key collision.
+  const seen = new Set<string>();
+  const unique = rows.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)));
+
+  return unique
+    .map(toFeedPost)
+    .sort((a, b) => (a.nightDate < b.nightDate ? 1 : a.nightDate > b.nightDate ? -1 : 0))
+    .slice(0, limit);
+}
