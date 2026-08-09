@@ -392,6 +392,8 @@ In `package.json`, add to `"scripts"` immediately after the `"check:schema"` lin
     "check:build-id": "node scripts/check-build-id.mjs",
 ```
 
+**Not yet the `postbuild` hook.** The guard has to be wired to the build to be worth anything — nothing else in the repo runs it, since `scripts/hooks/pre-push` runs only `check:schema` and `.github/workflows/` holds only `supabase-keepalive.yml` — but it cannot pass until Task 3 gives `__BUILD_ID__` a consumer, and a `postbuild` added here would fail every build in between. Task 3 Step 4 adds it.
+
 - [ ] **Step 5: Build, and confirm `version.json` is emitted**
 
 ```bash
@@ -436,7 +438,12 @@ Expected: 0 type errors, 393 tests passing (382 baseline + 11 from Task 1).
 **Files:**
 - Create: `src/hooks/useBuildUpdate.ts`
 - Create: `src/components/BuildUpdateBanner.tsx`
-- Modify: `src/layouts/AppLayout.tsx` (import, and render before `<BottomTabs />`)
+- Modify: `src/layouts/AppLayout.tsx` (import, render before `<BottomTabs />`, and add the banner variable to `<main>`'s bottom padding)
+- Modify: `src/index.css` (declare `--endz-update-banner-h: 0px` on `:root`)
+- Modify: `src/pages/MapPage.tsx`, `src/components/OutTonightPrompt.tsx` (add the same variable to their fixed bottom offsets)
+- Modify: `package.json` (the `postbuild` hook — Step 4)
+
+**Why the layout files are in scope:** `AppLayout`'s routes already stack four fixed elements above the bottom edge — the tabs at 0, the Map/List toggle at 96px, "I'm out tonight" at 148px, the check-in prompt at 210px — with gaps of 8px and 22px. There is no free slot to drop a ~54px banner into, so the banner cannot simply be positioned around them; it has to join the stack and push it up. One CSS variable does that.
 
 **Interfaces:**
 - Consumes: `createUpdateChecker` from `@/lib/buildVersion` (Task 1); the `__BUILD_ID__` global (Task 2).
@@ -512,8 +519,15 @@ export function useBuildUpdate(): { show: boolean; dismiss: () => void } {
 Create `src/components/BuildUpdateBanner.tsx`:
 
 ```tsx
+import { useEffect, useRef } from "react";
 import { RefreshCw, X } from "lucide-react";
 import { useBuildUpdate } from "@/hooks/useBuildUpdate";
+
+/** Clearance held between the banner and whatever sits directly above it. */
+const STACK_GAP_PX = 8;
+
+/** Kept in sync with the `:root` declaration in src/index.css. */
+const STACK_VAR = "--endz-update-banner-h";
 
 /**
  * Offers a reload when a newer build is deployed. Deliberately NOT an
@@ -521,27 +535,68 @@ import { useBuildUpdate } from "@/hooks/useBuildUpdate";
  * returning from it is precisely when an automatic reload would fire and
  * discard a half-written post.
  *
- * Sits above the bottom tabs (110px matches AppLayout's own content padding)
- * and below their z-50, so it never covers navigation.
+ * Placement: the banner JOINS the bottom stack rather than floating on top of
+ * it. AppLayout's routes stack four fixed things above the tab bar — the
+ * Map/List toggle at 96px, "I'm out tonight" at 148px, the check-in prompt at
+ * 210px, and the tabs themselves at 0 — with no free slot between them. So the
+ * banner takes the 96px slot and publishes its own height plus a gap as
+ * `--endz-update-banner-h`; AppLayout's content padding and all three map
+ * controls add that variable to their offsets and ride up by exactly the same
+ * amount while it is showing. Nothing above the banner is covered, and the tab
+ * bar below it is never reached: the banner's lower edge sits 40px clear of the
+ * tabs' upper edge, and z-40 stays under their z-50 regardless.
  */
 const BuildUpdateBanner = () => {
   const { show, dismiss } = useBuildUpdate();
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  // Measured rather than hardcoded: at 375px the copy wraps to a second line,
+  // which would silently break a fixed offset and put us back under the
+  // Map/List toggle — the exact bug this placement exists to fix.
+  useEffect(() => {
+    const el = cardRef.current;
+    const root = document.documentElement;
+    if (!show || !el) return;
+
+    const publish = () => {
+      const height = Math.ceil(el.getBoundingClientRect().height);
+      root.style.setProperty(STACK_VAR, `${height + STACK_GAP_PX}px`);
+    };
+
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+      root.style.setProperty(STACK_VAR, "0px");
+    };
+  }, [show]);
 
   if (!show) return null;
 
   return (
     <div
-      className="fixed z-40 inset-x-3 bottom-[calc(110px+env(safe-area-inset-bottom))]
+      className="fixed z-40 inset-x-3 bottom-[calc(96px+env(safe-area-inset-bottom))]
                  lg:inset-x-auto lg:left-24 lg:bottom-4 lg:w-80"
       role="status"
     >
       {/* Two sibling buttons, never nested — a <button> inside a <button> is
-          invalid HTML and cost us tap targets on the saved-spots row before. */}
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-card/95 px-3 py-2.5 shadow-lg backdrop-blur">
+          invalid HTML and cost us tap targets on the saved-spots row before.
+          The row is items-stretch and the padding lives on the children, so
+          each button's hit area is its full 44px rather than the ~20px line
+          box it would size to under items-center. gap-2 keeps 8px of dead,
+          non-interactive space between them: a mis-tap aimed at dismiss lands
+          on nothing rather than on the reload. */}
+      <div
+        ref={cardRef}
+        className="flex items-stretch gap-2 rounded-xl border border-border bg-card/95 p-1 shadow-lg backdrop-blur"
+      >
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="flex flex-1 items-center gap-2 text-left"
+          className="flex min-h-[44px] flex-1 items-center gap-2 rounded-lg px-2.5 text-left
+                     transition-colors active:bg-accent"
         >
           <RefreshCw className="h-4 w-4 shrink-0 text-primary" />
           <span className="text-sm font-medium">New version available — tap to update</span>
@@ -550,7 +605,8 @@ const BuildUpdateBanner = () => {
           type="button"
           onClick={dismiss}
           aria-label="Dismiss update notice"
-          className="shrink-0 rounded-md p-1.5 text-muted-foreground"
+          className="flex h-11 w-11 shrink-0 items-center justify-center self-center rounded-lg
+                     text-muted-foreground transition-colors active:bg-secondary"
         >
           <X className="h-4 w-4" />
         </button>
@@ -562,7 +618,7 @@ const BuildUpdateBanner = () => {
 export default BuildUpdateBanner;
 ```
 
-- [ ] **Step 3: Wire it into the layout**
+- [ ] **Step 3: Wire it into the layout, and make room for it**
 
 In `src/layouts/AppLayout.tsx`, add the import beneath the `BottomTabs` import:
 
@@ -570,22 +626,60 @@ In `src/layouts/AppLayout.tsx`, add the import beneath the `BottomTabs` import:
 import BuildUpdateBanner from "@/components/BuildUpdateBanner";
 ```
 
-and render it immediately before `<BottomTabs />`:
+render it immediately before `<BottomTabs />`, and add the banner variable to `<main>`'s bottom padding so page content is pushed clear of it rather than sliding under:
 
 ```tsx
+      <main
+        className="pb-[calc(110px+var(--endz-update-banner-h)+env(safe-area-inset-bottom))]
+                   lg:pb-[var(--endz-update-banner-h)] lg:pl-20"
+      >
+        <Outlet />
+      </main>
       <BuildUpdateBanner />
       <BottomTabs />
 ```
 
-- [ ] **Step 4: Typecheck and run the suite**
+Declare the variable on `:root` in `src/index.css`, inside the existing `@layer base` block, so those `calc()`s are valid before the banner has ever mounted:
 
-```bash
-cd <worktree> && npx tsc --noEmit -p tsconfig.app.json && npm test
+```css
+    --endz-update-banner-h: 0px;
 ```
 
-Expected: 0 type errors, 393 tests passing.
+Then add the same variable to the three fixed map controls, which is what stops the banner covering them. In `src/pages/MapPage.tsx`:
 
-- [ ] **Step 5: Prove the banner renders, then revert the proof**
+```tsx
+{/* "I'm out tonight" */}
+bottom-[calc(148px_+_var(--endz-update-banner-h)_+_env(safe-area-inset-bottom))] lg:bottom-[calc(4.75rem_+_var(--endz-update-banner-h))]
+
+{/* Map / List toggle */}
+bottom-[calc(96px_+_var(--endz-update-banner-h)_+_env(safe-area-inset-bottom))] lg:bottom-[calc(1.5rem_+_var(--endz-update-banner-h))]
+```
+
+and in `src/components/OutTonightPrompt.tsx`:
+
+```tsx
+bottom-[calc(210px_+_var(--endz-update-banner-h)_+_env(safe-area-inset-bottom))] lg:bottom-[calc(7rem_+_var(--endz-update-banner-h))]
+```
+
+- [ ] **Step 4: Attach the drift guard to the build**
+
+In `package.json`, immediately after `"build"`:
+
+```json
+    "postbuild": "node scripts/check-build-id.mjs",
+```
+
+Only now is this safe — `__BUILD_ID__` finally has a consumer, so the id is actually in the bundle and the guard can pass. From here it runs on every `npm run build`, Vercel's included, and real drift fails the deploy instead of shipping a banner that reloading never clears.
+
+- [ ] **Step 5: Typecheck, build and run the suite**
+
+```bash
+cd <worktree> && npx tsc --noEmit -p tsconfig.app.json && npm test && npm run build
+```
+
+Expected: 0 type errors, 393 tests passing, and the build ending in `PASS: build id <id> matches in version.json and the bundle.`
+
+- [ ] **Step 6: Prove the banner renders, then revert the proof**
 
 The banner cannot appear on a dev server (there is no `version.json` — the check returns `"unknown"` and stays silent, which is itself correct behaviour worth seeing). To see the banner, force it:
 
@@ -593,18 +687,20 @@ The banner cannot appear on a dev server (there is no `version.json` — the che
 cd <worktree> && npm run dev
 ```
 
-Temporarily change the first line of the `BuildUpdateBanner` body to `const { show, dismiss } = { show: true, dismiss: () => {} };`, load `http://localhost:8080`, and confirm:
+Temporarily change the first line of the `BuildUpdateBanner` body to `const { show, dismiss } = { show: true, dismiss: () => {} };`, load `http://localhost:8080` at 390px wide, and confirm:
 1. the strip sits above the tab bar and covers no tab;
-2. the text is on one line at 390px wide (iPhone width);
+2. **the Map/List toggle and the "I'm out tonight" button are both still fully visible and still tappable** — they should have moved up by the strip's height, not disappeared under it;
 3. tapping the text reloads the page;
-4. tapping the X hides the strip.
+4. tapping the X hides the strip, and the two controls drop back down.
 
 **Then revert that edit** and confirm with `git diff src/components/BuildUpdateBanner.tsx` that nothing remains.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-cd <worktree> && git add src/hooks/useBuildUpdate.ts src/components/BuildUpdateBanner.tsx src/layouts/AppLayout.tsx
+cd <worktree> && git add src/hooks/useBuildUpdate.ts src/components/BuildUpdateBanner.tsx \
+  src/layouts/AppLayout.tsx src/index.css src/pages/MapPage.tsx \
+  src/components/OutTonightPrompt.tsx package.json
 git commit -m "feat(update): banner offering a reload when a newer build is deployed"
 ```
 
@@ -627,31 +723,51 @@ Expected: **no output at all.** Any output is a spec violation — revert it.
 - [ ] **Step 2: Run every gate**
 
 ```bash
-cd <worktree> && npx tsc --noEmit -p tsconfig.app.json && npm test && npm run lint && npm run build && npm run check:build-id && npm run check:schema
+cd <worktree> && npx tsc --noEmit -p tsconfig.app.json && npm test && npm run build && npm run check:schema
 ```
 
-Expected: 0 type errors; 393 tests passing; lint clean; build clean; build-id PASS; schema guard PASS. Record the real numbers — do not claim these without seeing them.
+Expected: 0 type errors; 393 tests passing; the build ending in `PASS: build id <id> matches...` (that is `postbuild` — `check:build-id` no longer needs invoking by hand); schema guard PASS. Record the real numbers — do not claim these without seeing them.
+
+`npm run lint` fails repo-wide on pre-existing debt in files this branch never touches, so lint the changed files only:
+
+```bash
+cd <worktree> && npx eslint $(git diff origin/main --name-only -- '*.ts' '*.tsx')
+```
+
+Expected: no output.
 
 - [ ] **Step 3: Confirm no new dependency crept in**
 
 ```bash
-cd <worktree> && git diff origin/main -- package.json | grep -E '^\+' | grep -v '"check:build-id"' | grep -v '^\+\+\+'
+cd <worktree> && git diff origin/main -- package.json | grep -E '^\+' | grep -v '"check:build-id"' | grep -v '"postbuild"' | grep -v '^\+\+\+'
 ```
 
 Expected: no output.
 
 - [ ] **Step 4: Hand the device check to Colton**
 
-This is the only test that exercises the real bug, and it cannot be run from a dev server or from Chrome — see `CLAUDE.md` → "Mobile bugs: ask for a screen recording FIRST". Give Colton these steps verbatim after the branch is deployed:
+This is the only test that exercises the real bug, and it cannot be run from a dev server or from Chrome — see `CLAUDE.md` → "Mobile bugs: ask for a screen recording FIRST".
 
-1. Open ENDZ from the **home-screen icon**. Leave it open.
-2. Deploy any trivial change to that branch, and wait for Vercel to finish.
-3. Switch to another app, wait ~10 seconds, then switch back to ENDZ **without force-quitting it**.
-4. Within a moment the banner should appear above the tabs.
-5. Tap it — the app reloads and the change is there.
-6. Repeat steps 1–5 in a **Safari tab** instead of the home-screen icon.
+**Two things will make this test report a false failure if they are skipped.** Both are baked into the steps below; do not reorder them.
 
-Also confirm the negative case: with no new deploy, background and reopen the app several times and confirm **no banner ever appears**.
+- **The phone has to already be running a bundle that contains the checker.** A PWA resumed from the app switcher is still running whatever bundle it loaded — which, the first time, is the *old, checker-less* one. That build is exactly the population this feature cannot rescue. Step 2 force-quits and cold-launches once to get past it.
+- **There is a 60-second throttle** (`CHECK_THROTTLE_MS`). The app checks ~4 seconds after launch and then ignores any further check for a minute. Foregrounding sooner than that does nothing at all — no banner, and no bug either. Hence the one-minute waits.
+
+Give Colton these steps verbatim after the branch is deployed. Each one is literal; nothing is left to interpretation.
+
+1. Wait until Vercel says the branch is deployed.
+2. On the phone, open the app switcher and **swipe ENDZ away to force-quit it.** Then tap the ENDZ **home-screen icon** to launch it fresh. (This is what loads the bundle that can detect updates. Skipping it makes every later step fail for the wrong reason.)
+3. Leave ENDZ open on screen for **one full minute.** Do not use the phone for anything else.
+4. **Negative case first.** Switch to another app, count to ten, and switch back to ENDZ. Expected: **no banner.** Wait another full minute, then background and return once more. Still expected: **no banner.** (Waiting the minute between attempts matters — return sooner and the check is throttled, so "no banner" would prove nothing.)
+5. Now deploy a trivial visible change to the same branch — for example, one word of text — and wait for Vercel to report it live.
+6. Switch to another app, count to ten, then switch back to ENDZ **without force-quitting it.**
+7. Expected: within a few seconds a strip reading **"New version available — tap to update"** appears above the Map/List toggle. The Map/List toggle and the "I'm out tonight" button should still be fully visible and still tappable while it is there — tap both once to confirm.
+8. Tap the **X** on the right of the strip. Expected: the strip disappears and the app is untouched.
+9. Background the app and return. Expected: the strip comes straight back — dismissing it is for that visit, not forever, and this path is not throttled.
+10. Tap the strip's text. Expected: the app reloads and the change from step 5 is on screen.
+11. Repeat steps 2–10 with ENDZ open in a **Safari tab** instead of the home-screen icon.
+
+If the banner never appears at step 7, note whether step 2 was actually done, and how long the app was in the background — those are the two things that produce a false failure.
 
 - [ ] **Step 5: Report honestly**
 
@@ -666,4 +782,4 @@ State which gates were run with their real output, and state plainly that accept
 3. No banner ever appears when the build is current, including offline or on a failing network. *(Task 1 tests + Task 4 Step 4 negative case)*
 4. No auto-reload, ever. *(Task 3 — reload is only in the button's onClick)*
 5. `sw.js` is byte-for-byte unchanged. *(Task 4 Step 1)*
-6. Ignoring the banner leaves the app fully usable. *(Task 3 Step 5 — covers no tab, z-40 under the nav)*
+6. Ignoring the banner leaves the app fully usable. *(Task 3 Step 6 — the banner joins the bottom stack and pushes the tab bar's neighbours up via `--endz-update-banner-h`, so it covers no tab, no Map/List toggle, no "I'm out tonight" button and no check-in prompt; z-40 stays under the nav's z-50. Confirmed on device in Task 4 Step 4 item 7.)*
