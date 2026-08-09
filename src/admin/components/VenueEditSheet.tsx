@@ -34,7 +34,8 @@ import {
   type VenuePatch,
 } from "../data/venues";
 import { uploadVenuePhoto, deleteVenuePhotoByUrl } from "@/lib/venuePhotos";
-import { PLACEHOLDER } from "@/lib/venueImages";
+import { PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
+import PhotoLightbox from "@/components/PhotoLightbox";
 
 type Props = {
   venue: AdminVenueRow | null;
@@ -55,6 +56,7 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   // the value that ended up saved, right after save — so a Cancel, a second
   // pick before saving, or a pick-then-Remove never orphans a bucket file.
   const [pendingUploadUrl, setPendingUploadUrl] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   // The venue this mounted sheet instance is currently showing, kept fresh
   // every render. VenueEditSheet is never remounted between venues — the
   // parent just swaps the `venue` prop — so an upload's async continuation
@@ -192,11 +194,26 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
             hint="Venue-owned photos only (their Instagram or site). Not Google Maps, not press sites."
           >
             <div className="flex gap-3">
-              <img
-                src={draft.image_url || PLACEHOLDER[draft.type] || PLACEHOLDER.bar}
-                alt=""
-                className="h-20 w-20 flex-shrink-0 rounded-lg border border-border object-cover"
-              />
+              {hasRealPhoto(draft) ? (
+                <button
+                  type="button"
+                  onClick={() => setLightboxUrl(draft.image_url!)}
+                  className="flex-shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`View photo of ${draft.name}`}
+                >
+                  <img
+                    src={draft.image_url || PLACEHOLDER[draft.type] || PLACEHOLDER.bar}
+                    alt=""
+                    className="h-20 w-20 rounded-lg border border-border object-cover"
+                  />
+                </button>
+              ) : (
+                <img
+                  src={draft.image_url || PLACEHOLDER[draft.type] || PLACEHOLDER.bar}
+                  alt=""
+                  className="h-20 w-20 flex-shrink-0 rounded-lg border border-border object-cover"
+                />
+              )}
               <div className="flex flex-col justify-center gap-2">
                 <input
                   ref={fileInput}
@@ -369,6 +386,12 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
               </div>
             ))}
           </div>
+
+          <PhotoLightbox
+            url={lightboxUrl}
+            onClose={() => setLightboxUrl(null)}
+            alt={draft.name}
+          />
         </div>
 
         <div className="sticky bottom-0 flex gap-2 border-t border-border bg-background py-3">
