@@ -36,7 +36,14 @@ export default function BarCard({ venue, onClick }: { venue: Venue; onClick?: ()
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick?.()}
+      onKeyDown={(e) => {
+        // Only when the card root itself is the focused node — otherwise
+        // Enter/Space on any focusable descendant (the photo button, the
+        // save/bookmark button) bubbles here and opens the venue on top of
+        // whatever that descendant already did.
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") onClick?.();
+      }}
       className="group w-full text-left rounded-2xl glass hover:bg-accent/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring overflow-hidden flex items-stretch cursor-pointer"
       aria-label={`${venue.title} details`}
     >

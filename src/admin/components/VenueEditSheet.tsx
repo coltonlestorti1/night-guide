@@ -65,7 +65,10 @@ const VenueEditSheet = ({ venue, onClose, onSaved }: Props) => {
   // reassigned on every render can.
   const latestVenueId = useRef<string | null>(null);
 
-  useEffect(() => setDraft(venue), [venue]);
+  useEffect(() => {
+    setDraft(venue);
+    setLightboxUrl(null);
+  }, [venue]);
 
   // Hooks above run unconditionally; everything below may read `venue`.
   if (!venue || !draft) return null;

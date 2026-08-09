@@ -23,7 +23,12 @@ const PhotoLightbox = ({ url, onClose, alt = "" }: Props) => (
   // clickable ancestor rendered this component — e.g. a BarCard row. Radix's
   // own outside-click dismissal is a separate native listener and still
   // fires; this only stops the click's own onward journey once it gets here.
-  <div onClick={(e) => e.stopPropagation()}>
+  // Keydown needs the same treatment: Radix autofocuses DialogContent's close
+  // button on open, and Enter/Space there both closes the photo and (absent
+  // this stop) bubbles to reach the ancestor's onKeyDown too.
+  // `contents` keeps this div out of the caller's layout — it exists only as
+  // a React event boundary, not a box any caller's flow should see.
+  <div className="contents" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
     <Dialog open={!!url} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl border-none bg-transparent p-0 shadow-none">
         <DialogTitle className="sr-only">Photo</DialogTitle>

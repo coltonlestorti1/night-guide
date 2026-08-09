@@ -25,6 +25,7 @@ const SavedSpotsList = () => {
   const ids = useSaves().ids;
   const { data: venues, isLoading, isError } = useVenues({});
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState("");
 
   if (ids.length === 0) return <EmptyState />;
 
@@ -61,13 +62,16 @@ const SavedSpotsList = () => {
         {saved.map((venue) => (
           <li
             key={venue.id}
-            className="flex w-full items-center gap-3 p-3 transition-colors hover:bg-secondary/40"
+            className="flex w-full items-center p-0 transition-colors hover:bg-secondary/40"
           >
-            {hasRealPhoto(venue) ? (
+            {hasRealPhoto(venue) && (
               <button
                 type="button"
-                onClick={() => setLightboxUrl(venue.image_url!)}
-                className="shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => {
+                  setLightboxUrl(venue.image_url!);
+                  setLightboxAlt(venue.title);
+                }}
+                className="shrink-0 rounded-xl py-3 pl-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={`View photo of ${venue.title}`}
               >
                 <img
@@ -79,22 +83,23 @@ const SavedSpotsList = () => {
                   }}
                 />
               </button>
-            ) : (
-              <img
-                src={venueImageSrc(venue)}
-                alt=""
-                className="h-11 w-11 rounded-xl object-cover shrink-0"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
-                }}
-              />
             )}
 
             <button
               type="button"
               onClick={() => navigate(`/venue/${venue.id}`)}
-              className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-w-0 flex-1 items-center gap-3 py-3 pr-3 pl-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
+              {!hasRealPhoto(venue) && (
+                <img
+                  src={venueImageSrc(venue)}
+                  alt=""
+                  className="h-11 w-11 rounded-xl object-cover shrink-0"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
+                  }}
+                />
+              )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold">{venue.title}</span>
                 {venue.neighborhood && (
@@ -111,6 +116,7 @@ const SavedSpotsList = () => {
       <PhotoLightbox
         url={lightboxUrl}
         onClose={() => setLightboxUrl(null)}
+        alt={lightboxAlt}
       />
     </>
   );

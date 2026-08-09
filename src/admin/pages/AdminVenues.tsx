@@ -37,6 +37,7 @@ const AdminVenues = () => {
   const [editing, setEditing] = useState<AdminVenueRow | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState("");
 
   const configured = Boolean(getSupabase());
 
@@ -167,6 +168,7 @@ const AdminVenues = () => {
                               // The row's onClick opens the edit sheet.
                               e.stopPropagation();
                               setLightboxUrl(v.image_url!);
+                              setLightboxAlt(v.name);
                             }}
                             className="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             aria-label={`View photo of ${v.name}`}
@@ -245,7 +247,7 @@ const AdminVenues = () => {
           refetch();
         }}
       />
-      <PhotoLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
+      <PhotoLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} alt={lightboxAlt} />
     </>
   );
 };
