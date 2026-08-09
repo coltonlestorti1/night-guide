@@ -37,9 +37,20 @@
 --   events.venue_id               on delete set null -> row survives, venue_id -> null
 --   venue_requests.fulfilled_venue_id   (no action)   -> BLOCKS the delete with
 --     a foreign-key violation until that request is reassigned or cleared.
---     night_comments/night_post_likes/night_post_tags reference night_posts,
---     not venues directly, so they cascade transitively through night_posts
---     and need no entry of their own here.
+--
+-- TRANSITIVE CASCADE — night_posts.venue_id going away drags MORE than the
+-- venue_delete_impact() "night_posts" count reveals. night_comments,
+-- night_post_likes, night_post_tags and night_post_photos all reference
+-- night_posts (not venues directly), each ON DELETE CASCADE, so deleting a
+-- venue with 2 night posts can destroy dozens of rows once every comment,
+-- like, tag and photo on those 2 posts is counted. venue_delete_impact()
+-- deliberately does NOT add sub-counts for these — that would mean either a
+-- much heavier function or a second RPC just for depth-2 counts, for numbers
+-- an admin cannot act on individually anyway (you either delete the venue and
+-- everything under it, or you don't). The honest fix is at the UI layer: the
+-- confirmation copy must say plainly that deleting a night post also deletes
+-- its comments, likes, tags and photos, not just report a "night_posts"
+-- number that undersells what actually dies.
 -- ============================================================================
 
 
@@ -51,17 +62,52 @@ create policy "admins delete venues"
   using (public.is_admin());
 
 
--- ---------- 2. venue_delete_impact() ----------
+-- ---------- 2. is_admin() — RESTATED, search_path fix ----------
+-- The original definition in scripts/2026-07-28-admin-ddl.sql pins
+-- `set search_path = public` but NOT pg_temp. When pg_temp is not listed
+-- explicitly, Postgres searches it FIRST for unqualified relation names.
+-- Any authenticated user can run `create temp table profiles(id uuid, role
+-- text)` in their own session and insert a row making themselves look like an
+-- admin; is_admin()'s `select ... from profiles` would then resolve to that
+-- session-local temp table instead of public.profiles and return true. That
+-- function already gates venue UPDATE and the whole admin dashboard, and this
+-- script adds venue DELETE behind the same gate — the fix belongs here, in
+-- the script that is actually about to be pasted, not as a silent edit to the
+-- 2026-07-28 file (which stays as the historical record of what shipped
+-- then). `create or replace` is safe: same signature, same behavior, just a
+-- closed search_path.
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from profiles
+    where id = auth.uid()
+      and role in ('admin', 'super_admin')
+  );
+$$;
+
+grant execute on function public.is_admin() to authenticated;
+
+
+-- ---------- 3. venue_delete_impact() ----------
 -- One column per table that references venues, named for the table, so the
 -- admin sees the full blast radius before confirming. Same SECURITY DEFINER +
 -- pinned search_path + self-checked is_admin() pattern as admin_overview() in
--- scripts/2026-07-28-admin-ddl.sql.
+-- scripts/2026-07-28-admin-ddl.sql — with search_path additionally pinning
+-- pg_temp for the same reason as is_admin() above; this function also reads
+-- straight from base tables under SECURITY DEFINER and is just as reachable
+-- by a `create temp table check_ins(...)` shadowing trick otherwise.
 -- Every source table is aliased (c, vr, np, ...) even though most of the
 -- queries don't strictly need it, because the OUT parameters implied by
 -- `returns table` are named identically to several of these tables
 -- (check_ins, venue_ratings, ...) and become PL/pgSQL variables in scope for
 -- the rest of the function body. Aliasing sidesteps that name collision
 -- entirely instead of relying on qualified-reference resolution rules.
+drop function if exists public.venue_delete_impact(uuid);
 create or replace function public.venue_delete_impact(p_venue_id uuid)
 returns table (
   check_ins        bigint,
@@ -76,7 +122,7 @@ returns table (
 language plpgsql
 security definer
 stable
-set search_path = public
+set search_path = public, pg_temp
 as $$
 begin
   if not public.is_admin() then raise exception 'not authorized'; end if;
@@ -92,6 +138,11 @@ begin
       (select count(*) from venue_requests vreq where vreq.fulfilled_venue_id = p_venue_id)::bigint;
 end $$;
 
+-- Default PUBLIC grant on new functions would otherwise leave `anon` able to
+-- call this — harmlessly, since is_admin() rejects it with "not authorized",
+-- but the grant should say what it means rather than rely on that rejection
+-- being the only thing standing between anon and a call attempt.
+revoke execute on function public.venue_delete_impact(uuid) from public;
 grant execute on function public.venue_delete_impact(uuid) to authenticated;
 
 
@@ -103,6 +154,10 @@ grant execute on function public.venue_delete_impact(uuid) to authenticated;
 -- select policyname from pg_policies
 --   where tablename = 'venues' and policyname = 'admins delete venues';
 --   -- expect: one row
+--
+-- select proname, proconfig from pg_proc
+--   where proname in ('is_admin', 'venue_delete_impact') and pronamespace = 'public'::regnamespace;
+--   -- expect proconfig to include search_path=public, pg_temp for both rows
 --
 -- select * from public.venue_delete_impact(
 --   (select id from venues order by created_at limit 1)
