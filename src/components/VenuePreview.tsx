@@ -23,6 +23,8 @@ import VenueMoreInfo from "@/components/VenueMoreInfo";
 import TypicalNightChart from "@/components/TypicalNightChart";
 import FriendsHereRow from "@/components/FriendsHereRow";
 import PlansHereRow from "@/components/PlansHereRow";
+import PhotoLightbox from "@/components/PhotoLightbox";
+import { hasRealPhoto } from "@/lib/venueImages";
 
 export default function VenuePreview({
   venue,
@@ -43,6 +45,9 @@ export default function VenuePreview({
   const signedIn = useAuthStore((s) => s.status) === "signedIn";
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [planOpen, setPlanOpen] = useState(false);
+  // NOT `expanded` — that name is already taken in this file for the details
+  // section toggle (see the useState above).
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const showMore = hasMoreInfo(venue);
   // The back glyph is currently synonymous with the standalone page — the two
   // sheet containers both close. Page gets top-left back (the app's convention
@@ -68,17 +73,38 @@ export default function VenuePreview({
     <div className="px-4 pt-2 pb-6 w-full animate-slide-up">
       {/* Hero image */}
       <div className="relative w-full h-44 rounded-2xl overflow-hidden mb-4 bg-secondary">
-        <img
-          src={venue.image_url || ""}
-          alt={venue.title}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            const t = e.target as HTMLImageElement;
-            t.style.display = "none";
-            (t.parentElement as HTMLElement).style.background =
-              "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--primary-soft)))";
-          }}
-        />
+        {hasRealPhoto(venue) ? (
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(venue.image_url!)}
+            className="block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`View photo of ${venue.title}`}
+          >
+            <img
+              src={venue.image_url || ""}
+              alt={venue.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const t = e.target as HTMLImageElement;
+                t.style.display = "none";
+                (t.parentElement as HTMLElement).style.background =
+                  "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--primary-soft)))";
+              }}
+            />
+          </button>
+        ) : (
+          <img
+            src={venue.image_url || ""}
+            alt={venue.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const t = e.target as HTMLImageElement;
+              t.style.display = "none";
+              (t.parentElement as HTMLElement).style.background =
+                "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--primary-soft)))";
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none" />
         <button
           onClick={onClose}
@@ -205,6 +231,12 @@ export default function VenuePreview({
           {expanded && <VenueMoreInfo venue={venue} />}
         </div>
       )}
+
+      <PhotoLightbox
+        url={lightboxUrl}
+        onClose={() => setLightboxUrl(null)}
+        alt={venue.title}
+      />
     </div>
   );
 }
