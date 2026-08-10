@@ -15,6 +15,7 @@ import AdminLayout from "@/admin/AdminLayout";
 import AdminOverview from "@/admin/pages/AdminOverview";
 import AdminVenues from "@/admin/pages/AdminVenues";
 import AdminQuality from "@/admin/pages/AdminQuality";
+import AdminStorage from "@/admin/pages/AdminStorage";
 import DeferredSection from "@/admin/pages/DeferredSection";
 import { ADMIN_NAV_DEFERRED } from "@/admin/nav";
 
@@ -25,6 +26,7 @@ const AdminRoutes = () => (
         <Route index element={<AdminOverview />} />
         <Route path="venues" element={<AdminVenues />} />
         <Route path="quality" element={<AdminQuality />} />
+        <Route path="storage" element={<AdminStorage />} />
         {ADMIN_NAV_DEFERRED.map((item) => (
           <Route
             key={item.to}
