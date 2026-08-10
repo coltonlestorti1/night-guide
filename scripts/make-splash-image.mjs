@@ -28,6 +28,8 @@ import {
   WORDMARK,
   E_ASPECT,
   E_RECTS,
+  E_STOPS,
+  hex,
   WORDMARK_PATH,
   WORDMARK_VIEWBOX,
   LAYOUT,
@@ -44,14 +46,18 @@ const OUT_DIR = resolve(ROOT, "public/splash");
 
 /**
  * Every distinct portrait (device-width, device-height, DPR) an iPhone
- * presents to Safari. Verified against iosref.com/res rather than recalled —
- * pixel dimensions are always points x scale, so the arithmetic is checked at
- * startup below.
+ * presents to Safari. Checked against published device tables rather than
+ * recalled — pixel dimensions are always points x scale, and the arithmetic is
+ * asserted at startup below.
+ *
+ * Cross-check any addition against a SECOND source. iosref.com/res, which this
+ * table was first built from, omits the iPhone Air entirely; a single source
+ * would have shipped a white launch screen for that device.
  *
  * Models sharing a configuration share one image: the X, XS, 11 Pro, 12 mini
  * and 13 mini are all 375x812 @3x.
  */
-const DEVICES = [
+export const DEVICES = [
   { w: 320, h: 568, dpr: 2, models: "SE (1st gen)" },
   { w: 375, h: 667, dpr: 2, models: "SE 2nd/3rd gen, 8" },
   { w: 414, h: 736, dpr: 3, models: "8 Plus" },
@@ -64,6 +70,10 @@ const DEVICES = [
   { w: 430, h: 932, dpr: 3, models: "14 Pro Max, 15 Plus/Pro Max, 16 Plus" },
   { w: 402, h: 874, dpr: 3, models: "16 Pro, 17, 17 Pro" },
   { w: 440, h: 956, dpr: 3, models: "16 Pro Max, 17 Pro Max" },
+  // The Air is its own size and is MISSING from iosref's table — found only by
+  // checking a second source. Without this row an Air owner gets exactly the
+  // white launch screen this whole file exists to remove.
+  { w: 420, h: 912, dpr: 3, models: "Air (2025)" },
 ];
 
 /* ---------------------------------------------------------------- geometry */
@@ -73,7 +83,7 @@ const DEVICES = [
  * The live splash in index.html centres the same group with flexbox; these
  * numbers must produce the same result, which is what --check enforces.
  */
-function layout(cssW, cssH) {
+export function layout(cssW, cssH) {
   const cx = cssW / 2;
   const groupTop = cssH * LAYOUT.centerYFraction - markHeight() / 2;
   // The ring sits at the centre of the MARK_BOX, not at one ring-radius down:
@@ -145,21 +155,53 @@ function flattenPath(d) {
   return contours;
 }
 
-/** Non-zero winding, which is what TrueType outlines assume — the counters in
- *  D and the bowl of the E depend on it. */
-function insidePath(contours, px, py) {
-  let winding = 0;
-  for (const c of contours) {
+/**
+ * Where the outline crosses one horizontal line, sorted left to right, with
+ * the direction of each crossing.
+ *
+ * Cached per scanline: within a row of subsamples `py` is constant while `px`
+ * varies, so walking all ~400 segments for every single subsample was doing the
+ * same work hundreds of times. The crossings depend only on the path, which
+ * never changes, so the cache is valid across images too.
+ */
+const crossingCache = new Map();
+
+/**
+ * Deliberately closed over WORDMARK_CONTOURS rather than taking the contours as
+ * an argument: the cache is keyed on `py` ALONE, so a second caller passing a
+ * different outline would silently receive this one's crossings. There is only
+ * ever one path to fill, and this keeps that a fact rather than an assumption.
+ */
+function wordmarkCrossingsAt(py) {
+  const hit = crossingCache.get(py);
+  if (hit) return hit;
+  const xs = [];
+  for (const c of WORDMARK_CONTOURS) {
     for (let i = 0; i < c.length; i++) {
       const [x1, y1] = c[i];
       const [x2, y2] = c[(i + 1) % c.length];
-      if (y1 <= py) {
-        if (y2 > py && (x2 - x1) * (py - y1) - (px - x1) * (y2 - y1) > 0) winding++;
-      } else if (y2 <= py) {
-        if ((x2 - x1) * (py - y1) - (px - x1) * (y2 - y1) < 0) winding--;
-      }
+      // Half-open rule: a vertex sitting exactly on the scanline is counted
+      // once, not twice, and a horizontal segment is skipped entirely (both
+      // ends compare equal). Parenthesised because `<=` binds tighter than
+      // `===`, and the intent should not rest on remembering that.
+      if ((y1 <= py) === (y2 <= py)) continue;
+      xs.push({
+        x: x1 + ((py - y1) / (y2 - y1)) * (x2 - x1),
+        dir: y2 > y1 ? 1 : -1,
+      });
     }
   }
+  xs.sort((a, b) => a.x - b.x);
+  crossingCache.set(py, xs);
+  return xs;
+}
+
+/** Non-zero winding, which is what TrueType outlines assume — the counters in
+ *  D and the bowl of the E depend on it. */
+function insideWordmark(px, py) {
+  const xs = wordmarkCrossingsAt(py);
+  let winding = 0;
+  for (let i = 0; i < xs.length && xs[i].x <= px; i++) winding += xs[i].dir;
   return winding !== 0;
 }
 
@@ -175,15 +217,17 @@ export function render(cssW, cssH, dpr) {
   const L = layout(cssW, cssH);
 
   // Flat background first; the artwork is a rounding error of the canvas.
-  const raw = Buffer.alloc(H * (1 + W * 3));
-  for (let y = 0; y < H; y++) {
-    const row = y * (1 + W * 3);
-    raw[row] = 0;
-    for (let x = 0; x < W; x++) {
-      const o = row + 1 + x * 3;
-      raw[o] = BG[0]; raw[o + 1] = BG[1]; raw[o + 2] = BG[2];
-    }
+  // One row is built by hand and then memcpy'd down the image — at 1320x2868
+  // that is 2868 native copies instead of 3.8M JS loop iterations.
+  const stride = 1 + W * 3;
+  const raw = Buffer.alloc(H * stride);
+  const bgRow = Buffer.alloc(stride);
+  bgRow[0] = 0; // PNG filter: None
+  for (let x = 0; x < W; x++) {
+    const o = 1 + x * 3;
+    bgRow[o] = BG[0]; bgRow[o + 1] = BG[1]; bgRow[o + 2] = BG[2];
   }
+  for (let y = 0; y < H; y++) bgRow.copy(raw, y * stride);
 
   const ringOuter = LAYOUT.ringRadius + LAYOUT.ringStroke / 2;
   const ringInner = LAYOUT.ringRadius - LAYOUT.ringStroke / 2;
@@ -223,7 +267,7 @@ export function render(cssW, cssH, dpr) {
   const sampleWordmark = (sx, sy) => {
     const u = ((sx - L.wm.x) / L.wm.w) * WORDMARK_VIEWBOX.w;
     const v = ((sy - L.wm.y) / L.wm.h) * WORDMARK_VIEWBOX.h;
-    return insidePath(WORDMARK_CONTOURS, u, v) ? WORDMARK : BG;
+    return insideWordmark(u, v) ? WORDMARK : BG;
   };
 
   /** Supersample `sampler` over a CSS-pixel rect, writing averaged pixels. */
@@ -279,10 +323,9 @@ export function render(cssW, cssH, dpr) {
  * white screen used to be. index.html cannot import this module (it is static
  * markup), so instead we assert the numbers it hardcodes are still these ones.
  */
-function checkIndexHtml() {
-  const html = readFileSync(resolve(ROOT, "index.html"), "utf8");
+export function expectedInIndexHtml() {
   const c = MARK_BOX / 2;
-  const expect = [
+  return [
     ["wordmark path", WORDMARK_PATH],
     ["E path", ePath(c, c)],
     ["mark box viewBox", `viewBox="0 0 ${MARK_BOX} ${MARK_BOX}"`],
@@ -295,30 +338,108 @@ function checkIndexHtml() {
     ["orbit period", `${ORBIT_PERIOD_MS}ms`],
     ["wordmark width", `width="${LAYOUT.wordmarkWidth}"`],
     ["splash gap", `gap: ${LAYOUT.wordmarkGap}px`],
-    ["background", "#F7F7F4"],
+    // Everything below drifted SILENTLY until a review mutation-tested this
+    // list: each constant was changed one at a time and the guard still passed.
+    // Every value here is DERIVED from splash-art.mjs — a literal repeated here
+    // would only be checking itself, which is exactly what `"#F7F7F4"` was
+    // doing while hex() sat unused.
+    ["ring stroke width", `stroke-width="${LAYOUT.ringStroke}"`],
+    ["ring track opacity", `stroke-opacity="${LAYOUT.ringAlpha}"`],
+    ["ring colour", `stroke="${hex(PURPLE)}"`],
+    ["dot colour", `fill="${hex(PURPLE)}"`],
+    ["wordmark colour", `fill="${hex(WORDMARK)}"`],
+    ["wordmark viewBox", `viewBox="0 0 ${WORDMARK_VIEWBOX.w} ${WORDMARK_VIEWBOX.h}"`],
+    ["wordmark height", `height="${Math.round(wordmarkHeight() * 100) / 100}"`],
+    ["background", hex(BG)],
+    ...E_STOPS.map(([offset, colour], i) => [
+      `gradient stop ${i}`,
+      `offset="${offset}" stop-color="${hex(colour)}"`,
+    ]),
   ];
-  const missing = expect.filter(([, needle]) => !html.includes(needle));
+}
+
+function checkIndexHtml() {
+  const html = readFileSync(resolve(ROOT, "index.html"), "utf8");
+  const missing = expectedInIndexHtml().filter(
+    ([, needle]) => !html.includes(needle),
+  );
+
+  // The link set has to match the device table too. A row added to DEVICES
+  // without its <link> produces an image nothing ever loads; a <link> without
+  // its row points at a file that does not exist. Either way: white screen.
+  for (const d of DEVICES) {
+    const media =
+      `(device-width: ${d.w}px) and (device-height: ${d.h}px) and ` +
+      `(-webkit-device-pixel-ratio: ${d.dpr})`;
+    if (!html.includes(media)) missing.push([`startup link for ${d.models}`]);
+    if (!html.includes(`/splash/splash-${d.w * d.dpr}x${d.h * d.dpr}.png`)) {
+      missing.push([`startup image href for ${d.models}`]);
+    }
+  }
+
   if (missing.length) {
     console.error("index.html has drifted from scripts/lib/splash-art.mjs:");
     for (const [what] of missing) console.error(`  missing: ${what}`);
     process.exit(1);
   }
-  console.log("index.html matches splash-art.mjs ✓");
+  console.log(`index.html matches splash-art.mjs ✓ (${DEVICES.length} devices)`);
+}
+
+/**
+ * Are the committed PNGs actually what the current source renders?
+ *
+ * Without this, changing the geometry and hand-editing index.html to match
+ * passes every other check while `public/splash/*.png` stay stale — and stale
+ * images are the one failure the whole design is built to avoid, because they
+ * are what iOS paints before the HTML takes over.
+ */
+function checkImagesCurrent() {
+  let stale = 0;
+  for (const d of DEVICES) {
+    const { raw, W, H } = render(d.w, d.h, d.dpr);
+    const path = resolve(OUT_DIR, `splash-${W}x${H}.png`);
+    let onDisk;
+    try {
+      onDisk = readFileSync(path);
+    } catch {
+      console.error(`  missing image: splash-${W}x${H}.png (${d.models})`);
+      stale++;
+      continue;
+    }
+    if (!onDisk.equals(encodePNG(raw, W, H))) {
+      console.error(`  stale image: splash-${W}x${H}.png (${d.models})`);
+      stale++;
+    }
+  }
+  if (stale) {
+    console.error(`${stale} launch image(s) out of date — run: npm run make:splash`);
+    process.exit(1);
+  }
+  console.log(`${DEVICES.length} launch images match the current source ✓`);
 }
 
 /* -------------------------------------------------------------------- main */
 
 function main() {
-  // Guard the table itself: every entry's pixel size is points x scale, and a
-  // wrong dimension means iOS silently shows white for that device.
+  // A duplicate configuration means one image silently shadows another and a
+  // whole class of device gets the wrong art. (The previous guard here checked
+  // Number.isInteger(w * dpr), which for integer inputs can never be false —
+  // it read like a safety net and was dead code. Nothing here can validate the
+  // table against real hardware; only a device can.)
+  const seen = new Map();
   for (const d of DEVICES) {
-    if (!Number.isInteger(d.w * d.dpr) || !Number.isInteger(d.h * d.dpr)) {
-      throw new Error(`non-integer pixel size for ${d.models}`);
+    const key = `${d.w}x${d.h}@${d.dpr}`;
+    if (seen.has(key)) {
+      throw new Error(
+        `duplicate device configuration ${key}: "${seen.get(key)}" and "${d.models}"`,
+      );
     }
+    seen.set(key, d.models);
   }
 
   if (process.argv.includes("--check")) {
     checkIndexHtml();
+    checkImagesCurrent();
     return;
   }
 
