@@ -1,5 +1,5 @@
 /**
- * Your lists — Been (ranked, scored) and Want to try (saved).
+ * Your lists — Been (ranked, scored) and Saved (bookmarked).
  *
  * Reached from the profile stat row, not from the bottom bar: four tabs is
  * already the right number for a phone. The active tab lives in the URL so the
@@ -8,6 +8,12 @@
  * Been is a flat list ordered best-first. It is not grouped by bucket — the
  * bands guarantee the order already, and headers would turn one ranking into
  * three short ones.
+ *
+ * Saved deliberately OVERLAPS Been: rating a venue does not unsave it, because
+ * a bookmark is something the user set on purpose and "Saved" — unlike Beli's
+ * "Want to Try" — does not expire once you have been. Saved rows therefore
+ * carry your score when you have one, so one list answers both "where do I
+ * want to go" and "what did I make of it".
  *
  * Everything here is the signed-in user's own data. venue_ratings is owner-only
  * at the RLS level and nothing on this page reads anyone else's.
@@ -76,13 +82,19 @@ const Lists = () => {
   const been = useMemo(() => beenList(ratings, venues ?? []), [ratings, venues]);
   const saved = useMemo(() => {
     const byId = new Map((venues ?? []).map((v) => [v.id, v]));
+    // Read the rating off the ranked list rather than the raw rows, so the
+    // score shown here is the same number Been shows for the same venue.
+    const rated = new Map(been.map((e) => [e.venue.id, e]));
     // Saved ids that no longer resolve (deactivated venue) are dropped rather
     // than rendered as blank rows — same rule beenList applies to ratings.
-    return savedIds.map((id) => byId.get(id)).filter((v) => v !== undefined);
-  }, [savedIds, venues]);
+    return savedIds.flatMap((id) => {
+      const venue = byId.get(id);
+      return venue ? [{ venue, rating: rated.get(id) }] : [];
+    });
+  }, [savedIds, venues, been]);
 
   const shownBeen = been.filter((e) => venueMatches(e.venue, q));
-  const shownSaved = saved.filter((v) => venueMatches(v, q));
+  const shownSaved = saved.filter((e) => venueMatches(e.venue, q));
 
   // A failed ratings fetch must never render as "you haven't ranked anywhere" —
   // that reads as data loss on a list the user knows has thirty venues in it.
@@ -168,7 +180,7 @@ const Lists = () => {
               rank={e.position}
               score={e.score}
               bucket={e.bucket}
-              trailing={<ListRowMenu venue={e.venue} bucket={e.bucket} />}
+              trailing={<ListRowMenu venue={e.venue} list="been" bucket={e.bucket} />}
             />
           ))}
         </ul>
@@ -199,11 +211,17 @@ const Lists = () => {
     }
     return (
       <ul className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">
-        {shownSaved.map((venue) => (
+        {shownSaved.map(({ venue, rating }) => (
           <VenueListRow
             key={venue.id}
             venue={venue}
-            trailing={signedIn ? <ListRowMenu venue={venue} /> : undefined}
+            score={rating?.score}
+            bucket={rating?.bucket}
+            trailing={
+              signedIn ? (
+                <ListRowMenu venue={venue} list="saved" bucket={rating?.bucket} />
+              ) : undefined
+            }
           />
         ))}
       </ul>
@@ -240,7 +258,7 @@ const Lists = () => {
             >
               {t === "been"
                 ? `Been${been.length ? ` · ${been.length}` : ""}`
-                : `Want to try${saved.length ? ` · ${saved.length}` : ""}`}
+                : `Saved${saved.length ? ` · ${saved.length}` : ""}`}
             </Button>
           ))}
         </div>

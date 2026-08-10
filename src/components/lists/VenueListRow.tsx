@@ -1,7 +1,7 @@
 /**
  * One venue row, shared by every list surface. It began as the row inside the
  * old profile SavedSpotsList (removed when /lists took over that job), lifted
- * out so Been and Want to try cannot drift apart in padding, focus ring or
+ * out so Been and Saved cannot drift apart in padding, focus ring or
  * fallback image behaviour.
  *
  * The whole row navigates, thumbnail included. The old saved-spots row opened

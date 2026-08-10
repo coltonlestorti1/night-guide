@@ -13,8 +13,6 @@ import {
   saveRating,
   type RatingRow,
 } from "@/lib/night/ratings";
-import { removeSave } from "@/lib/saves";
-import { useSavedStore } from "@/store/saved";
 import type { Bucket } from "@/lib/night/ranking";
 
 export function useMyRatings() {
@@ -55,30 +53,14 @@ export function useSaveRating() {
         await removeFromBucket(userId, v.venueId, previous.bucket, orderOf(v.allRows, previous.bucket));
       }
 
-      // Rating it means you have been — it belongs in Been, not Want to try.
-      // Attempted unconditionally: removeSave throws "matched no row" when it
-      // was never saved, which is handled below and is cheaper than threading
-      // the saved-id list through this mutation. It lives here rather than in
-      // the rating UI so it fires from every entry point — the recap, the
-      // publish form, and the venue card.
-      try {
-        await removeSave(userId, v.venueId);
-        // The local mirror is the offline/signed-out fallback. Removing the
-        // save server-side without it leaves the two anti-phase: the next
-        // bookmark tap would then toggle them in opposite directions and they
-        // never reconcile.
-        if (useSavedStore.getState().ids.includes(v.venueId)) {
-          useSavedStore.getState().toggle(v.venueId);
-        }
-      } catch (e) {
-        // "matched no row" is the expected case — it was never saved. Anything
-        // else is a real failure and must not be silent, though it still must
-        // not fail the rating: that already landed, and the user's intent was
-        // the rating, not the bookkeeping.
-        if (!(e instanceof Error) || !e.message.includes("matched no row")) {
-          console.warn("Rating saved, but the venue could not leave Want to try", e);
-        }
-      }
+      // NOTE: rating deliberately does NOT unsave. Saved means "I bookmarked
+      // this", and a place you have been to is exactly what you re-save. The
+      // first cut moved a rated venue out of Saved the way Beli moves it out of
+      // "Want to Try" — but that word is a statement of intent that expires
+      // once you have been, and "Saved" is not. Silently undoing a bookmark the
+      // user deliberately set is the app overruling them. The Saved list shows
+      // your score on anything you have rated instead, so the two read as one
+      // shortlist rather than two lists that fight over the same venue.
     },
     // onSettled, not onSuccess: saveRating + removeFromBucket are two round
     // trips, so a failure can still have changed the server. Invalidating only
@@ -86,7 +68,6 @@ export function useSaveRating() {
     // write, and the UI then lies in the direction of "nothing happened".
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
-      qc.invalidateQueries({ queryKey: ["my-saves", userId] });
     },
   });
 }

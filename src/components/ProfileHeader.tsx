@@ -2,7 +2,7 @@
  * The identity card at the top of /profile and /u/:username.
  *
  * Stats are PASSED IN, never fetched here. The own-profile page passes
- * Friends / Been / Want to try; the public page passes none. If this component
+ * Friends / Been / Saved; the public page passes none. If this component
  * fetched them itself it would render the VIEWER's counts on someone else's
  * page — venue_ratings and venue_saves are owner-scoped, so the only numbers it
  * could ever read are the viewer's own, and they would silently be attributed

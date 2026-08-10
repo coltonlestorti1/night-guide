@@ -187,9 +187,9 @@ const Profile = () => {
             createdAt={profile?.created_at}
             collegeLine={collegeLabel(profile?.college_slug, profile?.class_year)}
             stats={[
-              { label: "Friends", value: friendCount, to: "/social" },
+              { label: "Friends", value: friendCount, to: "/friends" },
               { label: "Been", value: beenCount, to: "/lists?tab=been" },
-              { label: "Want to try", value: savedCount, to: "/lists?tab=saved" },
+              { label: "Saved", value: savedCount, to: "/lists?tab=saved" },
             ]}
             action={
               <Button

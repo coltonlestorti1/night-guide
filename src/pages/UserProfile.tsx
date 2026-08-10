@@ -105,7 +105,7 @@ const UserProfile = () => {
         createdAt={profile.created_at}
         collegeLine={collegeLabel(profile.college_slug, profile.class_year)}
         bio={profile.bio}
-        /* No stats on someone else's page in this slice: Been and Want to try
+        /* No stats on someone else's page in this slice: Been and Saved
            are owner-only at the RLS level, so the only counts this page could
            fetch are the VIEWER's own. See the note in ProfileHeader. */
         action={

@@ -1,10 +1,10 @@
 /**
  * Per-row actions on a list.
  *
- * Been rows get "Rank again" and a confirmed "Remove". Want to try rows get
- * "Rate it" and "Remove" — rating from the saved list is the action that moves
- * a venue from one tab to the other, and the saved list is exactly where
- * someone forms the thought "I went to that one".
+ * A row shows "Rank again" or "Rate it" depending on whether it has a rating,
+ * and a remove that means the right thing for the list it is on. Rating from
+ * the Saved list matters: that list is exactly where someone forms the thought
+ * "I went to that one".
  *
  * Removing a rating is confirmed because it throws away the comparisons that
  * produced the position, and re-earning them means answering the head-to-heads
@@ -42,10 +42,15 @@ const ITEM = "h-11 px-3 text-sm";
 
 export default function ListRowMenu({
   venue,
+  list,
   bucket,
 }: {
   venue: Venue;
-  /** The rating's bucket on a Been row; absent on a Want to try row. */
+  /** Which list this row is on. It decides what "Remove" means — the two
+   *  lists overlap now, so a rated venue can appear on both and the same
+   *  wording would delete a ranking when the user meant to unsave. */
+  list: "been" | "saved";
+  /** The venue's rating bucket, if it has one. Absent means never rated. */
   bucket?: Bucket;
 }) {
   const [rateOpen, setRateOpen] = useState(false);
@@ -79,7 +84,7 @@ export default function ListRowMenu({
           <DropdownMenuItem className={ITEM} onSelect={() => setRateOpen(true)}>
             {bucket ? "Rank again" : "Rate it"}
           </DropdownMenuItem>
-          {bucket ? (
+          {list === "been" ? (
             <DropdownMenuItem
               className={`${ITEM} text-destructive focus:text-destructive`}
               onSelect={() => setConfirmOpen(true)}
@@ -91,7 +96,7 @@ export default function ListRowMenu({
               className={`${ITEM} text-destructive focus:text-destructive`}
               onSelect={() => toggleSaved(venue.id)}
             >
-              Remove from Want to try
+              Remove from Saved
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
