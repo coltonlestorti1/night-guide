@@ -13,6 +13,10 @@ export type Profile = {
   college_slug: string | null;
   /** Graduation year. Past years read as alum. Null = not answered. */
   class_year: number | null;
+  /** Join date, for the profile's "Member since" line. Optional on the type
+   *  because a locally-constructed profile (sign-up, before the row is read
+   *  back) has not seen the database default yet. */
+  created_at?: string;
 };
 
 export type AuthStatus = "loading" | "signedOut" | "signedIn" | "needsUsername";
@@ -74,7 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     let { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, username, display_name, avatar_url, ghost_mode, bio, college_slug, class_year",
+        "id, username, display_name, avatar_url, ghost_mode, created_at, bio, college_slug, class_year",
       )
       .eq("id", session.user.id)
       .maybeSingle();
@@ -84,7 +88,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // the user profile-less, and null the rest.
       ({ data, error } = await supabase
         .from("profiles")
-        .select("id, username, display_name, avatar_url, ghost_mode")
+        .select("id, username, display_name, avatar_url, ghost_mode, created_at")
         .eq("id", session.user.id)
         .maybeSingle());
       if (data) {

@@ -10,6 +10,8 @@ import MapPage from "@/pages/MapPage";
 import Discover from "@/pages/Discover";
 import Social from "@/pages/Social";
 import Profile from "@/pages/Profile";
+import Lists from "@/pages/Lists";
+import Friends from "@/pages/Friends";
 import UserProfile from "@/pages/UserProfile";
 import VenueDetail from "@/pages/VenueDetail";
 import PickUsername from "@/pages/PickUsername";
@@ -51,6 +53,8 @@ const App = () => {
                 <Route path="venue/:id" element={<VenueDetail />} />
                 <Route path="social" element={<Social />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="lists" element={<Lists />} />
+                <Route path="friends" element={<Friends />} />
                 <Route path="u/:username" element={<UserProfile />} />
               </Route>
               <Route path="welcome" element={<PickUsername />} />

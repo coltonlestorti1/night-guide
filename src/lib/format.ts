@@ -47,3 +47,19 @@ export function formatPriceLevel(n?: number | null): string {
   const muted = "$".repeat(Math.max(0, 5 - n));
   return `${solid}${muted}`;
 }
+
+/**
+ * "June 2025" for a profile's join date. Returns null rather than a fallback
+ * string when the date is missing or unparseable — an absent line reads better
+ * than "Member since Invalid Date".
+ *
+ * Only the month is shown, so a timezone boundary can at worst shift it for
+ * someone who joined within hours of midnight on the 1st. Not worth a
+ * dependency to fix.
+ */
+export function formatMemberSince(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
