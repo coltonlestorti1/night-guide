@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Bookmark, ChevronRight } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { useVenues } from "@/hooks/useVenues";
 import { useSaves } from "@/hooks/useSaves";
-import { venueImageSrc, PLACEHOLDER, hasRealPhoto } from "@/lib/venueImages";
 import { Skeleton } from "@/components/ui/skeleton";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import VenueListRow from "@/components/lists/VenueListRow";
 
 const EmptyState = () => (
   <div className="glass rounded-2xl p-6 text-center">
@@ -21,7 +20,6 @@ const EmptyState = () => (
 
 /** Profile section body: the venues you've bookmarked, in save order. */
 const SavedSpotsList = () => {
-  const navigate = useNavigate();
   const ids = useSaves().ids;
   const { data: venues, isLoading, isError } = useVenues({});
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -60,57 +58,14 @@ const SavedSpotsList = () => {
     <>
       <ul className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">
         {saved.map((venue) => (
-          <li
+          <VenueListRow
             key={venue.id}
-            className="flex w-full p-0 transition-colors hover:bg-secondary/40"
-          >
-            {hasRealPhoto(venue) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setLightboxUrl(venue.image_url!);
-                  setLightboxAlt(venue.title);
-                }}
-                className="shrink-0 rounded-xl py-3 pl-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={`View photo of ${venue.title}`}
-              >
-                <img
-                  src={venueImageSrc(venue)}
-                  alt=""
-                  className="h-11 w-11 rounded-xl object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
-                  }}
-                />
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => navigate(`/venue/${venue.id}`)}
-              className="flex min-w-0 flex-1 items-center gap-3 py-3 pr-3 pl-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {!hasRealPhoto(venue) && (
-                <img
-                  src={venueImageSrc(venue)}
-                  alt=""
-                  className="h-11 w-11 rounded-xl object-cover shrink-0"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = PLACEHOLDER[venue.category] || PLACEHOLDER.bar;
-                  }}
-                />
-              )}
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">{venue.title}</span>
-                {venue.neighborhood && (
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {venue.neighborhood}
-                  </span>
-                )}
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-            </button>
-          </li>
+            venue={venue}
+            onPhotoClick={(url, alt) => {
+              setLightboxUrl(url);
+              setLightboxAlt(alt);
+            }}
+          />
         ))}
       </ul>
       <PhotoLightbox
