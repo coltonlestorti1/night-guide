@@ -3,10 +3,14 @@
  * Free concierge v1: scoring lives in src/lib/vibeScore.ts (no LLM, no cost);
  * a Claude-backed scorer can replace it later without touching this UI.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Venue } from "@/data/types";
 import { scoreVenues, VibePrefs } from "@/lib/vibeScore";
 import { useMyRatings } from "@/hooks/useMyRatings";
+import { useFriendsOutTonight } from "@/hooks/useFriends";
+import { useFriendSaves } from "@/hooks/useSaves";
+import { selectPicks, type MovePick } from "@/lib/move/select";
+import { readImpressions, recordImpressions } from "@/lib/move/cooldown";
 import { inferTaste } from "@/lib/taste";
 import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
 import BarCard from "@/components/BarCard";
@@ -17,7 +21,7 @@ import { useLocationStore, geolocationPermission, hasPermissionsApi } from "@/st
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import LocationDeniedDialog from "@/components/LocationDeniedDialog";
-import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine, Building2, Trees } from "lucide-react";
+import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine, Building2, Trees, User, Users, UsersRound } from "lucide-react";
 
 type Activity = Record<string, { count: number; vibe?: string }> | undefined;
 
@@ -49,6 +53,12 @@ const OUTSIDES = [
   { value: undefined, label: "Doesn't matter", Icon: Shuffle },
 ] as const;
 const AGES = ["21-25", "25-30", "30+"] as const;
+const GROUPS = [
+  { value: "solo", label: "Just me", Icon: User },
+  { value: "two", label: "Two of us", Icon: Users },
+  { value: "small", label: "3–5", Icon: Users },
+  { value: "big", label: "6+", Icon: UsersRound },
+] as const;
 
 const Chip = ({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) => (
   <button
@@ -83,6 +93,7 @@ export default function VibeFinder({
   const [happyHour, setHappyHour] = useState(false);
   const [outside, setOutside] = useState<VibePrefs["outside"]>(undefined);
   const [age, setAge] = useState<VibePrefs["age"]>(undefined);
+  const [groupSize, setGroupSize] = useState<VibePrefs["groupSize"]>(undefined);
   const [page, setPage] = useState<number | null>(null); // null = answers screen
   const [showDeniedDialog, setShowDeniedDialog] = useState(false);
 
@@ -119,15 +130,35 @@ export default function VibeFinder({
   const { data: myRatings } = useMyRatings();
   const taste = useMemo(() => inferTaste(myRatings, venues), [myRatings, venues]);
 
+  // Friend signals. Both hooks are already restricted to accepted friends and
+  // already pass through RLS (ghost mode, 'nobody' and non-friend rows never
+  // arrive), so naming anyone they return is naming someone this user can
+  // already see. Signed-out gets undefined from both and no friend reasons.
+  const { data: friendsOut } = useFriendsOutTonight();
+  const { data: friendSaves } = useFriendSaves();
+  const friends = useMemo(
+    () => ({ out: friendsOut, saves: friendSaves }),
+    [friendsOut, friendSaves],
+  );
+
+  // Stamped once when the user asks for results, so happy-hour windows and
+  // cooldown decay cannot shift under them while they read the screen. Also
+  // the snapshot the impression log is read against — reading it fresh on
+  // every render would let this run's own writes penalise this run.
+  const [runAt, setRunAt] = useState<Date | null>(null);
+  const impressions = useMemo(() => (runAt ? readImpressions(runAt) : {}), [runAt]);
+
   const ranked = useMemo(
     () =>
-      page === null
+      page === null || !runAt
         ? []
-        : scoreVenues(venues, { vibe, drinks, when, near, happyHour, outside, age }, activity, undefined, coords, {
+        : scoreVenues(venues, { vibe, drinks, when, near, happyHour, outside, age, groupSize }, activity, runAt, coords, {
             ratings: myRatings,
             taste,
+            friends,
+            impressions,
           }),
-    [page, venues, vibe, drinks, when, near, happyHour, outside, age, activity, coords, myRatings, taste],
+    [page, runAt, venues, vibe, drinks, when, near, happyHour, outside, age, groupSize, activity, coords, myRatings, taste, friends, impressions],
   );
 
   // Don't offer an option that can't match anything (same rule as the map chips).
@@ -139,9 +170,43 @@ export default function VibeFinder({
       (o) => (o.value !== "rooftop" || anyRooftop) && (o.value !== "outdoor" || anyOutdoor),
     );
   }, [venues]);
-  const results = page === null ? [] : ranked.slice(page * 3, page * 3 + 3);
+  /**
+   * Each "3 more" page re-runs the selector over what is LEFT, rather than
+   * slicing ranks 4-6 off the list. Slicing would hand back three venues that
+   * were passed over precisely because they were the same kind of night as
+   * page one — the diversity rules have to apply to every page or they only
+   * work once.
+   */
+  const results = useMemo<MovePick[]>(() => {
+    if (page === null || !runAt) return [];
+    const ctx = { activity, coords, friends, impressions, now: runAt };
+    const seen = new Set<string>();
+    let picks: MovePick[] = [];
+    for (let p = 0; p <= page; p++) {
+      picks = selectPicks(
+        ranked.filter((r) => !seen.has(r.venue.id)),
+        ctx,
+      );
+      for (const pick of picks) seen.add(pick.venue.id);
+    }
+    return picks;
+  }, [page, runAt, ranked, activity, coords, friends, impressions]);
 
-  const reset = () => setPage(null);
+  /** Wrap back to the first page once the pool cannot fill another one. */
+  const shownCount = (page ?? 0) * 3 + results.length;
+  const hasMore = shownCount < ranked.length;
+
+  // Record what was actually shown, so tomorrow's run can decay it (§3).
+  const shownIds = results.map((r) => r.venue.id).join(",");
+  useEffect(() => {
+    if (!shownIds) return;
+    recordImpressions(shownIds.split(","));
+  }, [shownIds]);
+
+  const reset = () => {
+    setPage(null);
+    setRunAt(null);
+  };
 
   return (
     <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
@@ -162,6 +227,16 @@ export default function VibeFinder({
                   <div className="flex gap-2 flex-wrap">
                     {VIBES.map((o) => (
                       <Chip key={o.value} active={vibe === o.value} onClick={() => setVibe(vibe === o.value ? undefined : o.value)}>
+                        <o.Icon className="h-4 w-4" /> {o.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Who's coming?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {GROUPS.map((o) => (
+                      <Chip key={o.value} active={groupSize === o.value} onClick={() => setGroupSize(groupSize === o.value ? undefined : o.value)}>
                         <o.Icon className="h-4 w-4" /> {o.label}
                       </Chip>
                     ))}
@@ -233,7 +308,8 @@ export default function VibeFinder({
               <Button
                 className="w-full h-11 rounded-xl mt-5"
                 onClick={() => {
-                  logEvent("find_the_move", { vibe, drinks, when, near, happy_hour: happyHour, outside, age });
+                  logEvent("find_the_move", { vibe, drinks, when, near, happy_hour: happyHour, outside, age, group_size: groupSize });
+                  setRunAt(new Date());
                   setPage(0);
                 }}
               >
@@ -242,9 +318,17 @@ export default function VibeFinder({
             </>
           ) : results.length > 0 ? (
             <>
-              <div className="space-y-2.5 mt-2">
-                {results.map(({ venue, reasons }) => (
+              <div className="space-y-3.5 mt-2">
+                {results.map(({ venue, reasons, headline, note }) => (
                   <div key={venue.id}>
+                    {headline && (
+                      <div className="flex items-baseline gap-2 mb-1 px-1">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                          {headline}
+                        </span>
+                        {note && <span className="text-[11px] text-muted-foreground">{note}</span>}
+                      </div>
+                    )}
                     <BarCard venue={venue} onClick={() => { onPick(venue); onOpenChange(false); reset(); }} />
                     {reasons.length > 0 && (
                       <p className="text-[11px] text-primary/90 mt-1 px-1">{reasons.join(" · ")}</p>
@@ -259,9 +343,9 @@ export default function VibeFinder({
                 <Button
                   variant="secondary"
                   className="h-11 rounded-xl"
-                  onClick={() => setPage(((page + 1) * 3 >= ranked.length ? 0 : page + 1))}
+                  onClick={() => setPage(hasMore ? page + 1 : 0)}
                 >
-                  Not these — 3 more
+                  {hasMore ? "Not these — 3 more" : "Start over"}
                 </Button>
               </div>
             </>

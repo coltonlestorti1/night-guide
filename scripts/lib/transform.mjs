@@ -52,6 +52,7 @@ export function transformPlace(place, fetchedAt) {
     // tri-state: undefined keys are dropped below, so "unknown" never becomes
     // a fake "no". Only true means verified outdoor seating.
     outdoorSeating: place.outdoorSeating,
+    reservable: place.reservable,
   };
   // drop undefined keys so the committed JSON stays clean
   return Object.fromEntries(Object.entries(rec).filter(([, v]) => v !== undefined));

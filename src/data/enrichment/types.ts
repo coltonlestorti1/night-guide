@@ -32,6 +32,8 @@ export type VenueEnrichment = {
    * "definitely none". Read it via hasOutdoorSeating() in venueTraits.
    */
   outdoorSeating?: boolean;
+  /** Google-verified. Absent means "not recorded", NEVER "takes no reservations". */
+  reservable?: boolean;
   popularTimes?: PopularTimesDay[];
   popularTimesSource?: "serpapi";
 };
