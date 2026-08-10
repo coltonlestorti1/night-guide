@@ -1,7 +1,8 @@
 /**
- * One venue row, shared by every list surface. Extracted from SavedSpotsList so
- * Been and Want to Try cannot drift apart in padding, focus ring or fallback
- * image behaviour.
+ * One venue row, shared by every list surface. It began as the row inside the
+ * old profile SavedSpotsList (removed when /lists took over that job), lifted
+ * out so Been and Want to try cannot drift apart in padding, focus ring or
+ * fallback image behaviour.
  *
  * The lightbox itself stays with the parent list: one lightbox per list, not
  * one per row.

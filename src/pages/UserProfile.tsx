@@ -5,7 +5,7 @@
  * RLS-scoped friends-out-tonight feed — no client-side privacy filtering.
  */
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, GraduationCap, MapPin, UserX } from "lucide-react";
+import { ArrowLeft, MapPin, UserX } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useFriendsOutTonight, useProfileByUsername } from "@/hooks/useFriends";
 import ProfilePosts from "@/components/night/ProfilePosts";
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AddButton from "@/components/social/AddButton";
 import ReportDialog from "@/components/social/ReportDialog";
-import ProfileAvatar from "@/components/social/ProfileAvatar";
+import ProfileHeader from "@/components/ProfileHeader";
 
 const UserProfile = () => {
   const { username = "" } = useParams();
@@ -98,37 +98,31 @@ const UserProfile = () => {
   return (
     <section className="container pt-6 pb-24 max-w-lg">
       {back}
-      <div className="rounded-3xl border border-border bg-card p-6 animate-fade-in">
-        <div className="flex flex-col items-center text-center">
-          <ProfileAvatar profile={profile} className="h-24 w-24 ring-4 ring-card shadow-float" />
-          <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">
-            {profile.display_name || `@${profile.username}`}
-          </h1>
-          {profile.display_name && (
-            <p className="text-sm text-muted-foreground">@{profile.username}</p>
-          )}
-          {collegeLabel(profile.college_slug, profile.class_year) && (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-              <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {collegeLabel(profile.college_slug, profile.class_year)}
-            </p>
-          )}
-          {profile.bio && (
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-foreground/80">{profile.bio}</p>
-          )}
-          {/* Guard on id as well as the username redirect above: if the profile
-              fetch errored (signedIn but profile null → myUsername undefined),
-              the redirect is skipped, so never offer to friend yourself. */}
-          {myId !== profile.id && (
-            <div className="mt-4 flex flex-col items-center gap-3">
-              <AddButton profile={profile} />
-              {/* Guideline 1.2: reporting has to be reachable from the content
-                  itself, not buried in a settings screen. */}
-              <ReportDialog profile={profile} />
-            </div>
-          )}
+      <ProfileHeader
+        displayName={profile.display_name || `@${profile.username}`}
+        username={profile.username}
+        avatarUrl={profile.avatar_url}
+        createdAt={profile.created_at}
+        collegeLine={collegeLabel(profile.college_slug, profile.class_year)}
+        bio={profile.bio}
+        /* No stats on someone else's page in this slice: Been and Want to try
+           are owner-only at the RLS level, so the only counts this page could
+           fetch are the VIEWER's own. See the note in ProfileHeader. */
+        action={
+          /* Guard on id as well as the username redirect above: if the profile
+             fetch errored (signedIn but profile null -> myUsername undefined),
+             the redirect is skipped, so never offer to friend yourself. */
+          myId !== profile.id ? <AddButton profile={profile} /> : undefined
+        }
+      />
+
+      {/* Guideline 1.2: reporting has to be reachable from the content itself,
+          not buried in a settings screen. */}
+      {myId !== profile.id && (
+        <div className="mt-3 flex justify-center">
+          <ReportDialog profile={profile} />
         </div>
-      </div>
+      )}
 
       {liveNow && (
         <Link
