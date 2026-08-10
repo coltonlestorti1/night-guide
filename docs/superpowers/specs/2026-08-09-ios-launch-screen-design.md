@@ -113,11 +113,21 @@ dark into an off-white splash.
 
 ## Known, not fixed
 
-**The safe-area offset**, described above: up to ~12pt of vertical
-disagreement at the handoff. Correcting it needs per-device status-bar inset
-values that cannot be verified without the device, 0.5 is already where the
-error mostly cancels, and a wrong correction is worse than the known one. It
-needs one launch on a real iPhone to settle.
+**The safe-area offset**, described above. The residual is ~12pt if the
+standalone web view stops above the home indicator, or ~29pt if it extends
+under it — **which of those is true is unverified.** Apple documents the top
+behaviour and not the bottom, and it cannot be measured from a desktop
+browser. `0.5` is the minimum for both cases, so it is right either way;
+correcting further needs per-device inset values a real device would settle in
+one launch. A wrong correction is worse than the known one.
+
+**Landscape launches.** The media queries are portrait-only and carry no
+`(orientation: portrait)` qualifier. If iOS swaps `device-width`/
+`device-height` on rotation, launching while holding the phone in landscape
+matches nothing and shows white. Adding the qualifier would not fix that — it
+needs a landscape image set — and if iOS does *not* swap them, adding it would
+break landscape launches that currently work. Left alone rather than guessed
+at.
 
 **Safari tabs still show white briefly.** `apple-touch-startup-image` applies
 only to the home-screen icon. Nothing can paint before the document arrives in

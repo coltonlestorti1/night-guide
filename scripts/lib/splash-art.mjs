@@ -118,12 +118,22 @@ export const LAYOUT = {
    * status bar (the viewport meta has no `viewport-fit=cover`), so the HTML
    * splash and the PNG measure from different origins.
    *
-   * At 0.5 the error cancels almost entirely: the web view's centre sits
-   * (topInset - bottomInset) / 2 below the screen's centre, and those insets
-   * are close on every iPhone — 59 vs 34 on Dynamic Island, 44 vs 34 notched,
-   * 20 vs 0 on the SE. Worst case ~12pt. Move this off 0.5 and the mark visibly
-   * jumps when iOS hands the screen over, which is a new defect exactly where
-   * the white screen used to be.
+   * The web view's centre sits (topInset - bottomInset) / 2 below the screen's
+   * centre, so 0.5 is the choice that minimises the gap without knowing either
+   * inset. How big the residual is depends on whether the standalone web view
+   * is inset at the BOTTOM as well as the top:
+   *
+   *   - if it stops above the home indicator (bottom 34pt), the residual is
+   *     ~12pt on a Dynamic Island phone;
+   *   - if it extends under the home indicator (bottom 0), it is ~29pt.
+   *
+   * WHICH ONE IS TRUE IS UNVERIFIED. Apple documents the top behaviour and not
+   * the bottom, and it cannot be measured from a desktop browser — this repo
+   * has already paid for guessing at iOS from Chrome (see CLAUDE.md, "Mobile
+   * bugs: ask for a screen recording FIRST"). One launch on a real iPhone
+   * settles it; until then 0.5 is right either way, because it is the minimum
+   * for BOTH cases. Move it off 0.5 and the mark visibly jumps when iOS hands
+   * the screen over — a new defect exactly where the white screen used to be.
    */
   centerYFraction: 0.5,
 };
