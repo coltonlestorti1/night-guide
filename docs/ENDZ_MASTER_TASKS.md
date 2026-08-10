@@ -1321,7 +1321,7 @@ requires native, and it is only needed for auto check-in (see line 416).
 
 Merged `86e0c74`. The PWA showed ~2s of blank white on a home-screen launch
 because there were **no `apple-touch-startup-image` links at all**; the inline
-splash cannot cover that window because it *is* the document. 12 startup PNGs
+splash cannot cover that window because it *is* the document. 13 startup PNGs
 now ship (`public/splash/`), plus a redesigned mark: the icon's gradient E in a
 still ring with one dot orbiting it, over the ENDZ wordmark.
 

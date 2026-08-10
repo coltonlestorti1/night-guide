@@ -44,9 +44,13 @@ const OUT_DIR = resolve(ROOT, "public/splash");
 
 /**
  * Every distinct portrait (device-width, device-height, DPR) an iPhone
- * presents to Safari. Verified against iosref.com/res rather than recalled —
- * pixel dimensions are always points x scale, so the arithmetic is checked at
- * startup below.
+ * presents to Safari. Checked against published device tables rather than
+ * recalled — pixel dimensions are always points x scale, and the arithmetic is
+ * asserted at startup below.
+ *
+ * Cross-check any addition against a SECOND source. iosref.com/res, which this
+ * table was first built from, omits the iPhone Air entirely; a single source
+ * would have shipped a white launch screen for that device.
  *
  * Models sharing a configuration share one image: the X, XS, 11 Pro, 12 mini
  * and 13 mini are all 375x812 @3x.
@@ -64,6 +68,10 @@ export const DEVICES = [
   { w: 430, h: 932, dpr: 3, models: "14 Pro Max, 15 Plus/Pro Max, 16 Plus" },
   { w: 402, h: 874, dpr: 3, models: "16 Pro, 17, 17 Pro" },
   { w: 440, h: 956, dpr: 3, models: "16 Pro Max, 17 Pro Max" },
+  // The Air is its own size and is MISSING from iosref's table — found only by
+  // checking a second source. Without this row an Air owner gets exactly the
+  // white launch screen this whole file exists to remove.
+  { w: 420, h: 912, dpr: 3, models: "Air (2025)" },
 ];
 
 /* ---------------------------------------------------------------- geometry */

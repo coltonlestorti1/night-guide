@@ -20,11 +20,16 @@ and there were **none**. So iOS drew white.
 
 ## What ships
 
-Twelve static PNGs in `public/splash/`, one per distinct portrait
+Thirteen static PNGs in `public/splash/`, one per distinct portrait
 `(device-width, device-height, device-pixel-ratio)` an iPhone presents, linked
 from `index.html`. iOS paints one the instant the icon is tapped — no network,
-no JavaScript, no fonts. 246 KB for the set, because a flat background
+no JavaScript, no fonts. 271 KB for the set, because a flat background
 compresses to almost nothing.
+
+**Cross-check the device table against a second source before adding to it.**
+It was first built from iosref.com/res, which **omits the iPhone Air** — that
+row was added later and, without it, Air owners would have seen exactly the
+white launch screen this work removes.
 
 The mark, used by both the PNG and the live splash: the app icon's gradient
 **E** inside a still ring, with one `#6C45FF` dot orbiting it, above the `ENDZ`
