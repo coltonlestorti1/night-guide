@@ -28,6 +28,8 @@ import {
   WORDMARK,
   E_ASPECT,
   E_RECTS,
+  E_STOPS,
+  hex,
   WORDMARK_PATH,
   WORDMARK_VIEWBOX,
   LAYOUT,
@@ -321,10 +323,9 @@ export function render(cssW, cssH, dpr) {
  * white screen used to be. index.html cannot import this module (it is static
  * markup), so instead we assert the numbers it hardcodes are still these ones.
  */
-function checkIndexHtml() {
-  const html = readFileSync(resolve(ROOT, "index.html"), "utf8");
+export function expectedInIndexHtml() {
   const c = MARK_BOX / 2;
-  const expect = [
+  return [
     ["wordmark path", WORDMARK_PATH],
     ["E path", ePath(c, c)],
     ["mark box viewBox", `viewBox="0 0 ${MARK_BOX} ${MARK_BOX}"`],
@@ -337,30 +338,108 @@ function checkIndexHtml() {
     ["orbit period", `${ORBIT_PERIOD_MS}ms`],
     ["wordmark width", `width="${LAYOUT.wordmarkWidth}"`],
     ["splash gap", `gap: ${LAYOUT.wordmarkGap}px`],
-    ["background", "#F7F7F4"],
+    // Everything below drifted SILENTLY until a review mutation-tested this
+    // list: each constant was changed one at a time and the guard still passed.
+    // Every value here is DERIVED from splash-art.mjs — a literal repeated here
+    // would only be checking itself, which is exactly what `"#F7F7F4"` was
+    // doing while hex() sat unused.
+    ["ring stroke width", `stroke-width="${LAYOUT.ringStroke}"`],
+    ["ring track opacity", `stroke-opacity="${LAYOUT.ringAlpha}"`],
+    ["ring colour", `stroke="${hex(PURPLE)}"`],
+    ["dot colour", `fill="${hex(PURPLE)}"`],
+    ["wordmark colour", `fill="${hex(WORDMARK)}"`],
+    ["wordmark viewBox", `viewBox="0 0 ${WORDMARK_VIEWBOX.w} ${WORDMARK_VIEWBOX.h}"`],
+    ["wordmark height", `height="${Math.round(wordmarkHeight() * 100) / 100}"`],
+    ["background", hex(BG)],
+    ...E_STOPS.map(([offset, colour], i) => [
+      `gradient stop ${i}`,
+      `offset="${offset}" stop-color="${hex(colour)}"`,
+    ]),
   ];
-  const missing = expect.filter(([, needle]) => !html.includes(needle));
+}
+
+function checkIndexHtml() {
+  const html = readFileSync(resolve(ROOT, "index.html"), "utf8");
+  const missing = expectedInIndexHtml().filter(
+    ([, needle]) => !html.includes(needle),
+  );
+
+  // The link set has to match the device table too. A row added to DEVICES
+  // without its <link> produces an image nothing ever loads; a <link> without
+  // its row points at a file that does not exist. Either way: white screen.
+  for (const d of DEVICES) {
+    const media =
+      `(device-width: ${d.w}px) and (device-height: ${d.h}px) and ` +
+      `(-webkit-device-pixel-ratio: ${d.dpr})`;
+    if (!html.includes(media)) missing.push([`startup link for ${d.models}`]);
+    if (!html.includes(`/splash/splash-${d.w * d.dpr}x${d.h * d.dpr}.png`)) {
+      missing.push([`startup image href for ${d.models}`]);
+    }
+  }
+
   if (missing.length) {
     console.error("index.html has drifted from scripts/lib/splash-art.mjs:");
     for (const [what] of missing) console.error(`  missing: ${what}`);
     process.exit(1);
   }
-  console.log("index.html matches splash-art.mjs ✓");
+  console.log(`index.html matches splash-art.mjs ✓ (${DEVICES.length} devices)`);
+}
+
+/**
+ * Are the committed PNGs actually what the current source renders?
+ *
+ * Without this, changing the geometry and hand-editing index.html to match
+ * passes every other check while `public/splash/*.png` stay stale — and stale
+ * images are the one failure the whole design is built to avoid, because they
+ * are what iOS paints before the HTML takes over.
+ */
+function checkImagesCurrent() {
+  let stale = 0;
+  for (const d of DEVICES) {
+    const { raw, W, H } = render(d.w, d.h, d.dpr);
+    const path = resolve(OUT_DIR, `splash-${W}x${H}.png`);
+    let onDisk;
+    try {
+      onDisk = readFileSync(path);
+    } catch {
+      console.error(`  missing image: splash-${W}x${H}.png (${d.models})`);
+      stale++;
+      continue;
+    }
+    if (!onDisk.equals(encodePNG(raw, W, H))) {
+      console.error(`  stale image: splash-${W}x${H}.png (${d.models})`);
+      stale++;
+    }
+  }
+  if (stale) {
+    console.error(`${stale} launch image(s) out of date — run: npm run make:splash`);
+    process.exit(1);
+  }
+  console.log(`${DEVICES.length} launch images match the current source ✓`);
 }
 
 /* -------------------------------------------------------------------- main */
 
 function main() {
-  // Guard the table itself: every entry's pixel size is points x scale, and a
-  // wrong dimension means iOS silently shows white for that device.
+  // A duplicate configuration means one image silently shadows another and a
+  // whole class of device gets the wrong art. (The previous guard here checked
+  // Number.isInteger(w * dpr), which for integer inputs can never be false —
+  // it read like a safety net and was dead code. Nothing here can validate the
+  // table against real hardware; only a device can.)
+  const seen = new Map();
   for (const d of DEVICES) {
-    if (!Number.isInteger(d.w * d.dpr) || !Number.isInteger(d.h * d.dpr)) {
-      throw new Error(`non-integer pixel size for ${d.models}`);
+    const key = `${d.w}x${d.h}@${d.dpr}`;
+    if (seen.has(key)) {
+      throw new Error(
+        `duplicate device configuration ${key}: "${seen.get(key)}" and "${d.models}"`,
+      );
     }
+    seen.set(key, d.models);
   }
 
   if (process.argv.includes("--check")) {
     checkIndexHtml();
+    checkImagesCurrent();
     return;
   }
 

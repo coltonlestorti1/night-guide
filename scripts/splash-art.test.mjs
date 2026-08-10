@@ -21,13 +21,16 @@ import {
   BG,
   LAYOUT,
   MARK_BOX,
-  WORDMARK_PATH,
-  ORBIT_PERIOD_MS,
-  ePath,
+  gradientAt,
   markHeight,
   wordmarkHeight,
 } from "./lib/splash-art.mjs";
-import { DEVICES, layout, render } from "./make-splash-image.mjs";
+import {
+  DEVICES,
+  layout,
+  render,
+  expectedInIndexHtml,
+} from "./make-splash-image.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -119,57 +122,78 @@ describe("launch screen geometry", () => {
     }
   });
 
-  it("draws the dot at 12 o'clock, fully inside the canvas", () => {
+  it("draws the dot WHOLE at 12 o'clock — measured, not sampled", () => {
     const d = DEVICES.at(-1);
     const img = render(d.w, d.h, d.dpr);
     const L = layout(d.w, d.h);
-    // Dead centre of the dot must be solid purple, and one pixel above its top
-    // edge must be background — i.e. it is whole, not clipped.
     const cx = Math.round(L.dot.x * d.dpr);
-    const cy = Math.round(L.dot.y * d.dpr);
-    expect(pixel(img, cx, cy)).toEqual([0x6c, 0x45, 0xff]);
-    const aboveDot = Math.round((L.dot.y - LAYOUT.dotRadius) * d.dpr) - 2;
-    expect(pixel(img, cx, aboveDot)).toEqual(BG);
+
+    // An earlier version of this test checked the dot's centre pixel and one
+    // pixel above its top edge. Both are TRUE when the dot is clipped in half:
+    // the centre sits inside a ring-sized box, and clipping only makes the
+    // pixel above it more background. So measure the dot's actual height
+    // instead — that is the thing that changes when it is cut.
+    let purpleRows = 0;
+    for (let y = 0; y < img.H; y++) {
+      const [r, g, b] = pixel(img, cx, y);
+      if (r === 0x6c && g === 0x45 && b === 0xff) purpleRows++;
+    }
+    const wholeDot = LAYOUT.dotRadius * 2 * d.dpr;
+    // Anti-aliasing softens the extreme top and bottom rows.
+    expect(purpleRows).toBeGreaterThan(wholeDot - 3);
+    expect(purpleRows).toBeLessThanOrEqual(wholeDot);
   });
 
   it("sweeps the E's gradient across the whole letter, not per bar", () => {
-    // The bug this catches: objectBoundingBox gradient units resolve per shape,
-    // so an E drawn as four rects gave EACH BAR its own purple-to-pink sweep.
-    // Across the letter, the top bar must still be in the purple half and the
-    // bottom bar in the pink half.
+    // objectBoundingBox gradient units resolve PER SHAPE, so an E drawn as four
+    // rects gives each bar its own full purple-to-pink sweep.
+    //
+    // The obvious samples — mid-top-bar and mid-bottom-bar — do NOT catch this:
+    // whole-letter and per-bar agree in sign there, and the old assertions
+    // ("top is blue-dominant, bottom is red-dominant") passed with the bug
+    // present. This samples the right end of the top bar, near its lower edge,
+    // where the two interpretations diverge by ~50/255.
     const d = DEVICES.at(-1);
     const img = render(d.w, d.h, d.dpr);
     const L = layout(d.w, d.h);
-    const sample = (fx, fy) =>
-      pixel(
-        img,
-        Math.round((L.e.x + L.e.w * fx) * d.dpr),
-        Math.round((L.e.y + L.e.h * fy) * d.dpr),
-      );
-    const topBar = sample(0.5, 0.02);
-    const bottomBar = sample(0.5, 0.98);
-    // Purple end is blue-dominant; pink end is red-dominant.
-    expect(topBar[2]).toBeGreaterThan(topBar[0]);
-    expect(bottomBar[0]).toBeGreaterThan(bottomBar[2]);
+    // Inside the top bar's ink with room to spare — the bar spans 0..0.169 of
+    // the letter's height, and sampling nearer its edge lands on anti-aliasing.
+    const fx = 0.82, fy = 0.1;
+    const actual = pixel(
+      img,
+      Math.round((L.e.x + L.e.w * fx) * d.dpr),
+      Math.round((L.e.y + L.e.h * fy) * d.dpr),
+    );
+
+    // Whole-letter: t is the anti-diagonal across the E's own box.
+    const wholeLetter = gradientAt((fx + fy) / 2);
+    // Per-bar: the top bar spans only 0..BAR_H of the letter's height, so the
+    // same point sits far further along that bar's own diagonal.
+    const barH = LAYOUT.eHeight * (86 / 510);
+    const perBar = gradientAt((fx + (fy * L.e.h) / barH) / 2);
+
+    const dist = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+    expect(dist(actual, wholeLetter)).toBeLessThanOrEqual(4);
+    // Guard the guard: if these two ever stop diverging, the test is vacuous
+    // again and should be moved to a different sample point.
+    expect(dist(wholeLetter, perBar)).toBeGreaterThan(20);
   });
 });
 
 describe("index.html cannot drift from the generator", () => {
   const html = readFileSync(resolve(ROOT, "index.html"), "utf8");
-  const c = MARK_BOX / 2;
 
-  it.each([
-    ["wordmark outlines", WORDMARK_PATH],
-    ["E path", ePath(c, c)],
-    ["mark box viewBox", `viewBox="0 0 ${MARK_BOX} ${MARK_BOX}"`],
-    ["ring", `cx="${c}" cy="${c}" r="${LAYOUT.ringRadius}"`],
-    ["dot at 12 o'clock", `cx="${c}" cy="${LAYOUT.dotRadius}" r="${LAYOUT.dotRadius}"`],
-    ["orbit origin", `transform-origin: ${c}px ${c}px`],
-    ["orbit period", `${ORBIT_PERIOD_MS}ms`],
-    ["gap under the mark", `gap: ${LAYOUT.wordmarkGap}px`],
-  ])("index.html still carries the %s", (_what, needle) => {
-    expect(html).toContain(needle);
-  });
+  // Driven off the guard's own expectation list rather than a second copy of
+  // it. A hand-maintained list here would drift from the guard, which is the
+  // exact failure mode this whole file exists to prevent — and every value in
+  // that list is DERIVED from splash-art.mjs, so none of it checks a literal
+  // against itself.
+  it.each(expectedInIndexHtml().map(([what, needle]) => [what, needle]))(
+    "index.html still carries the %s",
+    (_what, needle) => {
+      expect(html).toContain(needle);
+    },
+  );
 
   it("links one startup image per device configuration", () => {
     for (const d of DEVICES) {

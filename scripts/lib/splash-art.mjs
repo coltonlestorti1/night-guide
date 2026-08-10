@@ -193,6 +193,11 @@ export function gradientAt(t) {
   return E_STOPS[E_STOPS.length - 1][1];
 }
 
-/** `#rrggbb` for embedding in markup. */
+/**
+ * `#RRGGBB` for embedding in markup. Uppercase, matching the convention in
+ * index.html and src/index.css — the drift guard compares these strings
+ * literally, so the case has to agree.
+ */
 export const hex = ([r, g, b]) =>
-  "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+  "#" +
+  [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
