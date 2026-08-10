@@ -468,6 +468,33 @@ then whether the shared view truncates the `not_great` tail, because "#12 Ray's
 map view of a list, other-users' Been / Want to try counts, and anything
 gamified (leaderboard, streaks, goals — Colton ruled these out explicitly).
 
+### Post scores froze while the ranking moved — FIXED + LIVE 2026-08-10
+
+Reported by Colton from the running app: The Grafton read **9.2** in `/lists`
+and **8.4** on its Aug 6 night post.
+
+**Root cause, not a lists bug.** `night_posts.score` is a denormalized snapshot
+written at publish time (`PublishForm.tsx:74`), denormalized on purpose because
+`venue_ratings` is owner-only and a friend reading a post cannot join to the
+author's ratings. But a score is a *rendering of a ranking* — `ranking.ts`
+spreads a bucket's band across its members, so every score in a bucket moves
+when the bucket grows. The Grafton was alone in `great` when the post was made
+(band midpoint 8.35 → 8.4); a second `great` venue later re-spread the band to
+9.2 / 7.5. Latent since the feed shipped 08-07; invisible until `/lists` gave
+the live number somewhere to show.
+
+**Fix, two halves.** DB: `sync_night_post_score()` trigger on `venue_ratings`
+(pasted by Colton 2026-08-10, recorded in `endz-schema.sql`), plus a one-time
+backfill. Deliberately NOT `security definer` — it only updates the caller's own
+posts, which their existing policy permits. Client (`6cd65e8`): the trigger
+fires in the database, so the four caches that render a post score —
+`night-feed`, `my-posts`, `my-activity`, `profile-posts` — are invalidated on
+every rating write and delete.
+
+**Accepted consequence:** an old post's number now changes as the ranking moves,
+and deleting a rating nulls it (the card's verb falls back to "went to"). A post
+is no longer a frozen record of that night's score. Colton's call.
+
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
 ### Open after the 2026-08-09 session — NOT built, each needs its own gate
