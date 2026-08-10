@@ -26,6 +26,11 @@ export type FriendProfile = {
   bio?: string | null;
   college_slug?: string | null;
   class_year?: number | null;
+  /** Join date, for the "Member since" line. It sits in the lean PROFILE_COLS
+   *  rather than only on the profile-page select precisely so it survives the
+   *  42703 fallback below — created_at has existed since the first schema, so
+   *  unlike bio/college it can never be the column that trips it. */
+  created_at?: string;
 };
 
 export type FriendshipStatus = "pending" | "accepted" | "blocked";
@@ -51,7 +56,7 @@ export type FriendOutTonight = {
 
 export type Relationship = "none" | "friends" | "incoming" | "outgoing" | "blocked";
 
-const PROFILE_COLS = "id, username, display_name, avatar_url";
+const PROFILE_COLS = "id, username, display_name, avatar_url, created_at";
 const FRIENDSHIP_COLS = `id, user_id, friend_id, status, created_at,
   requester:profiles!friendships_user_id_fkey(${PROFILE_COLS}),
   recipient:profiles!friendships_friend_id_fkey(${PROFILE_COLS})`;
