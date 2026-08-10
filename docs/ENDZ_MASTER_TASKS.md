@@ -427,6 +427,47 @@ After a discussion is approved, Claude should:
 
 ---
 
+### Been & Want to try — BUILT 2026-08-09/10, branch `feat/been-lists`, NOT yet merged
+
+Beli-shaped surface for the rating engine that shipped 2026-08-06 and until now
+had no surface at all: no page showed your ranked list, rating was reachable
+only from the night recap, and a rating could not be changed or removed once
+made.
+
+Spec `docs/superpowers/specs/2026-08-09-been-lists-design.md`, plan
+`docs/superpowers/plans/2026-08-09-been-lists.md`. Colton approved the design
+and the 14 decisions in it on 2026-08-09.
+
+**Shipped on the branch:** `/lists` with Been (flat, best-first, numbered, score
+circle) and Want to try (saves) tabs, search, per-row menus (rank again / rate
+it / remove); `src/lib/night/lists.ts` as the single ranked-list model both the
+page and the venue card read; `deleteRating`; rate-or-re-rank from any venue
+card (previously impossible outside the recap, which is why lists were empty);
+`ProfileHeader` shared by `/profile` and `/u/:username` with member-since and a
+Friends / Been / Want to try stat row. `SavedSpotsList` deleted; the Saved spots
+section came off Profile.
+
+**No schema changes, no RLS edits.** Ratings stay owner-only and private.
+
+**Verified:** 432 tests in 45 files, typecheck (`-p tsconfig.app.json`),
+production build, `npm run check:schema` — all clean. Two independent review
+agents (security, correctness) plus a UX pass; every finding fixed on the
+branch. The critical one, found by both: the post-delete reindex is an upsert
+on the PK, so a stale caller-supplied order re-INSERTED a just-deleted rating —
+remove two venues in one refetch window and the first came back. It now reads
+the survivors back from the server.
+
+**NOT done — Colton owns this:** no on-device pass. Both browser profiles were
+held by a concurrent session, so nothing here has been seen running. Merge to
+main is deliberately not done.
+
+**Deferred, each needs its own gate:** friend-visible ranked lists (needs a
+SECURITY DEFINER `friend_ranked_list()` and its own security review — and decide
+then whether the shared view truncates the `not_great` tail, because "#12 Ray's
+— 2.1" on a public list is a callout of a real business), list filter chips, a
+map view of a list, other-users' Been / Want to try counts, and anything
+gamified (leaderboard, streaks, goals — Colton ruled these out explicitly).
+
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
 ### Open after the 2026-08-09 session — NOT built, each needs its own gate
@@ -715,6 +756,35 @@ re-suspect them.
   **⚠️ Design conflict to resolve at the gate (raised by Colton 2026-08-05):** he wants ratings to "show up on your friends' profile," but this line historically read *"recap trail private-to-self, never visible to others"* and the 2026-08-05 RLS fix deliberately time-bounds friend SELECTs to live rows so friends **cannot** read history. Proposed resolution: split **ratings** (shareable content) from the **trail** (private location history) — a friend sees the score, never the timestamped visit. Nothing here is approved.
 - **Night feed + venue ratings that feed recommendations** (added 2026-08-05, Colton) — per-night feed of where you went, with rate/score per bar; scores feed back into suggested outputs and surface on friends' profiles. Supersedes the narrow "Night Recap" framing above and is the **feedback half of the personalization loop** with §3/§32. **SLICE 1 SHIPPED 2026-08-06** — the rating engine and the private last-night recap, all of it invisible to other users: `src/lib/night/*` (night window + bucket/comparison ranking, 27 tests), `venue_ratings` with owner-only RLS, `RecapCard` + `RateSheet` on `/social`. Spec `docs/superpowers/specs/2026-08-06-night-feed-design.md`, plan `docs/superpowers/plans/2026-08-06-night-feed-slice-1-ratings.md`. **Still deferred and NOT approved:** `night_posts`, the feed itself, school-scoped visibility, moderation/reporting, photos + storage bucket, and §3 actually reading `venue_ratings` — that last one is what closes the personalization loop, and it is the point of the whole feature.
 - **"Find the vibe" — natural-language recommendation input** (added 2026-08-05, Colton) — describe what you want in your own words instead of tapping the seven `VibeFinder` chips; conversational refinement ("cheaper", "quieter"). Audited 2026-08-05: this is a new **front door onto §3**, not a new recommender — `vibeScore.ts:5` and `VibeFinder.tsx:3` already anticipate it ("a Claude-backed scorer can replace this module without UI changes"). Recommended architecture: model parses free text → `VibePrefs`, existing `scoreVenues()` ranks, so the model never sees venue data and cannot invent claims about a real business. Haiku 4.5 (~$0.0014/call; ~$13/mo at 100 users × 3/night). Not specced, not approved.
+- **Live user signals drive Find the Move's copy** (added 2026-08-10, Colton) —
+  "when we get users we should use live data to inform where to go, so Find the
+  Move changes live and says stuff like *line reported*, *your friends here*,
+  *lively now*, based off check-ins and reports." **Audited 2026-08-10: two of
+  the three already ship.** "Your friends here" shipped 2026-08-09 ("Maya is
+  here now"); "lively now" has shipped since the heat work — `scoreVenues`
+  already tiers live check-in counts (chill <3 / lively 3-5 / packed 6+) and
+  says "N here now".
+
+  **The real finding is "line reported": that data is ALREADY BEING COLLECTED
+  AND SILENTLY DISCARDED.** `Vibe` in `src/lib/checkins.ts` is `dead | chill |
+  building | packed | line_outside`, and `useCheckIns` builds a full
+  `vibeTally` per venue. But `VibeFinder`'s `Activity` type is only
+  `{count, vibe}`, and `vibeScore.ts:100` uses the vibe for exactly one thing —
+  `+1` when it equals the user's chosen chill/lively/packed. `line_outside`,
+  `dead` and `building` can never equal those three, so they reach the scorer
+  and are dropped. Surfacing a line is mostly plumbing, not new capture.
+
+  **Two traps for whoever builds this.** (1) `src/lib/reports.ts` is MODERATION
+  (reporting a user), not venue conditions — a venue-condition report does not
+  exist, so do not wire "reports" to it. (2) `venue_stats.wait_minutes` and
+  `venue_stats.crowd_level` are dead fields in the same shape as the §27 "Hot
+  Tonight" bug: both are in `types.ts` and `ApiDataSource`'s zod schema,
+  `BarCard` RENDERS crowd_level, and **nothing anywhere populates either.**
+
+  **Design constraint:** one person saying "line outside" is not a line. Needs a
+  freshness window and a corroboration floor, or the first troll sinks a venue —
+  same reasoning as `TASTE_MIN_RATINGS = 3`. Not specced, not approved. → §3
+
 - **Durable Find the Move impressions — DDL WRITTEN, NOT APPLIED (2026-08-09).** The
   cooldown that stops the same three repeating is `localStorage` only, so it is
   per-device: the same user on a laptop and a phone gets no shared memory. Built

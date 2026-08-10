@@ -4,18 +4,22 @@ import { useConfigStore } from "@/store/config";
 import { useAuthStore } from "@/store/auth";
 import { AGE_BANDS, AgeBand, getStoredAgeBand, storeAgeBand } from "@/lib/agePref";
 import { useMyAge } from "@/hooks/useMyAge";
+import { useMyFriendships } from "@/hooks/useFriends";
+import { useMyRatings } from "@/hooks/useMyRatings";
+import { useSaves } from "@/hooks/useSaves";
+import { useVenues } from "@/hooks/useVenues";
+import { beenList } from "@/lib/night/lists";
 import EditProfileDialog from "@/components/EditProfileDialog";
-import SavedSpotsList from "@/components/SavedSpotsList";
+import ProfileHeader from "@/components/ProfileHeader";
 import MyActivity from "@/components/night/MyActivity";
 import SaveVisibilityRow from "@/components/SaveVisibilityRow";
 import DeleteAccountDialog from "@/components/DeleteAccountDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
-import { ChevronDown, Flag, Ghost, GraduationCap, LogOut, MapPin, Pencil } from "lucide-react";
+import { ChevronDown, Flag, Ghost, LogOut, MapPin, Pencil } from "lucide-react";
 import { collegeLabel } from "@/data/colleges";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -108,6 +112,22 @@ const Profile = () => {
     setTimeout(() => setSigningIn(false), 4000);
   };
 
+  // Counts for the header. Every hook here is already loaded elsewhere in this
+  // page's tree (MyActivity calls useVenues), so this adds no requests.
+  //
+  // Counted from the RESOLVED lists, not the raw rows: a rating or save whose
+  // venue has since been deactivated is dropped by /lists, and a stat that
+  // says "Been 12" linking to a list of 11 reads as a bug.
+  const { data: friendships } = useMyFriendships();
+  const { data: myRatings } = useMyRatings();
+  const { data: allVenues } = useVenues({});
+  const savedIds = useSaves().ids;
+  const friendCount = (friendships ?? []).filter((r) => r.status === "accepted").length;
+  const beenCount = beenList(myRatings, allVenues ?? []).length;
+  const savedCount = allVenues
+    ? savedIds.filter((id) => allVenues.some((v) => v.id === id)).length
+    : savedIds.length;
+
   const meta = session?.user.user_metadata as { full_name?: string; name?: string; avatar_url?: string; picture?: string } | undefined;
   const displayName = profile?.display_name || meta?.full_name || meta?.name || "";
   const avatarUrl = profile?.avatar_url || meta?.avatar_url || meta?.picture || "";
@@ -160,59 +180,33 @@ const Profile = () => {
         </div>
       ) : (
         <>
-          <div className="relative glass rounded-3xl overflow-hidden animate-slide-up">
-            {/* Cover band — the ENDZ wordmark gradient */}
-            <div className="relative h-20 bg-gradient-to-r from-primary to-rose-400">
-              <span
-                className="absolute right-4 top-3 font-display font-bold tracking-tight text-white/30 select-none"
-                aria-hidden="true"
+          <ProfileHeader
+            displayName={displayName}
+            username={profile?.username}
+            avatarUrl={avatarUrl}
+            createdAt={profile?.created_at}
+            collegeLine={collegeLabel(profile?.college_slug, profile?.class_year)}
+            stats={[
+              { label: "Friends", value: friendCount, to: "/friends" },
+              { label: "Been", value: beenCount, to: "/lists?tab=been" },
+              { label: "Saved", value: savedCount, to: "/lists?tab=saved" },
+            ]}
+            action={
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-xl"
+                onClick={() => setEditing(true)}
               >
-                ENDZ
-              </span>
-            </div>
-            <div className="p-6 pt-0">
-              <div className="flex items-end justify-between">
-                <Avatar className="h-20 w-20 -mt-10 ring-4 ring-card shadow-float">
-                  <AvatarImage src={avatarUrl} alt={displayName} />
-                  <AvatarFallback className="text-xl font-semibold bg-primary-soft text-primary">
-                    {(displayName || "?").slice(0, 1).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => setEditing(true)}
-                >
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" /> Edit Profile
-                </Button>
-              </div>
-              <div className="min-w-0 mt-3">
-                <div className="font-display text-xl font-bold truncate">{displayName || "You"}</div>
-                {profile?.username && (
-                  <div className="text-sm text-muted-foreground truncate">@{profile.username}</div>
-                )}
-                {/* Mirrors the public /u/:username card, so you can see what
-                    others see without leaving settings. Edit Profile changes it. */}
-                {collegeLabel(profile?.college_slug, profile?.class_year) && (
-                  <div className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className="truncate">
-                      {collegeLabel(profile?.college_slug, profile?.class_year)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" /> Edit Profile
+              </Button>
+            }
+          />
 
           <SectionLabel>Activity</SectionLabel>
           <div className="mb-6">
             <MyActivity />
           </div>
-
-          <SectionLabel>Saved spots</SectionLabel>
-          <SavedSpotsList />
 
           <SectionLabel>Preferences</SectionLabel>
           {myAge != null && fromBirthday ? (
