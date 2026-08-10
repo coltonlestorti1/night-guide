@@ -9,6 +9,7 @@ import { getEnrichment, computeOpenState, isWithinPeriods, formatTime, getHappyH
 import { isCocktailSpot, hasOutdoorSeating, hasRooftop, takesReservations } from "@/lib/venueTraits";
 import { friendVerdict, type FriendSignals } from "@/lib/move/friends";
 import { cooldownPenalty, type ImpressionLog } from "@/lib/move/cooldown";
+import { lineSignal, linePenalty, LINE_REASON } from "@/lib/move/line";
 import { Coords } from "@/store/location";
 import { haversineMiles, formatMiles } from "@/lib/distance";
 import { directBoost, tasteBoost, type TasteProfile } from "@/lib/taste";
@@ -32,7 +33,8 @@ export type VibePrefs = {
 
 export type ScoredVenue = { venue: Venue; score: number; reasons: string[] };
 
-type Activity = Record<string, { count: number; vibe?: string }> | undefined;
+import type { ActivityMap } from "@/lib/move/activity";
+type Activity = ActivityMap;
 
 const tierOf = (count: number): "chill" | "lively" | "packed" =>
   count >= 6 ? "packed" : count >= 3 ? "lively" : "chill";
@@ -177,6 +179,21 @@ export function scoreVenues(
       }
     } else if (prefs.groupSize === "solo" || prefs.groupSize === "two") {
       if (isCocktailSpot(venue) || venue.category === "lounge") score += 1;
+    }
+
+    // ---- Live user reports. `line_outside` has been captured on every
+    // check-in since the vibe enum gained it, tallied per venue by
+    // venue_activity(), and thrown away here — the vibe was only ever compared
+    // for equality against chill/lively/packed, which it can never match.
+    //
+    // The label and the ranking effect are deliberately split: ONE person can
+    // put "Line reported" on a venue (the string is attributed, so it stays
+    // true at n=1), but it takes TWO before a real business moves down anyone's
+    // list. And it never counts against someone who asked for packed.
+    const line = lineSignal(act);
+    if (line.reported) {
+      score -= linePenalty(line, prefs);
+      reasons.push(LINE_REASON);
     }
 
     // A STATED preference beats an INFERENCE. If they picked a vibe, party size

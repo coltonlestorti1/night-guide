@@ -46,8 +46,19 @@ export function useVenueActivity() {
       if (!supabase) return {};
       const { data, error } = await supabase.rpc("venue_activity");
       if (error) throw error;
-      // Read defensively: the bucketed columns only exist once the slice-4 DDL
-      // has been pasted, and this code ships first (see SupabaseDataSource.ts).
+      // Read defensively. The slice-4 DDL IS applied — proved against
+      // production 2026-08-10 by requesting each column through PostgREST
+      // (`rpc/venue_activity?select=<col>`): every real column returned 200
+      // while a control column returned 42703. `vibeTally` and the age buckets
+      // are therefore live, and `vibeTally.line_outside` now drives "Line
+      // reported" in Find the Move (src/lib/move/line.ts).
+      //
+      // The defensive reads stay anyway: this shape is a database function
+      // body that exists in no file in this repo, so the client must never
+      // assume it. An earlier comment here claimed the columns were absent
+      // until the DDL was pasted, which was true when written and had gone
+      // stale — it would have sent the next person building on this data
+      // looking for schema work that was already done.
       const map: VenueActivity = {};
       type Row = Record<string, unknown>;
       for (const row of (data ?? []) as Row[]) {

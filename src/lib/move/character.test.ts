@@ -91,6 +91,46 @@ describe("deriveCharacters", () => {
   });
 });
 
+describe("a reported line changes what a venue can be called", () => {
+  const lined = (n: number, count = 2) => ({ [RESERVABLE]: { count, vibeTally: { line_outside: n } } });
+
+  it("never calls a venue with a reported line an easy door", () => {
+    // RESERVABLE would otherwise earn easy-door on its reservation policy —
+    // "Easy door" above a card reading "Line reported" contradicts itself.
+    expect(deriveCharacters(venue(RESERVABLE), { activity: lined(1), now: NOW })).not.toContain(
+      "easy-door",
+    );
+  });
+
+  it("still calls it an easy door when nobody reported a line", () => {
+    expect(
+      deriveCharacters(venue(RESERVABLE), {
+        activity: { [RESERVABLE]: { count: 2 } },
+        now: NOW,
+      }),
+    ).toContain("easy-door");
+  });
+
+  it("calls a well-rated venue with a line worth the wait, even below the packed tier", () => {
+    // count 2 is the chill tier — the queue is the wait, not the headcount.
+    expect(deriveCharacters(venue(RESERVABLE), { activity: lined(1), now: NOW })).toContain(
+      "worth-it",
+    );
+  });
+
+  it("does not call a poorly rated venue with a line worth the wait", () => {
+    expect(
+      deriveCharacters(venue(BARE), { activity: { [BARE]: { count: 2, vibeTally: { line_outside: 3 } } }, now: NOW }),
+    ).not.toContain("worth-it");
+  });
+
+  it("leads the note with the queue, and still states no wait time", () => {
+    const note = characterNote("worth-it", venue(RESERVABLE), { activity: lined(2), now: NOW });
+    expect(note).toBe("People queueing, and rated 4.4");
+    expect(note?.toLowerCase()).not.toMatch(/\bmin\b|\bhour\b/);
+  });
+});
+
 describe("notes never claim a ranking the code did not compute", () => {
   const ALL: Character[] = ["fit", "easy-door", "worth-it", "value", "close", "friends"];
 
