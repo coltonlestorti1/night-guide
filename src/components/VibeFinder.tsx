@@ -10,6 +10,7 @@ import { useMyRatings } from "@/hooks/useMyRatings";
 import { useFriendsOutTonight } from "@/hooks/useFriends";
 import { useFriendSaves } from "@/hooks/useSaves";
 import { selectPicks, type MovePick } from "@/lib/move/select";
+import type { ActivityMap } from "@/lib/move/activity";
 import { readImpressions, recordImpressions } from "@/lib/move/cooldown";
 import { inferTaste } from "@/lib/taste";
 import { hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
@@ -23,7 +24,7 @@ import { toast } from "sonner";
 import LocationDeniedDialog from "@/components/LocationDeniedDialog";
 import { Sofa, TrendingUp, Flame, Beer, Martini, Shuffle, Zap, Moon, Sparkles, MapPin, Globe, Wine, Building2, Trees, User, Users, UsersRound } from "lucide-react";
 
-type Activity = Record<string, { count: number; vibe?: string }> | undefined;
+type Activity = ActivityMap;
 
 const VIBES = [
   { value: "chill", label: "Chill", Icon: Sofa },

@@ -20,11 +20,13 @@ import { takesReservations } from "@/lib/venueTraits";
 import { haversineMiles, formatMiles } from "@/lib/distance";
 import { Coords } from "@/store/location";
 import { hasFriendSignal, type FriendSignals } from "./friends";
+import { lineSignal } from "./line";
+import type { ActivityMap } from "./activity";
 
 export type Character = "fit" | "easy-door" | "worth-it" | "value" | "close" | "friends";
 
 export type CharacterContext = {
-  activity?: Record<string, { count: number; vibe?: string }>;
+  activity?: NonNullable<ActivityMap>;
   coords?: Coords | null;
   friends?: FriendSignals;
   now?: Date;
@@ -67,7 +69,10 @@ export function characterNote(
       // of the three, and the highest rated" — a ranking against the other two
       // picks that nothing here ever computed.
       const rating = getEnrichment(venue.title)?.rating;
-      return rating ? `Busy right now, and rated ${rating.toFixed(1)}` : "Busy right now";
+      // A line is the more concrete fact, so it leads when we have one. Still
+      // no time claim: nothing dates an individual report (see move/line.ts).
+      const busy = lineSignal(ctx.activity?.[venue.id]).reported ? "People queueing" : "Busy right now";
+      return rating ? `${busy}, and rated ${rating.toFixed(1)}` : busy;
     }
     case "value": {
       const hh = getHappyHourState(getEnrichment(venue.title)?.happyHour, now);
@@ -100,11 +105,22 @@ export function deriveCharacters(venue: Venue, ctx: CharacterContext = {}): Char
 
   if (hasFriendSignal(venue.id, ctx.friends)) out.push("friends");
 
-  if (tier === "packed" && (e?.rating ?? 0) >= WORTH_IT_RATING) out.push("worth-it");
+  // A reported line qualifies a venue as "worth the wait" even when the
+  // headcount has not reached the packed tier — a queue at the door IS the
+  // wait, and it is the more direct evidence of one. Colton's framing:
+  // "if you dont mind waiting in line this is the most fun."
+  const line = lineSignal(act);
+  if ((tier === "packed" || line.reported) && (e?.rating ?? 0) >= WORTH_IT_RATING) {
+    out.push("worth-it");
+  }
 
   // Deliberately mutually exclusive with worth-it: a packed room is not an
-  // easy door, whatever its reservation policy says.
-  if (tier !== "packed" && (takesReservations(venue) || tier === "chill")) out.push("easy-door");
+  // easy door, whatever its reservation policy says — and neither is one
+  // people are queueing outside. Labelling a venue "Easy door" while the card
+  // below it reads "Line reported" would contradict itself on screen.
+  if (tier !== "packed" && !line.reported && (takesReservations(venue) || tier === "chill")) {
+    out.push("easy-door");
+  }
 
   const hh = getHappyHourState(e?.happyHour, now);
   if (hh.status === "active" || hh.status === "upcoming-today" || (venue.avg_price_level ?? 3) <= 2) {

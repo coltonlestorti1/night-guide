@@ -783,6 +783,35 @@ re-suspect them.
   **⚠️ Design conflict to resolve at the gate (raised by Colton 2026-08-05):** he wants ratings to "show up on your friends' profile," but this line historically read *"recap trail private-to-self, never visible to others"* and the 2026-08-05 RLS fix deliberately time-bounds friend SELECTs to live rows so friends **cannot** read history. Proposed resolution: split **ratings** (shareable content) from the **trail** (private location history) — a friend sees the score, never the timestamped visit. Nothing here is approved.
 - **Night feed + venue ratings that feed recommendations** (added 2026-08-05, Colton) — per-night feed of where you went, with rate/score per bar; scores feed back into suggested outputs and surface on friends' profiles. Supersedes the narrow "Night Recap" framing above and is the **feedback half of the personalization loop** with §3/§32. **SLICE 1 SHIPPED 2026-08-06** — the rating engine and the private last-night recap, all of it invisible to other users: `src/lib/night/*` (night window + bucket/comparison ranking, 27 tests), `venue_ratings` with owner-only RLS, `RecapCard` + `RateSheet` on `/social`. Spec `docs/superpowers/specs/2026-08-06-night-feed-design.md`, plan `docs/superpowers/plans/2026-08-06-night-feed-slice-1-ratings.md`. **Still deferred and NOT approved:** `night_posts`, the feed itself, school-scoped visibility, moderation/reporting, photos + storage bucket, and §3 actually reading `venue_ratings` — that last one is what closes the personalization loop, and it is the point of the whole feature.
 - **"Find the vibe" — natural-language recommendation input** (added 2026-08-05, Colton) — describe what you want in your own words instead of tapping the seven `VibeFinder` chips; conversational refinement ("cheaper", "quieter"). Audited 2026-08-05: this is a new **front door onto §3**, not a new recommender — `vibeScore.ts:5` and `VibeFinder.tsx:3` already anticipate it ("a Claude-backed scorer can replace this module without UI changes"). Recommended architecture: model parses free text → `VibePrefs`, existing `scoreVenues()` ranks, so the model never sees venue data and cannot invent claims about a real business. Haiku 4.5 (~$0.0014/call; ~$13/mo at 100 users × 3/night). Not specced, not approved.
+- **"Line reported" — SHIPPED 2026-08-10.** The first live-user signal in Find
+  the Move. `line_outside` was already captured on every check-in and tallied by
+  `venue_activity()`, and was being dropped because `vibeScore` only compared the
+  vibe for equality against chill/lively/packed. **Blocking question settled by
+  probing production** (`rpc/venue_activity?select=<col>`: real columns 200, a
+  control column 42703) — the slice-4 DDL IS applied, `vibe_line_outside` and the
+  age buckets are live, and the "absent until the DDL is pasted" comment in
+  `useCheckIns.ts` was stale and has been corrected.
+  **Label and rank are split:** 1 report says "Line reported" (attributed, so it
+  is true at n=1); 2 before it moves rank, so one troll cannot demote a real
+  business. **A stated preference still beats the inference** — a line is never a
+  penalty for someone who asked for packed, though they are still told. A venue
+  with a line can no longer be called "Easy door" (it would contradict the card
+  below it) and now qualifies as "Worth the wait" on the line alone.
+  **Cannot date a report:** the tally covers active check-ins (3h) and the age
+  buckets are not per-vibe, so the copy carries no time claim and must never say
+  a wait. DDL for per-vibe age buckets parked below. Spec:
+  `docs/superpowers/specs/2026-08-10-line-reported-design.md`. → §3
+
+- **Age-bucketed vibe tallies — DDL NOT WRITTEN, the upgrade to "Line reported".**
+  Today `venue_activity()` returns `vibe_*` counts across all active check-ins
+  (a 3-hour window) and `count_15m/45m/90m` for the total headcount only. Because
+  the buckets are not per-vibe, **nothing can tell a line reported 10 minutes ago
+  from one reported two hours ago**, which is why the copy says "Line reported"
+  and never "there's a line now". Adding `vibe_line_outside_15m` (and siblings)
+  to that function would let the UI say something time-bounded and let stale
+  reports decay out. `check_ins.vibe_at` already exists and is trigger-written,
+  so the data is there. Requires Colton to paste the DDL.
+
 - **Live user signals drive Find the Move's copy** (added 2026-08-10, Colton) —
   "when we get users we should use live data to inform where to go, so Find the
   Move changes live and says stuff like *line reported*, *your friends here*,
