@@ -220,6 +220,33 @@ Manual verification, signed in on a real device:
 6. Profile stat counts match the two list lengths and the friends list.
 7. `/u/:username` shows member-since and no Been / Want to Try stats.
 
+## Changed during implementation
+
+Recorded here so the spec matches what shipped:
+
+1. **`deleteRating` re-reads the bucket** instead of trusting a caller-supplied
+   order. Every write in this module is an upsert keyed on `(user_id, venue_id)`,
+   so a venue in the caller's stale list but no longer in the table was
+   *inserted*, not updated — removing two venues inside one refetch window
+   resurrected the first. Found by both the security and bug review agents,
+   independently.
+2. **Both rating mutations invalidate on `onSettled`**, not `onSuccess`. Each is
+   a two-step write, and a half-landed one left the cache showing the pre-write
+   state; the delete retry then failed permanently against zero rows.
+3. **The list rows do not open a lightbox.** The whole row navigates, thumbnail
+   included. The old saved-spots row opened a lightbox from the photo, which
+   meant two visually identical rows behaved differently depending on whether
+   the venue had a real photo.
+4. **Want to try rows got the same overflow menu** — "Rate it" and "Remove".
+   Rating from the saved list is the action that moves a venue between the two
+   tabs, and it was missing. `BeenRowMenu` became `ListRowMenu`.
+5. **Profile counts are taken from the resolved lists**, so a deactivated venue
+   cannot make "Been 12" link to a list of 11.
+6. **`SavedSpotsList` was deleted**, not kept — nothing imported it once the
+   Saved spots section came off Profile.
+
+Still true to the spec: no schema changes, no RLS edits, ratings private.
+
 ## Open questions
 
 None blocking. The one judgment call worth revisiting before slice 2: decision #3
