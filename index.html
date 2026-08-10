@@ -85,17 +85,17 @@
       #endz-splash.endz-splash-out { opacity: 0; pointer-events: none; }
       .endz-splash-mark { display: block; }
       .endz-splash-word { display: block; }
-      /* The ONLY moving part. The dot is drawn at 12 o'clock and rotated about
-         the SVG's origin, so frame 0 is identical to the static startup PNG.
-         Linear, so there is no eased pause that could read as a stall. */
+      /* The ONLY moving part. The arc is drawn starting at 12 o'clock and
+         rotated about the SVG's centre, so frame 0 is identical to the static
+         startup PNG. Linear, so there is no eased pause reading as a stall. */
       /* transform-box and transform-origin are BOTH stated explicitly. Their
          defaults for SVG have changed across engines, and getting the origin
-         wrong sends the dot around a circle that is not the ring — on iOS
-         Safari, which is the one browser we cannot check from here. */
+         wrong swings the arc around a point that is not its own centre — on
+         iOS Safari, the one browser we cannot check from here. */
       .endz-splash-orbit {
         transform-box: view-box;
-        transform-origin: 51.5px 51.5px;
-        animation: endz-splash-orbit 1400ms linear infinite;
+        transform-origin: 47px 47px;
+        animation: endz-splash-orbit 1000ms linear infinite;
       }
       @keyframes endz-splash-orbit {
         from { transform: rotate(0deg); }
@@ -130,37 +130,19 @@
            Geometry is mirrored from scripts/lib/splash-art.mjs, which also
            renders the startup PNGs; `node scripts/make-splash-image.mjs --check`
            fails the build if these two drift apart. -->
-      <!-- 103 = 2 x (ringRadius 46 + dotRadius 5.5). The box is the ring PLUS
-           the dot's radius on every side: the dot rides on the ring, so a box
-           sized to the ring alone clips it in half at 12 o'clock — the exact
-           frame the startup PNG shows. -->
-      <svg class="endz-splash-mark" width="103" height="103" viewBox="0 0 103 103"
-           fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <!-- Sampled from the app icon: purple to pink on the anti-diagonal.
-               Default objectBoundingBox units, so it spans the E's own box. -->
-          <linearGradient id="endz-splash-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#8C51ED" />
-            <stop offset="0.5" stop-color="#BC56B9" />
-            <stop offset="1" stop-color="#F97087" />
-          </linearGradient>
-        </defs>
-        <!-- The orbit track: still, always. -->
-        <circle cx="51.5" cy="51.5" r="46" fill="none" stroke="#6C45FF"
-                stroke-opacity="0.18" stroke-width="1.5" />
-        <!-- The E, as four axis-aligned bars — the same proportions as
-             public/icon-512.png (86/88/326/304/510 of a 1024 canvas).
-             ONE path, not four <rect>s, and that matters: objectBoundingBox
-             gradient units resolve against each individual shape's box, so
-             four rects gave each bar its own full purple-to-pink sweep instead
-             of one sweep across the letter. As a single path the box is the
-             whole E, which is what the PNG renderer draws. -->
-        <path fill="url(#endz-splash-grad)"
-              d="M36.8 28.5H66.2V36.26H36.8ZM36.8 47.62H64.22V55.38H36.8ZM36.8 66.74H66.2V74.5H36.8ZM36.8 28.5H44.74V74.5H36.8Z" />
-        <!-- The only thing that moves. Drawn at 12 o'clock, which is exactly
-             what the static startup PNG shows, so the handoff is invisible. -->
+      <!-- 94 = 2 x (radius 46 + half the 2px stroke). The arc's centreline sits
+           at 46, so its ink reaches one stroke-half beyond; a box sized to the
+           centreline would shave the outer edge of the line off. -->
+      <svg class="endz-splash-mark" width="94" height="94" viewBox="0 0 94 94"
+           fill="none" overflow="visible" xmlns="http://www.w3.org/2000/svg">
+        <!-- The only thing here, and the only thing that moves: a 270-degree
+             arc, round caps, no track behind it and nothing inside it. Starts
+             at 12 o'clock, which is exactly what the static startup PNG shows,
+             so the handoff is invisible. The wordmark below carries the brand,
+             which is why the centre can be empty. -->
         <g class="endz-splash-orbit">
-          <circle cx="51.5" cy="5.5" r="5.5" fill="#6C45FF" />
+          <path d="M47 1A46 46 0 1 1 1 47" fill="none" stroke="#6C45FF"
+                stroke-width="2" stroke-linecap="round" />
         </g>
       </svg>
       <svg class="endz-splash-word" width="68" height="14.1"

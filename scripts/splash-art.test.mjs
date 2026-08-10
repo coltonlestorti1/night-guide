@@ -7,11 +7,11 @@
  * the mark jumping, exactly where the blank white screen used to be. That is
  * the property under test.
  *
- * Two real defects motivated every assertion here, both of which passed a
- * typecheck, the build and a visual glance at ONE image:
- *   - the orbiting dot was clipped in half at 12 o'clock, because the SVG box
- *     was the ring's diameter and the dot rides ON the ring;
- *   - the E's gradient ran per-bar instead of across the letter.
+ * The mark is a single 270-degree arc with round caps — no track behind it and
+ * nothing inside it. The assertions below exist because the earlier mark
+ * shipped two defects that passed a typecheck, the build, AND a visual glance
+ * at one image: art clipped by a too-small box, and a gradient that resolved
+ * per shape. Both were invisible except in the one frame nobody looked at.
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -19,9 +19,9 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   BG,
+  PURPLE,
   LAYOUT,
   MARK_BOX,
-  gradientAt,
   markHeight,
   wordmarkHeight,
 } from "./lib/splash-art.mjs";
@@ -83,10 +83,11 @@ describe("launch screen geometry", () => {
 
       const ink = inkBox(img);
 
-      // The dot rides ON the ring, so the artwork's true top is the ring's top
-      // MINUS the dot's radius. This is the assertion that fails if the mark
-      // box is ever sized to the ring alone again.
-      const expectedTop = (L.ringCy - LAYOUT.ringRadius - LAYOUT.dotRadius) * d.dpr;
+      // The arc's ink reaches half a stroke beyond its centreline, and its
+      // round cap at 12 o'clock reaches exactly as far. This fails if the mark
+      // box is ever sized to the centreline and shaves the line's outer edge.
+      const expectedTop =
+        (L.ringCy - LAYOUT.ringRadius - LAYOUT.arcStroke / 2) * d.dpr;
       expect(Math.abs(ink.minY - expectedTop)).toBeLessThanOrEqual(1.5);
 
       // Nothing may touch an edge — that would mean the art is being cropped.
@@ -100,8 +101,8 @@ describe("launch screen geometry", () => {
       const rightGap = img.W - 1 - ink.maxX;
       expect(Math.abs(leftGap - rightGap)).toBeLessThanOrEqual(2);
 
-      // The ring is wider than the wordmark, so it sets the horizontal extent.
-      const ringOuter = LAYOUT.ringRadius + LAYOUT.ringStroke / 2;
+      // The arc is wider than the wordmark, so it sets the horizontal extent.
+      const ringOuter = LAYOUT.ringRadius + LAYOUT.arcStroke / 2;
       expect(Math.abs(ink.minX - (L.cx - ringOuter) * d.dpr)).toBeLessThanOrEqual(2);
 
       // The wordmark's baseline sets the bottom.
@@ -122,61 +123,49 @@ describe("launch screen geometry", () => {
     }
   });
 
-  it("draws the dot WHOLE at 12 o'clock — measured, not sampled", () => {
+  it("draws the arc where it should be, and the GAP where it should not", () => {
     const d = DEVICES.at(-1);
     const img = render(d.w, d.h, d.dpr);
     const L = layout(d.w, d.h);
-    const cx = Math.round(L.dot.x * d.dpr);
 
-    // An earlier version of this test checked the dot's centre pixel and one
-    // pixel above its top edge. Both are TRUE when the dot is clipped in half:
-    // the centre sits inside a ring-sized box, and clipping only makes the
-    // pixel above it more background. So measure the dot's actual height
-    // instead — that is the thing that changes when it is cut.
-    let purpleRows = 0;
-    for (let y = 0; y < img.H; y++) {
-      const [r, g, b] = pixel(img, cx, y);
-      if (r === 0x6c && g === 0x45 && b === 0xff) purpleRows++;
+    // A point on the arc's centreline, `deg` clockwise from 12 o'clock.
+    const onCentreline = (deg) => {
+      const a = ((deg - 90) * Math.PI) / 180;
+      return pixel(
+        img,
+        Math.round((L.cx + LAYOUT.ringRadius * Math.cos(a)) * d.dpr),
+        Math.round((L.ringCy + LAYOUT.ringRadius * Math.sin(a)) * d.dpr),
+      );
+    };
+
+    // The sweep runs 12 -> 3 -> 6 -> 9 o'clock. Checking only that "some arc
+    // exists" would pass for a full ring, so the OPEN quadrant is the load
+    // bearing half of this test.
+    for (const deg of [0, 45, 90, 180, 270]) {
+      expect(onCentreline(deg), `${deg} deg should be on the arc`).toEqual(PURPLE);
     }
-    const wholeDot = LAYOUT.dotRadius * 2 * d.dpr;
-    // Anti-aliasing softens the extreme top and bottom rows.
-    expect(purpleRows).toBeGreaterThan(wholeDot - 3);
-    expect(purpleRows).toBeLessThanOrEqual(wholeDot);
+    for (const deg of [300, 315, 330]) {
+      expect(onCentreline(deg), `${deg} deg should be the gap`).toEqual(BG);
+    }
   });
 
-  it("sweeps the E's gradient across the whole letter, not per bar", () => {
-    // objectBoundingBox gradient units resolve PER SHAPE, so an E drawn as four
-    // rects gives each bar its own full purple-to-pink sweep.
-    //
-    // The obvious samples — mid-top-bar and mid-bottom-bar — do NOT catch this:
-    // whole-letter and per-bar agree in sign there, and the old assertions
-    // ("top is blue-dominant, bottom is red-dominant") passed with the bug
-    // present. This samples the right end of the top bar, near its lower edge,
-    // where the two interpretations diverge by ~50/255.
+  it("leaves the centre of the mark empty", () => {
+    // The E used to sit here. It was removed deliberately (two competing
+    // purples, and the arc visibly hugged the letter) — so the emptiness is a
+    // decision, not an oversight, and something reappearing here should fail.
     const d = DEVICES.at(-1);
     const img = render(d.w, d.h, d.dpr);
     const L = layout(d.w, d.h);
-    // Inside the top bar's ink with room to spare — the bar spans 0..0.169 of
-    // the letter's height, and sampling nearer its edge lands on anti-aliasing.
-    const fx = 0.82, fy = 0.1;
-    const actual = pixel(
-      img,
-      Math.round((L.e.x + L.e.w * fx) * d.dpr),
-      Math.round((L.e.y + L.e.h * fy) * d.dpr),
-    );
-
-    // Whole-letter: t is the anti-diagonal across the E's own box.
-    const wholeLetter = gradientAt((fx + fy) / 2);
-    // Per-bar: the top bar spans only 0..BAR_H of the letter's height, so the
-    // same point sits far further along that bar's own diagonal.
-    const barH = LAYOUT.eHeight * (86 / 510);
-    const perBar = gradientAt((fx + (fy * L.e.h) / barH) / 2);
-
-    const dist = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
-    expect(dist(actual, wholeLetter)).toBeLessThanOrEqual(4);
-    // Guard the guard: if these two ever stop diverging, the test is vacuous
-    // again and should be moved to a different sample point.
-    expect(dist(wholeLetter, perBar)).toBeGreaterThan(20);
+    const r = LAYOUT.ringRadius - LAYOUT.arcStroke;
+    for (const [fx, fy] of [[0, 0], [-0.5, 0], [0.5, 0], [0, -0.5], [0, 0.5]]) {
+      expect(
+        pixel(
+          img,
+          Math.round((L.cx + r * fx) * d.dpr),
+          Math.round((L.ringCy + r * fy) * d.dpr),
+        ),
+      ).toEqual(BG);
+    }
   });
 });
 

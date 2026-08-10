@@ -10,8 +10,8 @@
  * silently falls back to white, which is the bug we are fixing.
  *
  * Everything is drawn by hand — the repo has no image library on purpose (see
- * make-app-icon.mjs). The E is axis-aligned rectangles, exact at any size. The
- * ring, dot and wordmark curves are supersampled 4x4, but ONLY inside their own
+ * make-app-icon.mjs). The arc and wordmark curves are supersampled 4x4, but
+ * ONLY inside their own
  * bounding boxes: at 1320x2868 the artwork covers about 2% of the canvas, and
  * supersampling the flat background would be ~50M wasted samples per image.
  *
@@ -26,19 +26,15 @@ import {
   BG,
   PURPLE,
   WORDMARK,
-  E_ASPECT,
-  E_RECTS,
-  E_STOPS,
   hex,
   WORDMARK_PATH,
   WORDMARK_VIEWBOX,
   LAYOUT,
   MARK_BOX,
-  ePath,
+  arcPath,
   ORBIT_PERIOD_MS,
   markHeight,
   wordmarkHeight,
-  gradientAt,
 } from "./lib/splash-art.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -86,20 +82,14 @@ export const DEVICES = [
 export function layout(cssW, cssH) {
   const cx = cssW / 2;
   const groupTop = cssH * LAYOUT.centerYFraction - markHeight() / 2;
-  // The ring sits at the centre of the MARK_BOX, not at one ring-radius down:
-  // the box is padded by the dot's radius so the orbit is never clipped.
+  // The arc's centre sits at the centre of the MARK_BOX, which is padded by
+  // half a stroke so the line's outer edge is never shaved off.
   const ringCy = groupTop + MARK_BOX / 2;
-  const eH = LAYOUT.eHeight;
-  const eW = eH * E_ASPECT;
   const wmW = LAYOUT.wordmarkWidth;
   const wmH = wordmarkHeight();
   return {
     cx,
     ringCy,
-    e: { x: cx - eW / 2, y: ringCy - eH / 2, w: eW, h: eH },
-    // 12 o'clock: frame 0 of the orbit, and where the dot parks under
-    // prefers-reduced-motion. Both make this the honest resting frame.
-    dot: { x: cx, y: ringCy - LAYOUT.ringRadius },
     wm: {
       x: cx - wmW / 2,
       y: groupTop + MARK_BOX + LAYOUT.wordmarkGap,
@@ -229,37 +219,39 @@ export function render(cssW, cssH, dpr) {
   }
   for (let y = 0; y < H; y++) bgRow.copy(raw, y * stride);
 
-  const ringOuter = LAYOUT.ringRadius + LAYOUT.ringStroke / 2;
-  const ringInner = LAYOUT.ringRadius - LAYOUT.ringStroke / 2;
-
-  /** Colour of one subsample, in CSS-pixel space. Painted back-to-front:
-   *  background, ring track, E, dot. They do not overlap by design — the E's
-   *  half-diagonal clears the dot's orbit — so ordering is belt-and-braces. */
-  const sampleMark = (sx, sy) => {
-    const dxr = sx - L.cx, dyr = sy - L.ringCy;
-    const r = Math.hypot(dxr, dyr);
-
-    const dxd = sx - L.dot.x, dyd = sy - L.dot.y;
-    if (Math.hypot(dxd, dyd) <= LAYOUT.dotRadius) return PURPLE;
-
-    const e = L.e;
-    if (sx >= e.x && sx < e.x + e.w && sy >= e.y && sy < e.y + e.h) {
-      const fx = (sx - e.x) / e.w, fy = (sy - e.y) / e.h;
-      for (const [rx0, ry0, rx1, ry1] of E_RECTS) {
-        if (fx >= rx0 && fx < rx1 && fy >= ry0 && fy < ry1) {
-          // Anti-diagonal across the E's own box, matching the app icon.
-          return gradientAt((fx + fy) / 2);
-        }
-      }
-    }
-
-    if (r >= ringInner && r <= ringOuter) {
-      const a = LAYOUT.ringAlpha;
+  const half = LAYOUT.arcStroke / 2;
+  const arcInner = LAYOUT.ringRadius - half;
+  const arcOuter = LAYOUT.ringRadius + half;
+  // Endpoints of the arc's centreline, for the round caps. Angles run clockwise
+  // from 12 o'clock, matching arcPath() in splash-art.mjs.
+  const capAngle = (deg) => ((deg - 90) * Math.PI) / 180;
+  const caps = [LAYOUT.arcStartDeg, LAYOUT.arcStartDeg + LAYOUT.arcSweepDeg].map(
+    (deg) => {
+      const a = capAngle(deg);
       return [
-        Math.round(BG[0] + (PURPLE[0] - BG[0]) * a),
-        Math.round(BG[1] + (PURPLE[1] - BG[1]) * a),
-        Math.round(BG[2] + (PURPLE[2] - BG[2]) * a),
+        L.cx + LAYOUT.ringRadius * Math.cos(a),
+        L.ringCy + LAYOUT.ringRadius * Math.sin(a),
       ];
+    },
+  );
+
+  /** Colour of one subsample, in CSS-pixel space. The centre of the mark is
+   *  deliberately empty — there is nothing to composite against. */
+  const sampleMark = (sx, sy) => {
+    const dx = sx - L.cx, dy = sy - L.ringCy;
+    const r = Math.hypot(dx, dy);
+    if (r >= arcInner && r <= arcOuter) {
+      // Clockwise degrees from 12 o'clock, 0..360.
+      const deg = (((Math.atan2(dx, -dy) * 180) / Math.PI) + 360) % 360;
+      const from = (LAYOUT.arcStartDeg + 360) % 360;
+      const travelled = (deg - from + 360) % 360;
+      if (travelled <= LAYOUT.arcSweepDeg) return PURPLE;
+    }
+    // Round caps: a disc of half the stroke width at each end of the
+    // centreline. Without these the arc ends in a hard chisel, which is the
+    // detail that makes a spinner look unfinished.
+    for (const [capX, capY] of caps) {
+      if (Math.hypot(sx - capX, sy - capY) <= half) return PURPLE;
     }
     return BG;
   };
@@ -300,10 +292,10 @@ export function render(cssW, cssH, dpr) {
   const pad = 2;
   paint(
     {
-      x: L.cx - ringOuter - LAYOUT.dotRadius - pad,
-      y: L.ringCy - ringOuter - LAYOUT.dotRadius - pad,
-      w: (ringOuter + LAYOUT.dotRadius + pad) * 2,
-      h: (ringOuter + LAYOUT.dotRadius + pad) * 2,
+      x: L.cx - arcOuter - pad,
+      y: L.ringCy - arcOuter - pad,
+      w: (arcOuter + pad) * 2,
+      h: (arcOuter + pad) * 2,
     },
     sampleMark,
   );
@@ -327,13 +319,10 @@ export function expectedInIndexHtml() {
   const c = MARK_BOX / 2;
   return [
     ["wordmark path", WORDMARK_PATH],
-    ["E path", ePath(c, c)],
     ["mark box viewBox", `viewBox="0 0 ${MARK_BOX} ${MARK_BOX}"`],
     ["mark box size", `width="${MARK_BOX}" height="${MARK_BOX}"`],
-    ["ring centred in the mark box", `cx="${c}" cy="${c}" r="${LAYOUT.ringRadius}"`],
-    // The dot at 12 o'clock: one dot-radius down from the top of the box, so
-    // it is fully inside it. This is the frame the startup PNG paints.
-    ["dot at 12 o'clock", `cx="${c}" cy="${LAYOUT.dotRadius}" r="${LAYOUT.dotRadius}"`],
+    // The arc, starting at 12 o'clock — the frame the startup PNG paints.
+    ["spinner arc path", arcPath(c, c)],
     ["orbit origin", `transform-origin: ${c}px ${c}px`],
     ["orbit period", `${ORBIT_PERIOD_MS}ms`],
     ["wordmark width", `width="${LAYOUT.wordmarkWidth}"`],
@@ -343,18 +332,17 @@ export function expectedInIndexHtml() {
     // Every value here is DERIVED from splash-art.mjs — a literal repeated here
     // would only be checking itself, which is exactly what `"#F7F7F4"` was
     // doing while hex() sat unused.
-    ["ring stroke width", `stroke-width="${LAYOUT.ringStroke}"`],
-    ["ring track opacity", `stroke-opacity="${LAYOUT.ringAlpha}"`],
-    ["ring colour", `stroke="${hex(PURPLE)}"`],
-    ["dot colour", `fill="${hex(PURPLE)}"`],
+    ["arc stroke width", `stroke-width="${LAYOUT.arcStroke}"`],
+    ["arc round caps", 'stroke-linecap="round"'],
+    // The arc's ink lands exactly ON the viewBox edge, so without this the
+    // outermost anti-aliased pixel is clipped in the live SVG but not in the
+    // PNG — a hairline difference right at the handoff.
+    ["mark not clipped at its own edge", 'overflow="visible"'],
+    ["arc colour", `stroke="${hex(PURPLE)}"`],
     ["wordmark colour", `fill="${hex(WORDMARK)}"`],
     ["wordmark viewBox", `viewBox="0 0 ${WORDMARK_VIEWBOX.w} ${WORDMARK_VIEWBOX.h}"`],
     ["wordmark height", `height="${Math.round(wordmarkHeight() * 100) / 100}"`],
     ["background", hex(BG)],
-    ...E_STOPS.map(([offset, colour], i) => [
-      `gradient stop ${i}`,
-      `offset="${offset}" stop-color="${hex(colour)}"`,
-    ]),
   ];
 }
 
