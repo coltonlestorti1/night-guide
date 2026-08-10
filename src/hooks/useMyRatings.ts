@@ -15,6 +15,21 @@ import {
 } from "@/lib/night/ratings";
 import type { Bucket } from "@/lib/night/ranking";
 
+/**
+ * Every cache that renders a score alongside a post. `night_posts.score` is a
+ * stored mirror of the ranking, kept in step by the sync_night_post_score
+ * trigger on venue_ratings — but the trigger fires in the database, so nothing
+ * on the client knows a post just changed. Without this, rating a second venue
+ * re-spreads the band and the feed keeps showing the old number until a reload.
+ */
+const POST_SCORE_KEYS = ["night-feed", "my-posts", "my-activity", "profile-posts"];
+
+function invalidateRatingViews(qc: ReturnType<typeof useQueryClient>, userId?: string) {
+  qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
+  // Prefix match: these keys carry a night date or a limit after the user id.
+  for (const key of POST_SCORE_KEYS) qc.invalidateQueries({ queryKey: [key] });
+}
+
 export function useMyRatings() {
   const userId = useAuthStore((s) => s.session?.user.id);
 
@@ -67,7 +82,7 @@ export function useSaveRating() {
     // on success leaves the cache showing the pre-write state after a partial
     // write, and the UI then lies in the direction of "nothing happened".
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
+      invalidateRatingViews(qc, userId);
     },
   });
 }
@@ -89,7 +104,7 @@ export function useDeleteRating() {
     // reindex fails. Without this the row stays on screen, and the retry then
     // fails forever because its delete matches no rows.
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
+      invalidateRatingViews(qc, userId);
     },
   });
 }
