@@ -1317,9 +1317,36 @@ requires native, and it is only needed for auto check-in (see line 416).
 - App Tracking Transparency is likely **not** required — analytics is
   first-party and nothing is shared with data brokers. Confirm before filing.
 
+### Launch screen — DONE 2026-08-09
+
+Merged `86e0c74`. The PWA showed ~2s of blank white on a home-screen launch
+because there were **no `apple-touch-startup-image` links at all**; the inline
+splash cannot cover that window because it *is* the document. 12 startup PNGs
+now ship (`public/splash/`), plus a redesigned mark: the icon's gradient E in a
+still ring with one dot orbiting it, over the ENDZ wordmark.
+
+Design and constraints:
+`docs/superpowers/specs/2026-08-09-ios-launch-screen-design.md`.
+
+Carries into the Capacitor wrap: a native iOS target needs its own
+`LaunchScreen.storyboard`, which is a **separate** asset from these web startup
+images. `scripts/lib/splash-art.mjs` already renders the artwork at any size,
+so producing it is a size list, not a redesign.
+
+⚠️ **Open, needs a real device:** the startup image is full-screen while the
+standalone web view sits below the status bar, so the mark can land up to ~12pt
+off at the handoff. Not corrected on purpose — the per-device inset values
+cannot be verified without the device, and a wrong correction is worse than the
+known one.
+
+⚠️ **To test any of this, the home-screen icon must be DELETED and re-added** —
+iOS caches startup images at install time.
+
 ### App Store Connect assets still to produce
 
-- **1024×1024 app icon** — `public/` has 192 and 512 only.
+- ~~**1024×1024 app icon**~~ — **DONE.** `assets/appstore-icon-1024.png`,
+  verified 1024×1024 and colour type 2 (no alpha, which Apple rejects).
+  Regenerate with `node scripts/make-app-icon.mjs 1024 <out>`.
 - Screenshots for the current required iPhone sizes.
 - Name, subtitle, description, keywords, promo text.
 - Support URL and Privacy Policy URL. `/privacy` (127 lines) and `/terms` (75)
