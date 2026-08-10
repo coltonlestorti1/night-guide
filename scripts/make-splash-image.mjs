@@ -156,16 +156,25 @@ function flattenPath(d) {
  */
 const crossingCache = new Map();
 
-function crossingsAt(contours, py) {
+/**
+ * Deliberately closed over WORDMARK_CONTOURS rather than taking the contours as
+ * an argument: the cache is keyed on `py` ALONE, so a second caller passing a
+ * different outline would silently receive this one's crossings. There is only
+ * ever one path to fill, and this keeps that a fact rather than an assumption.
+ */
+function wordmarkCrossingsAt(py) {
   const hit = crossingCache.get(py);
   if (hit) return hit;
   const xs = [];
-  for (const c of contours) {
+  for (const c of WORDMARK_CONTOURS) {
     for (let i = 0; i < c.length; i++) {
       const [x1, y1] = c[i];
       const [x2, y2] = c[(i + 1) % c.length];
-      // Half-open rule: a vertex exactly on the line counts once, not twice.
-      if (y1 <= py === y2 <= py) continue;
+      // Half-open rule: a vertex sitting exactly on the scanline is counted
+      // once, not twice, and a horizontal segment is skipped entirely (both
+      // ends compare equal). Parenthesised because `<=` binds tighter than
+      // `===`, and the intent should not rest on remembering that.
+      if ((y1 <= py) === (y2 <= py)) continue;
       xs.push({
         x: x1 + ((py - y1) / (y2 - y1)) * (x2 - x1),
         dir: y2 > y1 ? 1 : -1,
@@ -179,8 +188,8 @@ function crossingsAt(contours, py) {
 
 /** Non-zero winding, which is what TrueType outlines assume — the counters in
  *  D and the bowl of the E depend on it. */
-function insidePath(contours, px, py) {
-  const xs = crossingsAt(contours, py);
+function insideWordmark(px, py) {
+  const xs = wordmarkCrossingsAt(py);
   let winding = 0;
   for (let i = 0; i < xs.length && xs[i].x <= px; i++) winding += xs[i].dir;
   return winding !== 0;
@@ -248,7 +257,7 @@ export function render(cssW, cssH, dpr) {
   const sampleWordmark = (sx, sy) => {
     const u = ((sx - L.wm.x) / L.wm.w) * WORDMARK_VIEWBOX.w;
     const v = ((sy - L.wm.y) / L.wm.h) * WORDMARK_VIEWBOX.h;
-    return insidePath(WORDMARK_CONTOURS, u, v) ? WORDMARK : BG;
+    return insideWordmark(u, v) ? WORDMARK : BG;
   };
 
   /** Supersample `sampler` over a CSS-pixel rect, writing averaged pixels. */
