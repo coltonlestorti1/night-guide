@@ -21,7 +21,7 @@ const FIELD_MASK = [
   "id", "displayName", "rating", "userRatingCount", "priceRange",
   "editorialSummary", "nationalPhoneNumber", "websiteUri", "googleMapsUri",
   "businessStatus", "regularOpeningHours", "regularSecondaryOpeningHours",
-  "outdoorSeating",
+  "outdoorSeating", "reservable",
 ].join(",");
 
 function envLocal(key) {
@@ -98,7 +98,7 @@ async function resolve() {
  */
 const PROTECTED_FIELDS = [
   "rating", "userRatingCount", "priceRange", "editorialSummary",
-  "websiteUri", "phone", "outdoorSeating", "hours", "happyHour",
+  "websiteUri", "phone", "outdoorSeating", "reservable", "hours", "happyHour",
 ];
 
 const isPresent = (v) =>

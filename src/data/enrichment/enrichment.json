@@ -1,10 +1,10 @@
 {
   "The Grafton": {
     "placeId": "ChIJd3-uGZ1ZwokR2fCvxWdgWqY",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
     "userRatingCount": 460,
-    "priceRange": "$10–40",
+    "priceRange": "$20–30",
     "editorialSummary": "This laid-back Irish bar offers pub grub, pints & plenty of TVs for catching the game.",
     "phone": "(212) 228-8580",
     "websiteUri": "http://www.thegraftonnyc.com/",
@@ -110,11 +110,12 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Standings": {
     "placeId": "ChIJLXPphJxZwokRNVmngCybEpQ",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.6,
     "userRatingCount": 157,
     "priceRange": "$10–20",
@@ -180,11 +181,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "International Bar": {
     "placeId": "ChIJlUueGJ1ZwokRlBb3NEfYFF8",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.2,
     "userRatingCount": 341,
     "priceRange": "$1–30",
@@ -251,14 +253,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "Coyote Ugly Saloon": {
     "placeId": "ChIJ7buqpp1ZwokRk-t076OO99E",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4,
     "userRatingCount": 835,
-    "priceRange": "$10–20",
+    "priceRange": "$20–30",
     "editorialSummary": "Outpost of a festive saloon chain with female bartenders, bartop dancing & body shots.",
     "phone": "(646) 360-3018",
     "websiteUri": "https://www.coyoteuglysaloon.com/newyork/",
@@ -371,13 +374,14 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "reservable": true
   },
   "Niagara Bar": {
     "placeId": "ChIJq-A7UZ1ZwokRC9nHZurb4iQ",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 3.4,
-    "userRatingCount": 652,
+    "userRatingCount": 651,
     "priceRange": "$10–20",
     "editorialSummary": "This longtime watering hole on a busy Alphabet City corner features DJ-spun tunes & a photo booth.",
     "phone": "(212) 420-9517",
@@ -442,13 +446,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Lucy's Bar": {
     "placeId": "ChIJ3WRZYp1ZwokRI0GzAf4kCIQ",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.2,
-    "userRatingCount": 288,
+    "userRatingCount": 289,
     "priceRange": "$20–30",
     "editorialSummary": "Easygoing hangout, famed for its eponymous owner, features pool, video games & a laid-back vibe.",
     "websiteUri": "https://www.lucysbarnyc.com/",
@@ -512,14 +517,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Doc Holliday's": {
     "placeId": "ChIJwRcz2HdZwokR_I0BuB3PkFc",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.1,
     "userRatingCount": 464,
-    "priceRange": "$10–20",
+    "priceRange": "$10–50",
     "editorialSummary": "Texas roadhouse-style bar in the East Village with biker bartenders & country music on the jukebox.",
     "phone": "(212) 979-0312",
     "websiteUri": "http://www.instagram.com/dochollidaysnyc",
@@ -583,11 +589,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "The Library": {
     "placeId": "ChIJQwDts4NZwokR1G-QaglL6H0",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
     "userRatingCount": 708,
     "priceRange": "$10–20",
@@ -653,13 +660,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Death & Co": {
     "placeId": "ChIJKU1MNJ1ZwokRQ7eiWK511vI",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.5,
-    "userRatingCount": 2119,
+    "userRatingCount": 2121,
     "editorialSummary": "Bartenders in bow ties & suspenders recall the speakeasy era at this dark, moody cocktail lounge.",
     "phone": "(212) 388-0882",
     "websiteUri": "http://www.deathandcompany.com/",
@@ -723,11 +731,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "The Summit Bar": {
     "placeId": "ChIJG4L6XndZwokR7CIyJVdM4CI",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.7,
     "userRatingCount": 437,
     "priceRange": "$1–60",
@@ -836,11 +845,12 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Alphabet City Beer Co": {
     "placeId": "ChIJWaWbwHlZwokRj1wHkvB84zE",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.6,
     "userRatingCount": 598,
     "priceRange": "$20–30",
@@ -907,13 +917,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "KGB Bar": {
     "placeId": "ChIJMbtTs4RZwokRB3Bd_3yH7AA",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
-    "userRatingCount": 644,
+    "userRatingCount": 645,
     "priceRange": "$20–30",
     "editorialSummary": "Readings & publication parties are regular events at this tiny Soviet-themed watering hole.",
     "phone": "(347) 441-4481",
@@ -978,13 +989,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "McSorley's Old Ale House": {
     "placeId": "ChIJGdCSd5tZwokRfYvMyzO7qtE",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.7,
-    "userRatingCount": 8871,
+    "userRatingCount": 8880,
     "priceRange": "$10–20",
     "editorialSummary": "Old-time bar with Irish bartenders, 2 kinds of ale (light or dark) & sawdust on the floor.",
     "websiteUri": "http://mcsorleysoldalehouse.nyc/",
@@ -1047,11 +1059,12 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "reservable": false
   },
   "Beauty Bar": {
     "placeId": "ChIJbU-JV55ZwokRRgid16uv0jA",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
     "userRatingCount": 816,
     "priceRange": "$10–20",
@@ -1110,14 +1123,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Please Don't Tell": {
     "placeId": "ChIJb67-ZZ1ZwokRRxBYr3GlFp0",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
-    "userRatingCount": 2460,
-    "priceRange": "$20–50",
+    "userRatingCount": 2467,
+    "priceRange": "$20–60",
     "editorialSummary": "Patrons who enter through a phone booth in Crif Dogs next door sip novel cocktails in a dark space.",
     "websiteUri": "http://www.pdtnyc.com/",
     "googleMapsUri": "https://maps.google.com/?cid=11319416621133992007&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
@@ -1180,11 +1194,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "The Wayland": {
     "placeId": "ChIJZeSUWndZwokRwwxbW4B4nHM",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.6,
     "userRatingCount": 895,
     "priceRange": "$20–30",
@@ -1293,13 +1308,14 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "d.b.a.": {
     "placeId": "ChIJFTsuboNZwokRNAuw9taAIx4",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
-    "userRatingCount": 752,
+    "userRatingCount": 754,
     "priceRange": "$10–20",
     "editorialSummary": "A smartly curated selection of beer, bourbon & beyond draws connoisseurs to this East Village bar.",
     "phone": "(646) 707-0599",
@@ -1405,14 +1421,15 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "Juke Bar": {
     "placeId": "ChIJD28DfJ5ZwokRpyv9AXrO6no",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.5,
-    "userRatingCount": 584,
-    "priceRange": "$10–40",
+    "userRatingCount": 585,
+    "priceRange": "$20–30",
     "editorialSummary": "Lively, Southern-flavored joint with signature cocktails, craft beers & a live band on Sundays.",
     "phone": "(212) 228-7464",
     "websiteUri": "http://eastvillage.jukebarnyc.com/",
@@ -1476,11 +1493,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "Holiday Cocktail Lounge": {
     "placeId": "ChIJB2KyA51ZwokRyWZr8ZgaeRA",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
     "userRatingCount": 658,
     "priceRange": "$10–20",
@@ -1604,11 +1622,12 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "reservable": true
   },
   "Ten Degrees": {
     "placeId": "ChIJI1FMYZ1ZwokRhOThOdTMOgA",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
     "userRatingCount": 645,
     "priceRange": "$20–30",
@@ -1733,11 +1752,12 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "The Headless Widow": {
     "placeId": "ChIJA9irJVtZwokRxk_y6uNanoI",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.6,
     "userRatingCount": 462,
     "priceRange": "$20–30",
@@ -1845,13 +1865,14 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Wonderland Bar": {
     "placeId": "ChIJsctiAgBZwokRRPidYZS6VzQ",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.7,
-    "userRatingCount": 420,
+    "userRatingCount": 421,
     "priceRange": "$20–50",
     "phone": "(212) 814-2943",
     "websiteUri": "http://wonderlandbarnyc.com/",
@@ -1925,14 +1946,15 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "Bua": {
     "placeId": "ChIJ3XASaJ1ZwokR4zn6EyjizVM",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
     "userRatingCount": 684,
-    "priceRange": "$20–30",
+    "priceRange": "$10–40",
     "editorialSummary": "East Villagers down discounted cocktails on a lively patio during this pub's daytime happy hour.",
     "phone": "(212) 979-6276",
     "websiteUri": "http://www.buabar.com/",
@@ -2038,13 +2060,14 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "Superbueno": {
     "placeId": "ChIJbXN71WhZwokRNTk55-ScVWY",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.2,
-    "userRatingCount": 753,
+    "userRatingCount": 757,
     "priceRange": "$30–70",
     "phone": "(347) 866-7739",
     "websiteUri": "http://www.superbuenonyc.com/",
@@ -2108,13 +2131,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "Sweet Linda": {
     "placeId": "ChIJTSEOrsNZwokR8vHwFFdZla8",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.8,
-    "userRatingCount": 339,
+    "userRatingCount": 345,
     "priceRange": "$20–50",
     "phone": "(929) 494-1794",
     "websiteUri": "https://sweetlindanyc.com/?utm_source=gbp&utm_medium=organic",
@@ -2162,13 +2186,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "Motel No Tell": {
     "placeId": "ChIJqTZuJztZwokREqOEPG7VOSM",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.6,
-    "userRatingCount": 412,
+    "userRatingCount": 422,
     "priceRange": "$20–60",
     "phone": "(646) 368-9775",
     "websiteUri": "https://www.motelnotellnyc.com/",
@@ -2282,11 +2307,12 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Solas": {
     "placeId": "ChIJYTk0bpxZwokRHBO9UXg4SVA",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 3.9,
     "userRatingCount": 1014,
     "priceRange": "$10–20",
@@ -2403,14 +2429,15 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Paradise Lost": {
     "placeId": "ChIJr_CugNxZwokRYRqcXtzJ8sQ",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
-    "userRatingCount": 511,
-    "priceRange": "$20–70",
+    "userRatingCount": 513,
+    "priceRange": "$20–60",
     "websiteUri": "http://paradiselost.nyc/",
     "googleMapsUri": "https://maps.google.com/?cid=14191627324115130977&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
     "businessStatus": "OPERATIONAL",
@@ -2472,11 +2499,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "Goodnight Sonny": {
     "placeId": "ChIJm8vZD51ZwokR-5pyz5U7Omg",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.1,
     "userRatingCount": 661,
     "priceRange": "$20–60",
@@ -2589,9 +2617,10 @@
   },
   "Deluxx Fluxx": {
     "placeId": "ChIJe-lFm_VZwokRpZ2tEFhS6f4",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
-    "rating": 4.6,
-    "userRatingCount": 300,
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
+    "rating": 4.7,
+    "userRatingCount": 309,
+    "priceRange": "$20–30",
     "phone": "(917) 274-7913",
     "websiteUri": "https://www.deluxxfluxx.com/deluxx-fluxx-nyc",
     "googleMapsUri": "https://maps.google.com/?cid=18368303093397691813&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
@@ -2614,14 +2643,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "Lucky": {
     "placeId": "ChIJe74ZAXdZwokR3qXA9irhjio",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
     "userRatingCount": 324,
-    "priceRange": "$10–30",
+    "priceRange": "$10–20",
     "editorialSummary": "Small, easygoing bar & community event space featuring seasonal cocktails & a backyard beer garden.",
     "phone": "(212) 777-3111",
     "websiteUri": "http://www.luckyonb.com/",
@@ -2685,13 +2715,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "Mona's": {
     "placeId": "ChIJjZDVonZZwokRoZPvylQfyFY",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.2,
-    "userRatingCount": 420,
+    "userRatingCount": 421,
     "priceRange": "$10–20",
     "editorialSummary": "Relaxed, brick-walled bar with a pool table, Skee-Ball & a juke box, plus frequent live music.",
     "websiteUri": "https://www.facebook.com/Monas-Bar-NYC-118839478171924/",
@@ -2755,14 +2786,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "The York": {
     "placeId": "ChIJx1AoOXVZwokRe1q0RHf5t6U",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.8,
-    "userRatingCount": 178,
-    "priceRange": "$10–20",
+    "userRatingCount": 179,
+    "priceRange": "$20–30",
     "phone": "(646) 998-4138",
     "websiteUri": "http://theyork.nyc/",
     "googleMapsUri": "https://maps.google.com/?cid=11941287227645254267&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
@@ -2829,7 +2861,7 @@
   },
   "The Spotted Owl Tavern": {
     "placeId": "ChIJfdFXdnZZwokRw8KBMsqlO5U",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
     "userRatingCount": 286,
     "priceRange": "$10–20",
@@ -2896,11 +2928,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Accidental Bar": {
     "placeId": "ChIJUeg8neFZwokRjTD4oCwTPGk",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.9,
     "userRatingCount": 161,
     "priceRange": "$20–30",
@@ -2941,14 +2974,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Berlin": {
     "placeId": "ChIJiaPprINZwokR2C1kGvUYBfQ",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4,
-    "userRatingCount": 425,
-    "priceRange": "$20–40",
+    "userRatingCount": 426,
+    "priceRange": "$30–40",
     "editorialSummary": "Tiny, dimly-lit entertainment venue featuring DJs & live bands along with cocktails & beer.",
     "phone": "(212) 505-2466",
     "websiteUri": "https://berlin.nyc/",
@@ -3012,14 +3046,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "Little Rebel": {
     "placeId": "ChIJ4erQS9dZwokRRAK6XSV74sg",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
-    "userRatingCount": 321,
-    "priceRange": "$20–30",
+    "userRatingCount": 327,
+    "priceRange": "$20–60",
     "phone": "(646) 922-7325",
     "websiteUri": "http://www.littlerebelnyc.com/",
     "googleMapsUri": "https://maps.google.com/?cid=14475267552738673220&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
@@ -3082,11 +3117,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Romeos": {
     "placeId": "ChIJ5dKgkl1ZwokRVaLe0VlqPXg",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
     "userRatingCount": 216,
     "priceRange": "$20–50",
@@ -3130,7 +3166,7 @@
         "day": 4,
         "openHour": 16,
         "openMinute": 0,
-        "closeHour": 4,
+        "closeHour": 2,
         "closeMinute": 0,
         "closeDayOffset": 1
       },
@@ -3151,11 +3187,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Club Cumming": {
     "placeId": "ChIJr1acrIJZwokRLpu9uKM6lIo",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
     "userRatingCount": 240,
     "priceRange": "$20–30",
@@ -3222,11 +3259,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Big Bar": {
     "placeId": "ChIJo3_m5pxZwokRyDo458xlexg",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
     "userRatingCount": 229,
     "priceRange": "$10–20",
@@ -3291,13 +3329,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Two Perrys": {
     "placeId": "ChIJA5VYvHZZwokR3PrQCTgoJ8g",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.9,
     "userRatingCount": 109,
+    "priceRange": "$20–30",
     "googleMapsUri": "https://maps.google.com/?cid=14422540552825273052&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
     "businessStatus": "OPERATIONAL",
     "hours": [
@@ -3359,13 +3399,14 @@
         "closeMinute": 0,
         "closeDayOffset": 0
       }
-    ]
+    ],
+    "reservable": true
   },
   "Wiggle Room": {
     "placeId": "ChIJd5X6lqdZwokRmTT4LVSpAl4",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 3.4,
-    "userRatingCount": 285,
+    "userRatingCount": 286,
     "priceRange": "$20–30",
     "editorialSummary": "Beer, wine & inventive cocktails fixed up in a buzzy bar with live DJs & an edgy vibe.",
     "websiteUri": "http://wiggleroom.bar/",
@@ -3393,7 +3434,7 @@
   },
   "96 Tears": {
     "placeId": "ChIJpStBHXZZwokRP6qe0Iyqtsk",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.5,
     "userRatingCount": 50,
     "phone": "(212) 614-9798",
@@ -3458,13 +3499,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   },
   "Double Down Saloon": {
     "placeId": "ChIJRZhgTIJZwokR5ZRVoHE3tlw",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
-    "userRatingCount": 630,
+    "userRatingCount": 631,
     "priceRange": "$10–20",
     "editorialSummary": "NYC offshoot of a longtime Las Vegas punk bar, best known for its bacon martinis.",
     "phone": "(212) 982-0543",
@@ -3529,11 +3571,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "Lovers of Today": {
     "placeId": "ChIJ7QfWz5VZwokRMwX7VtNhwvw",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 3.8,
     "userRatingCount": 249,
     "priceRange": "$20–30",
@@ -3597,13 +3640,14 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "reservable": false
   },
   "Banshee": {
     "placeId": "ChIJMRtpqp1ZwokRewsdGXAeOOI",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 5,
-    "userRatingCount": 59,
+    "userRatingCount": 60,
     "priceRange": "$10–50",
     "phone": "(917) 262-0022",
     "websiteUri": "https://www.banshee-nyc.com/",
@@ -3671,7 +3715,7 @@
   },
   "Sake Bar Decibel": {
     "placeId": "ChIJ-3ZSb5xZwokRDb2PQKNwwbU",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.4,
     "userRatingCount": 1236,
     "priceRange": "$20–30",
@@ -3721,13 +3765,14 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "Barcade": {
     "placeId": "ChIJuYldg5tZwokRsqgWxKnQQTk",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
-    "userRatingCount": 1901,
+    "userRatingCount": 1902,
     "priceRange": "$10–20",
     "editorialSummary": "A spin-off of a Williamsburg bar, this hang has vintage video games (Pac-Man, Donkey Kong) & beer.",
     "phone": "(212) 388-0522",
@@ -3834,11 +3879,12 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Blue & Gold Tavern": {
     "placeId": "ChIJdY_U5pxZwokR0A9LyTQzOz8",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
     "userRatingCount": 387,
     "priceRange": "$10–20",
@@ -3903,11 +3949,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Downtown Social": {
     "placeId": "ChIJf0AsgTxZwokRiE7wZTUENp0",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.2,
     "userRatingCount": 165,
     "priceRange": "$20–30",
@@ -3973,14 +4020,15 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": false
   },
   "Otto's Shrunken Head": {
     "placeId": "ChIJR4DCmHZZwokRabhwmFJnhnE",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.5,
-    "userRatingCount": 918,
-    "priceRange": "$10–20",
+    "userRatingCount": 919,
+    "priceRange": "$10–50",
     "editorialSummary": "Rock bands, a Polynesian-esque setting & cocktails enliven this offbeat tiki bar.",
     "phone": "(212) 228-2240",
     "websiteUri": "http://www.ottosshrunkenhead.com/",
@@ -4039,9 +4087,9 @@
   },
   "Phebe's Tavern": {
     "placeId": "ChIJK3tvLJtZwokReGHk-DS62eY",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.3,
-    "userRatingCount": 1551,
+    "userRatingCount": 1554,
     "priceRange": "$20–30",
     "editorialSummary": "Casual hang with a wide menu of American comfort food & happy-hour specials in a spacious setting.",
     "phone": "(212) 358-1902",
@@ -4105,13 +4153,15 @@
         "closeMinute": 0,
         "closeDayOffset": 1
       }
-    ]
+    ],
+    "reservable": true
   },
   "Joyface": {
     "placeId": "ChIJyVOaMJtZwokRdMND4_f_L-U",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
-    "rating": 3.3,
-    "userRatingCount": 463,
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
+    "rating": 3.2,
+    "userRatingCount": 465,
+    "priceRange": "$20–30",
     "editorialSummary": "Subdued 1970s-style bar with plush couches, a disco ball & waterbed, serving innovative cocktails.",
     "websiteUri": "http://joyface.nyc/",
     "googleMapsUri": "https://maps.google.com/?cid=16514699798725772148&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNlEAIYBCAA",
@@ -4166,11 +4216,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": true
   },
   "St. Dymphna's": {
     "placeId": "ChIJ5XAAap1ZwokRk-eUiFS2OaY",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4,
     "userRatingCount": 286,
     "priceRange": "$20–30",
@@ -4229,11 +4280,12 @@
         "closeDayOffset": 1
       }
     ],
-    "outdoorSeating": false
+    "outdoorSeating": false,
+    "reservable": false
   },
   "Nublu 151": {
     "placeId": "ChIJ5UXURXdZwokR4sn8rm7f9Q4",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 4.5,
     "userRatingCount": 403,
     "editorialSummary": "Cool, compact live-music venue with a unique center-of-the-room stage & its own record label.",
@@ -4301,9 +4353,10 @@
   },
   "The Ready Rooftop": {
     "placeId": "ChIJ-1HxQCdZwokRLHj8Dl1rVOo",
-    "fetchedAt": "2026-08-05T17:17:22.016Z",
+    "fetchedAt": "2026-08-10T03:27:20.497Z",
     "rating": 3.7,
     "userRatingCount": 597,
+    "priceRange": "$20–30",
     "editorialSummary": "Tacos, cocktails & canned wine are served in this lively venue on the Moxy Hotel rooftop.",
     "phone": "(646) 908-2125",
     "websiteUri": "https://moxyeastvillage.com/the-ready-rooftop-bar/",
@@ -4425,6 +4478,7 @@
         "closeDayOffset": 0
       }
     ],
-    "outdoorSeating": true
+    "outdoorSeating": true,
+    "reservable": true
   }
 }

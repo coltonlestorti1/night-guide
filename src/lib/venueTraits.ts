@@ -46,6 +46,25 @@ export function hasRooftop(v: Venue): boolean {
   return v.has_rooftop === true;
 }
 
+/**
+ * Takes reservations — the ONE definition, same contract as hasOutdoorSeating.
+ *
+ * Google-verified (28 true / 22 false / 6 absent across the 56 enriched venues,
+ * measured 2026-08-09). Only `true` counts: absent means "not recorded", never
+ * "takes no reservations", so callers boost matches and must never sink the
+ * rest. Enrichment expiring (>30d) makes this go quiet rather than assert a
+ * stale amenity.
+ *
+ * This is the ONLY group-related fact the app is allowed to state out loud.
+ * `goodForGroups` was evaluated and rejected — it returned true for 46 of 56
+ * venues and false for none, so it ranks nothing; and there is no capacity
+ * data anywhere, which is why no reason string may ever claim a venue fits a
+ * given party size.
+ */
+export function takesReservations(v: Venue): boolean {
+  return getEnrichment(v.title)?.reservable === true;
+}
+
 /** Outdoor kinds we'll repeat, only when a real source says the word. */
 const OUTDOOR_KINDS = ["backyard", "beer garden", "patio", "terrace", "courtyard", "garden"] as const;
 
