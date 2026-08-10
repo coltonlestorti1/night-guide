@@ -6,12 +6,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
 import {
+  deleteRating,
   listMyRatings,
   orderOf,
   removeFromBucket,
   saveRating,
   type RatingRow,
 } from "@/lib/night/ratings";
+import { removeSave } from "@/lib/saves";
 import type { Bucket } from "@/lib/night/ranking";
 
 export function useMyRatings() {
@@ -51,6 +53,38 @@ export function useSaveRating() {
       if (previous && previous.bucket !== v.bucket) {
         await removeFromBucket(userId, v.venueId, previous.bucket, orderOf(v.allRows, previous.bucket));
       }
+
+      // Rating it means you have been — it belongs in Been, not Want to Try.
+      // Unconditional: the delete is a no-op when it was never saved, which is
+      // cheaper than threading the saved-id list through this mutation. It
+      // lives here rather than in the rating UI so it fires from every entry
+      // point — the recap, the publish form, and the venue card.
+      try {
+        await removeSave(userId, v.venueId);
+      } catch {
+        // Bookkeeping. The rating is the user's intent and has already landed;
+        // failing it because a save could not be tidied would be a lie.
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
+      qc.invalidateQueries({ queryKey: ["my-saves", userId] });
+    },
+  });
+}
+
+/**
+ * Remove a rating outright. Until this existed a rating was permanent, which
+ * is what made a wrong tap in the recap flow unfixable.
+ */
+export function useDeleteRating() {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (v: { venueId: string; bucket: Bucket; allRows: RatingRow[] }) => {
+      if (!userId) throw new Error("Not signed in");
+      await deleteRating(userId, v.venueId, v.bucket, orderOf(v.allRows, v.bucket));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
