@@ -21,7 +21,7 @@ Audited against `main` at commit `3ae6a4d` (venue is_active filter merged).
 | 5 | No error monitoring | 🟠 High (ops) | Nothing catches prod exceptions. A white-screen crash for real users would be invisible to us. |
 | 6 | No rate limiting on writable tables | 🟡 Medium (abuse) | `events`, `check_ins`, `waitlist` accept unbounded client inserts. A script could flood them. |
 | 7 | Analytics doesn't honor ghost mode | 🟡 Medium (decide) | Open question from the analytics prep — we log check-ins from ghost users to our own metrics. Not a broadcast, but decide explicitly. |
-| 8 | Custom domain | 🟢 Low (polish) | `night-guide.vercel.app` works but reads as a placeholder, not "ENDZ". |
+| 8 | Custom domain | 🟡 **Raised 2026-08-10** | `night-guide.vercel.app` reads as a placeholder — and the missing domain is now what makes Google's sign-in screen say `nqafzgryzjbtwpvzjagr.supabase.co`. Parked, no free fix. |
 | 9 | App Store vs PWA-only for v1 | 🟢 Low (strategy) | Decide distribution; not blocking a soft launch. |
 
 **What's already solid (no action):** CSP + security headers (`vercel.json`),
@@ -114,10 +114,36 @@ check-ins in *our own* server-side metrics? It's not a broadcast to other
 users, so I lean **yes, count them** (north-star accuracy) — but it's your
 privacy call. No code either way until you decide.
 
-### 8. Custom domain — 🟢
+### 8. Custom domain — 🟢 → **upgraded 2026-08-10: no longer only polish**
 `night-guide.vercel.app` is fine functionally. A real domain (endz.app / getendz
-/ whatever's available) is a ~$12/yr + Vercel DNS step, mostly brand polish.
-Non-blocking. Flag for whenever you want to spend the $12.
+/ whatever's available) is a ~$12/yr + Vercel DNS step.
+
+**It now also gates the Google sign-in screen.** Signing in shows
+*"to continue to nqafzgryzjbtwpvzjagr.supabase.co"*, because Google displays the
+host of the OAuth callback — which is Supabase's, not ours. Colton flagged it
+2026-08-10 as unprofessional; it is the first screen any new user or App Store
+reviewer sees.
+
+**Diagnosed and PARKED by Colton 2026-08-10. There is no free configuration
+fix** — do not re-investigate the Google console. All three candidate causes
+were checked and eliminated: the app name IS set (`Endz`), publishing status IS
+"In production", and the OAuth client DOES belong to the right Google Cloud
+project (`205642828803`). The cause is the authorized domain `…supabase.co`,
+which we cannot verify ownership of, and Google will not substitute an app name
+for an unverified domain.
+
+Two options, both waiting on the domain:
+
+- **A.** Supabase custom domain add-on — no code changes, but requires a paid
+  plan: ~$25/mo Pro + $10/mo add-on (the org is on FREE).
+- **B.** Google Identity Services + `signInWithIdToken` — free and permanently
+  avoids that $10/mo, but rewrites the only login path
+  (`src/store/auth.ts:191`) and a Capacitor wrapper needs native Google
+  Sign-In anyway, so part of it is redone for §31.
+
+Migration itself is cheap whenever it happens: `src/lib/constants.ts` already
+reads `VITE_APP_URL` with the Vercel URL as a fallback, so it is one env var
+plus three hardcoded `og:`/`twitter:` URLs in `index.html`.
 
 ### 9. App Store vs PWA-only — 🟢 strategy
 PWA is installable today. Native (via Capacitor) unlocks background location /
