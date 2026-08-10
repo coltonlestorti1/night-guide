@@ -100,7 +100,7 @@ const UserProfile = () => {
       {back}
       <ProfileHeader
         displayName={profile.display_name || `@${profile.username}`}
-        username={profile.username}
+        username={profile.display_name ? profile.username : undefined}
         avatarUrl={profile.avatar_url}
         createdAt={profile.created_at}
         collegeLine={collegeLabel(profile.college_slug, profile.class_year)}

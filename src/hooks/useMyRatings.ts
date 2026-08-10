@@ -14,6 +14,7 @@ import {
   type RatingRow,
 } from "@/lib/night/ratings";
 import { removeSave } from "@/lib/saves";
+import { useSavedStore } from "@/store/saved";
 import type { Bucket } from "@/lib/night/ranking";
 
 export function useMyRatings() {
@@ -54,19 +55,36 @@ export function useSaveRating() {
         await removeFromBucket(userId, v.venueId, previous.bucket, orderOf(v.allRows, previous.bucket));
       }
 
-      // Rating it means you have been — it belongs in Been, not Want to Try.
-      // Unconditional: the delete is a no-op when it was never saved, which is
-      // cheaper than threading the saved-id list through this mutation. It
-      // lives here rather than in the rating UI so it fires from every entry
-      // point — the recap, the publish form, and the venue card.
+      // Rating it means you have been — it belongs in Been, not Want to try.
+      // Attempted unconditionally: removeSave throws "matched no row" when it
+      // was never saved, which is handled below and is cheaper than threading
+      // the saved-id list through this mutation. It lives here rather than in
+      // the rating UI so it fires from every entry point — the recap, the
+      // publish form, and the venue card.
       try {
         await removeSave(userId, v.venueId);
-      } catch {
-        // Bookkeeping. The rating is the user's intent and has already landed;
-        // failing it because a save could not be tidied would be a lie.
+        // The local mirror is the offline/signed-out fallback. Removing the
+        // save server-side without it leaves the two anti-phase: the next
+        // bookmark tap would then toggle them in opposite directions and they
+        // never reconcile.
+        if (useSavedStore.getState().ids.includes(v.venueId)) {
+          useSavedStore.getState().toggle(v.venueId);
+        }
+      } catch (e) {
+        // "matched no row" is the expected case — it was never saved. Anything
+        // else is a real failure and must not be silent, though it still must
+        // not fail the rating: that already landed, and the user's intent was
+        // the rating, not the bookkeeping.
+        if (!(e instanceof Error) || !e.message.includes("matched no row")) {
+          console.warn("Rating saved, but the venue could not leave Want to try", e);
+        }
       }
     },
-    onSuccess: () => {
+    // onSettled, not onSuccess: saveRating + removeFromBucket are two round
+    // trips, so a failure can still have changed the server. Invalidating only
+    // on success leaves the cache showing the pre-write state after a partial
+    // write, and the UI then lies in the direction of "nothing happened".
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
       qc.invalidateQueries({ queryKey: ["my-saves", userId] });
     },
@@ -82,11 +100,14 @@ export function useDeleteRating() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (v: { venueId: string; bucket: Bucket; allRows: RatingRow[] }) => {
+    mutationFn: async (v: { venueId: string; bucket: Bucket }) => {
       if (!userId) throw new Error("Not signed in");
-      await deleteRating(userId, v.venueId, v.bucket, orderOf(v.allRows, v.bucket));
+      await deleteRating(userId, v.venueId, v.bucket);
     },
-    onSuccess: () => {
+    // onSettled for the same reason as above: the delete can land while the
+    // reindex fails. Without this the row stays on screen, and the retry then
+    // fails forever because its delete matches no rows.
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
     },
   });

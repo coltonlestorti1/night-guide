@@ -1,16 +1,22 @@
 /**
- * Per-row actions on the Been list: re-rank, or remove.
+ * Per-row actions on a list.
  *
- * Removing is confirmed because it throws away the comparisons that produced
- * the position, and re-earning them means answering the head-to-heads again.
+ * Been rows get "Rank again" and a confirmed "Remove". Want to try rows get
+ * "Rate it" and "Remove" — rating from the saved list is the action that moves
+ * a venue from one tab to the other, and the saved list is exactly where
+ * someone forms the thought "I went to that one".
+ *
+ * Removing a rating is confirmed because it throws away the comparisons that
+ * produced the position, and re-earning them means answering the head-to-heads
+ * again. Unsaving is one tap to undo, so it is not.
  */
 import { useState } from "react";
 import { MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import type { Venue } from "@/data/types";
 import type { Bucket } from "@/lib/night/ranking";
-import type { RatingRow } from "@/lib/night/ratings";
 import { useDeleteRating } from "@/hooks/useMyRatings";
+import { useSaves } from "@/hooks/useSaves";
 import RateSheet from "@/components/night/RateSheet";
 import { logEvent } from "@/lib/analytics";
 import {
@@ -30,22 +36,27 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function BeenRowMenu({
+/** Touch-sized menu rows. The shadcn default is py-1.5 — about 32px, which is
+ *  too small for a destructive action on a phone. */
+const ITEM = "h-11 px-3 text-sm";
+
+export default function ListRowMenu({
   venue,
   bucket,
-  allRows,
 }: {
   venue: Venue;
-  bucket: Bucket;
-  allRows: RatingRow[];
+  /** The rating's bucket on a Been row; absent on a Want to try row. */
+  bucket?: Bucket;
 }) {
   const [rateOpen, setRateOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const remove = useDeleteRating();
+  const { toggle: toggleSaved } = useSaves();
 
   const onConfirmRemove = async () => {
+    if (!bucket) return;
     try {
-      await remove.mutateAsync({ venueId: venue.id, bucket, allRows });
+      await remove.mutateAsync({ venueId: venue.id, bucket });
       logEvent("rating_removed", { venue_id: venue.id, bucket });
       setConfirmOpen(false);
     } catch {
@@ -59,16 +70,30 @@ export default function BeenRowMenu({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="shrink-0 self-center h-11 w-10 flex items-center justify-center rounded-xl text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="shrink-0 self-center h-11 w-11 flex items-center justify-center rounded-xl text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Options for ${venue.title}`}
         >
           <MoreVertical className="h-4 w-4" aria-hidden="true" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setRateOpen(true)}>Rank again</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setConfirmOpen(true)}>
-            Remove from Been
+        <DropdownMenuContent align="end" className="min-w-48">
+          <DropdownMenuItem className={ITEM} onSelect={() => setRateOpen(true)}>
+            {bucket ? "Rank again" : "Rate it"}
           </DropdownMenuItem>
+          {bucket ? (
+            <DropdownMenuItem
+              className={`${ITEM} text-destructive focus:text-destructive`}
+              onSelect={() => setConfirmOpen(true)}
+            >
+              Remove from your Been list
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              className={`${ITEM} text-destructive focus:text-destructive`}
+              onSelect={() => toggleSaved(venue.id)}
+            >
+              Remove from Want to try
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

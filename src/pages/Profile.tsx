@@ -7,6 +7,8 @@ import { useMyAge } from "@/hooks/useMyAge";
 import { useMyFriendships } from "@/hooks/useFriends";
 import { useMyRatings } from "@/hooks/useMyRatings";
 import { useSaves } from "@/hooks/useSaves";
+import { useVenues } from "@/hooks/useVenues";
+import { beenList } from "@/lib/night/lists";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import ProfileHeader from "@/components/ProfileHeader";
 import MyActivity from "@/components/night/MyActivity";
@@ -110,13 +112,21 @@ const Profile = () => {
     setTimeout(() => setSigningIn(false), 4000);
   };
 
-  // Counts for the header. All three hooks are already loaded elsewhere on
-  // this page's tree, so this adds no requests.
+  // Counts for the header. Every hook here is already loaded elsewhere in this
+  // page's tree (MyActivity calls useVenues), so this adds no requests.
+  //
+  // Counted from the RESOLVED lists, not the raw rows: a rating or save whose
+  // venue has since been deactivated is dropped by /lists, and a stat that
+  // says "Been 12" linking to a list of 11 reads as a bug.
   const { data: friendships } = useMyFriendships();
   const { data: myRatings } = useMyRatings();
-  const savedCount = useSaves().ids.length;
+  const { data: allVenues } = useVenues({});
+  const savedIds = useSaves().ids;
   const friendCount = (friendships ?? []).filter((r) => r.status === "accepted").length;
-  const beenCount = (myRatings ?? []).length;
+  const beenCount = beenList(myRatings, allVenues ?? []).length;
+  const savedCount = allVenues
+    ? savedIds.filter((id) => allVenues.some((v) => v.id === id)).length
+    : savedIds.length;
 
   const meta = session?.user.user_metadata as { full_name?: string; name?: string; avatar_url?: string; picture?: string } | undefined;
   const displayName = profile?.display_name || meta?.full_name || meta?.name || "";

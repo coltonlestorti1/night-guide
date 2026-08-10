@@ -136,12 +136,19 @@ export async function removeFromBucket(
  * carry stale SCORES but their ORDER is still correct, and the next write to
  * this bucket repairs them. The other order would leave the deleted venue
  * holding a live rank, which is a wrong list rather than a slightly stale one.
+ *
+ * The reindex reads the bucket back from the server instead of trusting a
+ * caller-supplied order. That is not defensive padding — every write in this
+ * module is an upsert keyed on (user_id, venue_id), so a venue that is in the
+ * caller's list but no longer in the table is INSERTED rather than updated.
+ * Remove two venues in one refetch window, or in two tabs, and the first one
+ * comes back from the dead with a fresh rank. Reading the survivors makes the
+ * set being rewritten exactly the set that exists.
  */
 export async function deleteRating(
   userId: string,
   venueId: string,
   bucket: Bucket,
-  currentOrder: string[],
 ): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
@@ -157,11 +164,21 @@ export async function deleteRating(
   // error, and the row would appear to vanish from a list it is still in.
   if (!data?.length) throw new Error("Rating delete matched no rows");
 
-  const order = currentOrder.filter((id) => id !== venueId);
-  if (order.length === 0) return;
-
-  const { error: reindexError } = await supabase
+  const { data: survivors, error: readError } = await supabase
     .from("venue_ratings")
-    .upsert(bucketRows(userId, bucket, order), { onConflict: "user_id,venue_id" });
+    .select("venue_id")
+    .eq("user_id", userId)
+    .eq("bucket", bucket)
+    .order("rank_position", { ascending: true });
+  if (readError) throw readError;
+
+  const order = (survivors ?? []).map((r) => (r as { venue_id: string }).venue_id);
+  if (order.length === 0) return; // nothing left to reindex
+
+  const { data: written, error: reindexError } = await supabase
+    .from("venue_ratings")
+    .upsert(bucketRows(userId, bucket, order), { onConflict: "user_id,venue_id" })
+    .select("venue_id");
   if (reindexError) throw reindexError;
+  if (!written?.length) throw new Error("Rating reindex matched no rows");
 }
