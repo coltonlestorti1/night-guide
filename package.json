@@ -7,7 +7,7 @@
     "postinstall": "node scripts/install-hooks.mjs",
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "node scripts/check-build-id.mjs",
+    "postbuild": "node scripts/check-build-id.mjs && node scripts/make-splash-image.mjs --check",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -15,7 +15,9 @@
     "test:watch": "vitest",
     "check:schema": "node scripts/check-schema.mjs",
     "check:build-id": "node scripts/check-build-id.mjs",
-    "hooks:install": "node scripts/install-hooks.mjs"
+    "hooks:install": "node scripts/install-hooks.mjs",
+    "make:splash": "node scripts/make-splash-image.mjs",
+    "check:splash": "node scripts/make-splash-image.mjs --check"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
