@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 import VenueStatTiles from "@/components/VenueStatTiles";
+import VenueRatingRow from "@/components/lists/VenueRatingRow";
 import CheckInCard from "@/components/CheckInCard";
 import DirectionsButton from "@/components/DirectionsButton";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
@@ -165,6 +166,10 @@ export default function VenuePreview({
       </div>
 
       <VenueQuickInfo venue={venue} />
+
+      {/* Your own history with the place sits above Activity: everything from
+          Activity down answers "should I go", this answers "have I been". */}
+      <VenueRatingRow venue={venue} />
 
       {/* Activity sits above friends/plans: it answers "should I go", which is
           the question this card exists to settle. */}
