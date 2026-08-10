@@ -51,7 +51,7 @@ const OUT_DIR = resolve(ROOT, "public/splash");
  * Models sharing a configuration share one image: the X, XS, 11 Pro, 12 mini
  * and 13 mini are all 375x812 @3x.
  */
-const DEVICES = [
+export const DEVICES = [
   { w: 320, h: 568, dpr: 2, models: "SE (1st gen)" },
   { w: 375, h: 667, dpr: 2, models: "SE 2nd/3rd gen, 8" },
   { w: 414, h: 736, dpr: 3, models: "8 Plus" },
@@ -73,7 +73,7 @@ const DEVICES = [
  * The live splash in index.html centres the same group with flexbox; these
  * numbers must produce the same result, which is what --check enforces.
  */
-function layout(cssW, cssH) {
+export function layout(cssW, cssH) {
   const cx = cssW / 2;
   const groupTop = cssH * LAYOUT.centerYFraction - markHeight() / 2;
   // The ring sits at the centre of the MARK_BOX, not at one ring-radius down:
@@ -145,21 +145,44 @@ function flattenPath(d) {
   return contours;
 }
 
-/** Non-zero winding, which is what TrueType outlines assume — the counters in
- *  D and the bowl of the E depend on it. */
-function insidePath(contours, px, py) {
-  let winding = 0;
+/**
+ * Where the outline crosses one horizontal line, sorted left to right, with
+ * the direction of each crossing.
+ *
+ * Cached per scanline: within a row of subsamples `py` is constant while `px`
+ * varies, so walking all ~400 segments for every single subsample was doing the
+ * same work hundreds of times. The crossings depend only on the path, which
+ * never changes, so the cache is valid across images too.
+ */
+const crossingCache = new Map();
+
+function crossingsAt(contours, py) {
+  const hit = crossingCache.get(py);
+  if (hit) return hit;
+  const xs = [];
   for (const c of contours) {
     for (let i = 0; i < c.length; i++) {
       const [x1, y1] = c[i];
       const [x2, y2] = c[(i + 1) % c.length];
-      if (y1 <= py) {
-        if (y2 > py && (x2 - x1) * (py - y1) - (px - x1) * (y2 - y1) > 0) winding++;
-      } else if (y2 <= py) {
-        if ((x2 - x1) * (py - y1) - (px - x1) * (y2 - y1) < 0) winding--;
-      }
+      // Half-open rule: a vertex exactly on the line counts once, not twice.
+      if (y1 <= py === y2 <= py) continue;
+      xs.push({
+        x: x1 + ((py - y1) / (y2 - y1)) * (x2 - x1),
+        dir: y2 > y1 ? 1 : -1,
+      });
     }
   }
+  xs.sort((a, b) => a.x - b.x);
+  crossingCache.set(py, xs);
+  return xs;
+}
+
+/** Non-zero winding, which is what TrueType outlines assume — the counters in
+ *  D and the bowl of the E depend on it. */
+function insidePath(contours, px, py) {
+  const xs = crossingsAt(contours, py);
+  let winding = 0;
+  for (let i = 0; i < xs.length && xs[i].x <= px; i++) winding += xs[i].dir;
   return winding !== 0;
 }
 
@@ -175,15 +198,17 @@ export function render(cssW, cssH, dpr) {
   const L = layout(cssW, cssH);
 
   // Flat background first; the artwork is a rounding error of the canvas.
-  const raw = Buffer.alloc(H * (1 + W * 3));
-  for (let y = 0; y < H; y++) {
-    const row = y * (1 + W * 3);
-    raw[row] = 0;
-    for (let x = 0; x < W; x++) {
-      const o = row + 1 + x * 3;
-      raw[o] = BG[0]; raw[o + 1] = BG[1]; raw[o + 2] = BG[2];
-    }
+  // One row is built by hand and then memcpy'd down the image — at 1320x2868
+  // that is 2868 native copies instead of 3.8M JS loop iterations.
+  const stride = 1 + W * 3;
+  const raw = Buffer.alloc(H * stride);
+  const bgRow = Buffer.alloc(stride);
+  bgRow[0] = 0; // PNG filter: None
+  for (let x = 0; x < W; x++) {
+    const o = 1 + x * 3;
+    bgRow[o] = BG[0]; bgRow[o + 1] = BG[1]; bgRow[o + 2] = BG[2];
   }
+  for (let y = 0; y < H; y++) bgRow.copy(raw, y * stride);
 
   const ringOuter = LAYOUT.ringRadius + LAYOUT.ringStroke / 2;
   const ringInner = LAYOUT.ringRadius - LAYOUT.ringStroke / 2;
