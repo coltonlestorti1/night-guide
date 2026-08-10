@@ -31,9 +31,9 @@ It was first built from iosref.com/res, which **omits the iPhone Air** — that
 row was added later and, without it, Air owners would have seen exactly the
 white launch screen this work removes.
 
-The mark, used by both the PNG and the live splash: the app icon's gradient
-**E** inside a still ring, with one `#6C45FF` dot orbiting it, above the `ENDZ`
-wordmark.
+The mark, used by both the PNG and the live splash: a single thin `#6C45FF`
+arc — 270°, round caps, spinning — with **nothing inside it and no track behind
+it**, above the `ENDZ` wordmark.
 
 ## The governing rule
 
@@ -43,8 +43,9 @@ iOS paints the PNG, then hands the screen to the HTML splash. Anything that
 differs between the two appears as the mark jumping — a new visible defect
 exactly where the white screen used to be. So:
 
-- Only the orbiting dot moves. Nothing fades in, scales up, or slides.
-- The dot is drawn at 12 o'clock, which is frame 0, and is also where
+- Only the arc moves, and only by rotating. Nothing fades in, scales up, or
+  slides.
+- The arc begins at 12 o'clock, which is frame 0, and is also where
   `prefers-reduced-motion` parks it.
 - `scripts/lib/splash-art.mjs` is the single source of truth. The PNG renderer
   imports it; `index.html` mirrors it and cannot be imported into, so
@@ -53,12 +54,16 @@ exactly where the white screen used to be. So:
 
 ## Why it looks the way it does
 
-- **Gradient E over a solid one.** Colton's call. The stops are sampled from
-  `public/icon-512.png` and shared with `make-app-icon.mjs`, so the launch
-  screen and the App Store icon are the same artwork.
-- **A ring plus one orbiting dot.** Asked for as "an E with a circle spinning
-  around it." The dot reuses the map's live "someone is out" language, so the
-  first thing you see is the app's own vocabulary.
+- **One thin arc, nothing else.** Asked for as "a spinning half circle that
+  looks a little cleaner, a thin purple line" (Colton, 2026-08-10), against a
+  reference image of a bare arc spinner.
+- **No track behind it.** The earlier mark had a full ring with a dot riding on
+  it; the track was most of what made it look busy.
+- **Nothing inside it.** A gradient E was built and rejected on sight: it put a
+  second, different purple beside the arc's flat one so they read as two
+  accents rather than one, and at 46px inside a 92px circle the arc visibly
+  hugged the letter. The wordmark below already names the app, so the centre
+  can be empty — and that emptiness is what makes it read calm.
 - **The wordmark stays.** An E-with-orbit plus the word ENDZ says the name
   twice, but without it the screen reads as a generic spinner rather than this
   app loading.
@@ -75,12 +80,12 @@ exactly where the white screen used to be. So:
   screen's centre, and those insets are close on every iPhone (59 vs 34 on
   Dynamic Island, 44 vs 34 notched, 20 vs 0 on the SE). Worst case ~12pt.
   Moving off 0.5 makes the mark jump.
-- **`MARK_BOX = 2 * (ringRadius + dotRadius)`.** The dot rides *on* the ring,
-  so a box sized to the ring clips it in half — and only at 12 o'clock, the one
-  frame the PNG shows.
-- **The E is one `<path>`, not four `<rect>`s.** `objectBoundingBox` gradient
-  units resolve against each individual shape, so four rects gave every bar its
-  own full purple-to-pink sweep.
+- **`MARK_BOX = 2 * (ringRadius + arcStroke / 2)`.** The arc's centreline sits
+  at `ringRadius`, so its ink — and its round caps — reach half a stroke
+  beyond. A box sized to the centreline shaves the line's outer edge.
+- **The mark SVG is `overflow="visible"`.** The ink lands exactly *on* the
+  viewBox edge, so without it the outermost anti-aliased pixel is clipped in
+  the live SVG but not in the PNG: a hairline difference right at the handoff.
 - **The wordmark is outlines, not text.** The old splash asked for
   `"Space Grotesk Variable"`, which is imported in `src/main.tsx` and has not
   loaded when the splash paints — it had always silently rendered in system
@@ -102,10 +107,10 @@ dark into an off-white splash.
   computed layout).
 - Browser-vs-generator **pixel diff**: 0.039% of pixels differ, all 1px
   anti-aliasing edges. This is what caught the gradient bug, when the diff map
-  lit up the E solid rather than its outline.
-- Orbit rides the ring at 0/90/180/270° in **Chromium and WebKit** — WebKit
-  being the engine iOS Safari uses — never clipped at any angle.
-- `prefers-reduced-motion` parks the dot at 12 o'clock.
+  lit up a solid region rather than an outline.
+- The arc rotates about its own centre at 0/45/90/180/270° in **WebKit**, the
+  engine iOS Safari uses — centre offset 0 at every angle.
+- `prefers-reduced-motion` parks the arc at 12 o'clock.
 - All 12 configurations asserted in `scripts/splash-art.test.mjs`.
 - The App Store icon generator is byte-identical (same SHA-256) after its
   encoder was extracted.
