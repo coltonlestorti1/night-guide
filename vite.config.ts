@@ -74,7 +74,15 @@ export default defineConfig(({ mode }) => {
       // ROLE and therefore enforces its own authorization in code — RLS does not
       // apply to it. That logic needs tests like any other; it shipped without
       // them and a self-approval bypass survived until the 2026-08-09 review.
-      include: ["src/**/*.test.ts", "supabase/functions/**/*.test.ts"],
+      // scripts/ is included because the launch-screen art is GENERATED: the
+      // startup PNGs and the inline splash in index.html are two renderings of
+      // one source, and if they disagree the mark jumps at the moment iOS hands
+      // the screen over. That is a correctness property, so it gets tests.
+      include: [
+        "src/**/*.test.ts",
+        "supabase/functions/**/*.test.ts",
+        "scripts/**/*.test.mjs",
+      ],
     },
   };
 });

@@ -6,7 +6,9 @@
  */
 import { Venue } from "@/data/types";
 import { getEnrichment, computeOpenState, isWithinPeriods, formatTime, getHappyHourState } from "@/data/enrichment";
-import { isCocktailSpot, hasOutdoorSeating, hasRooftop } from "@/lib/venueTraits";
+import { isCocktailSpot, hasOutdoorSeating, hasRooftop, takesReservations } from "@/lib/venueTraits";
+import { friendVerdict, type FriendSignals } from "@/lib/move/friends";
+import { cooldownPenalty, type ImpressionLog } from "@/lib/move/cooldown";
 import { Coords } from "@/store/location";
 import { haversineMiles, formatMiles } from "@/lib/distance";
 import { directBoost, tasteBoost, type TasteProfile } from "@/lib/taste";
@@ -21,6 +23,11 @@ export type VibePrefs = {
   age?: "21-25" | "25-30" | "30+";
   /** Kept as one single-select preference — you want a roof or a yard, not both. */
   outside?: "rooftop" | "outdoor";
+  /**
+   * §17 party size. Changes which ROOM suits you, never what we claim about a
+   * venue's capacity — no capacity data exists, so nothing here may assert one.
+   */
+  groupSize?: "solo" | "two" | "small" | "big";
 };
 
 export type ScoredVenue = { venue: Venue; score: number; reasons: string[] };
@@ -38,6 +45,13 @@ export type PersonalSignals = {
   ratings?: RatingRow[];
   /** Inferred once, by the caller, from the same venue set being scored. */
   taste?: TasteProfile | null;
+  /**
+   * Friends who are out now / who saved a venue. Already RLS-filtered by the
+   * hooks that produce them — see src/lib/move/friends.ts for the naming rule.
+   */
+  friends?: FriendSignals;
+  /** Recent impressions, so the same three stop repeating (§3). */
+  impressions?: ImpressionLog;
 };
 
 export function scoreVenues(
@@ -143,6 +157,36 @@ export function scoreVenues(
       } else score -= 2;
     }
 
+    // ---- §17 party size. Two separate jobs, kept apart on purpose.
+    //
+    // (1) ROOM signals — what suits six people vs one, from facts we hold.
+    //     `reservable` is the only one allowed to speak: there is NO capacity
+    //     data anywhere, so nothing here may claim a venue "fits your group".
+    // (2) The CROWD dimension — see below, where a stated preference wins.
+    if (prefs.groupSize === "big" || prefs.groupSize === "small") {
+      const big = prefs.groupSize === "big";
+      if (takesReservations(venue)) {
+        score += big ? 1.5 : 0.75;
+        reasons.push("Takes reservations");
+      }
+      // Absent/false reservable is NEVER sunk — "not recorded" is not "no".
+      if (hasRooftop(venue) || hasOutdoorSeating(venue)) score += big ? 1 : 0.5;
+      if (big) {
+        if ((venue.avg_price_level ?? 3) <= 2) score += 0.5; // splitting a tab
+        if (venue.category === "club") score += 0.5;
+      }
+    } else if (prefs.groupSize === "solo" || prefs.groupSize === "two") {
+      if (isCocktailSpot(venue) || venue.category === "lounge") score += 1;
+    }
+
+    // A STATED preference beats an INFERENCE. If they picked a vibe, party size
+    // stays out of the crowd dimension entirely — six people who asked for
+    // "packed" mean it, and quietly sinking packed rooms would overrule them.
+    // Only when they said nothing does group size lean at all.
+    if (prefs.groupSize === "big" && !prefs.vibe && act && tierOf(act.count) === "packed") {
+      score -= 1;
+    }
+
     // "Around me" — boost closer venues (soft ranking, never a hard filter).
     if (prefs.near && userCoords && venue.latitude != null && venue.longitude != null) {
       const dist = haversineMiles(userCoords, { lat: venue.latitude, lng: venue.longitude });
@@ -168,6 +212,19 @@ export function scoreVenues(
         const { delta, reason } = tasteBoost(venue, personal.taste ?? null);
         score += delta;
         if (reason) reasons.push(reason);
+      }
+
+      // Friends. Named, and only ever from a signal this user could already
+      // see — both sources are RLS-filtered accepted-friend queries. Unshifted
+      // because "Maya is here now" beats any generic reason for the slot.
+      const friends = friendVerdict(venue.id, personal.friends);
+      if (friends.delta) score += friends.delta;
+      if (friends.reason) reasons.unshift(friends.reason);
+
+      // Recent-impression decay (§3). A penalty, never an exclusion — a venue
+      // that is still clearly the best survives it and says so in select.ts.
+      if (personal.impressions) {
+        score -= cooldownPenalty(venue.id, personal.impressions, now);
       }
     }
 

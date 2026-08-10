@@ -17,8 +17,8 @@
  *
  *   node scripts/make-app-icon.mjs <size> <outfile>
  */
-import { deflateSync } from "node:zlib";
 import { writeFileSync } from "node:fs";
+import { encodePNG } from "./lib/png.mjs";
 
 /** Sampled from public/icon-512.png: corners and the anti-diagonal midpoint.
  *  Three stops rather than two — a straight 2-stop lerp lands on #C260BA at
@@ -79,47 +79,7 @@ function render(S) {
   return raw;
 }
 
-const CRC = (() => {
-  const t = new Int32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    t[n] = c;
-  }
-  return t;
-})();
-
-function crc32(buf) {
-  let c = ~0;
-  for (const b of buf) c = CRC[(c ^ b) & 0xff] ^ (c >>> 8);
-  return ~c >>> 0;
-}
-
-function chunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length);
-  const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(body));
-  return Buffer.concat([len, body, crc]);
-}
-
-function png(S) {
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(S, 0);
-  ihdr.writeUInt32BE(S, 4);
-  // 8-bit, colour type 2 (truecolour RGB). NO alpha channel — App Store icons
-  // are rejected outright if one is present.
-  ihdr[8] = 8; ihdr[9] = 2; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk("IHDR", ihdr),
-    chunk("IDAT", deflateSync(render(S), { level: 9 })),
-    chunk("IEND", Buffer.alloc(0)),
-  ]);
-}
-
 const size = Number(process.argv[2] || 1024);
 const out = process.argv[3] || `icon-${size}.png`;
-writeFileSync(out, png(size));
+writeFileSync(out, encodePNG(render(size), size, size));
 console.log(`wrote ${out} (${size}x${size}, no alpha)`);

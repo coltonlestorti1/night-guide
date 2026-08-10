@@ -11,7 +11,7 @@ Decision Log as they're made.
 |---|---------|--------|----------------------------------|
 | 1 | Apple Maps place links & named navigation | NOT DISCUSSED | Directions use **raw lat/lng only** (`src/lib/directions.ts`) — exactly the failure mode this task describes |
 | 2 | Dynamic Happy Hours | NOT DISCUSSED | `HappyHourRail.tsx` is already time-aware (active/upcoming, day tabs, real Google hours); no location/weather/preference inputs, no explanation labels beyond timing |
-| 3 | Dynamic Find the Move | **PERSONALIZATION SHIPPED 2026-08-07** (gate passed, built, merged @ `90c4bdd`, pushed). Cooldowns / diversity / freshness still NOT discussed | `vibeScore.ts` now takes optional personal signals from `src/lib/taste.ts`: **directBoost** from rating #1 (great up, not_great down and never explained), **tasteBoost** from rating #3 for UNVISITED venues only. `good` is neutral by design. Capped at ±1.5 and applied AFTER exclusions, so it reorders what already qualifies and can never surface a closed venue or one a filter excluded. Collaborative filtering ruled out — needs hundreds of users, there are ~12. Zero-rating output is byte-identical, pinned by test and confirmed in-browser. Birthday also wired: `useMyAge()` feeds exact age to `ageAffinity()`, replacing the localStorage band that re-asked people who had already answered and gave under-21s nothing. **Still open: cooldowns, diversity rules, freshness signals.** → §3 |
+| 3 | Dynamic Find the Move | **PERSONALIZATION SHIPPED 2026-08-07** (gate passed, built, merged @ `90c4bdd`, pushed). **COOLDOWNS + DIVERSITY + DIFFERENTIATED PICKS SHIPPED 2026-08-09.** Freshness/confidence still not discussed | `vibeScore.ts` now takes optional personal signals from `src/lib/taste.ts`: **directBoost** from rating #1 (great up, not_great down and never explained), **tasteBoost** from rating #3 for UNVISITED venues only. `good` is neutral by design. Capped at ±1.5 and applied AFTER exclusions, so it reorders what already qualifies and can never surface a closed venue or one a filter excluded. Collaborative filtering ruled out — needs hundreds of users, there are ~12. Zero-rating output is byte-identical, pinned by test and confirmed in-browser. Birthday also wired: `useMyAge()` feeds exact age to `ageAffinity()`, replacing the localStorage band that re-asked people who had already answered and gave under-21s nothing. **2026-08-09 overnight build:** picks now carry differentiated CHARACTERS (Best fit · Easy door · Worth the wait · Best value · Closest · Your people) in `src/lib/move/character.ts`, selected with a diversity rule (never two picks of the same category AND neighborhood, never two of the same character) in `select.ts`, and decayed by a localStorage impression cooldown in `cooldown.ts`. **A recently shown venue only keeps the lead if it still beats the runner-up by >2.0, and then the UI says so** ("Still your best match tonight") — found in the browser, where the top pick otherwise repeated a minute later in silence. Friends are now NAMED ("Maya is here now", "Maya and Dev saved this") from `useFriendsOutTonight()` / `useFriendSaves()`, both already RLS-filtered to accepted friends, so a friend is only ever named from a signal that user could already see. **Still open: freshness/confidence penalties, impression logging server-side (localStorage is per-device — DDL parked below), and the `liveMusic` / `goodForWatchingSports` enrichment fields, which are real and unused.** → §3 |
 | 4 | Dynamic Weekend Favorites | NOT DISCUSSED | `WeekendFavorites.tsx` = static rating sort filtered by open-that-night — the most static of the three surfaces; same order every weekend |
 | 5 | Recommendation state & impression tracking | NOT DISCUSSED | Nothing exists. Explicitly gated: **do not create schema until recommendation design is approved** |
 | 6 | Favorites filter & saved venues | PARTIALLY SHIPPED (core) | **Core "Saved" filter chip SHIPPED 2026-07-17** (map+list narrow, stacks/ANDs w/ filters, device-local `store/saved.ts`, empty state, save via cards/detail). Open sub-ideas → §6 |
@@ -25,7 +25,7 @@ Decision Log as they're made.
 | 14 | Profile buildout (profile + settings hub) | PHASE 1 SHIPPED (2026-07-19) | Edit profile (name/username/photo), saved spots, age pref, privacy + account sections live on main + production. Avatars bucket live; photo upload verified E2E 2026-07-19. Destination = full IG-style profile/settings → §14 + Decision Log |
 | 15 | Social page buildout | NOT DISCUSSED | Foundation exists (`Social.tsx` + `components/social/`): requests, search, suggested friends, friends list, share handle, blocked section, out-tonight rows. No plans/crew/friends-tonight surfaces → §15 |
 | 16 | Going-out crew | NOT DISCUSSED | Promoted from backlog (tabled 2026-07-13). Nothing built; needs `close_groups`/`close_group_members`. Naming + privacy defaults open → §16 |
-| 17 | Group-size-aware discovery | NOT DISCUSSED | No group-size input anywhere in discovery today. Sibling of §12 (party size at check-in = live signal; this = planning input to recs) → §17 |
+| 17 | Group-size-aware discovery | **SHIPPED 2026-08-09** (gate passed, built, merged, pushed) | Find the Move now asks "Who's coming?" — Just me · Two of us · 3–5 · 6+. **`goodForGroups` was evaluated against the live Google API and REJECTED: 46 true / 0 false / 10 absent across 56 venues — it never says no, so it ranks nothing.** `reservable` was adopted instead (28 true / 22 false / 6 absent), and it is the ONLY group fact the app states out loud, because no capacity data exists anywhere. Big groups get reservations +1.5, outdoor/rooftop +1, cheap +0.5, club +0.5; solo/two lean cocktail bars and lounges. **A stated vibe preference beats the group-size inference** — group size only touches the crowd dimension when the user left it blank. Curated `group_capacity` (the only path to ever saying "fits your six") remains content work, not built. → §17 |
 | 18 | Discover page buildout | NOT DISCUSSED | `Discover.tsx` = exactly 2 tabs (Happy Hours, Weekend Favorites), nothing else. Proposed: more sections, dynamic over time → §18 |
 | 19 | Map product review | **SLICE 1 SHIPPED 2026-07-26** (venue surface merge — gate passed, built, reviewed, merged). Rest of the walk-through still NOT DISCUSSED. | Map is functional + recently cleaned up; this is a structured walk-through of pins/icons/rings/legend/filters/CTA/sheet before any changes → §19. **Slice 1 closed the "pin tap → bottom sheet (evaluate it)" agenda item:** the "View Details" hop is gone, `VenueDetail.tsx` 201 → 56 lines, one component serves all three containers. Still open: pin crowding, icon clarity, activity rings, legend, neighbourhood zones, list-view images, FTM as a map CTA |
 | 20 | Rooftop & outdoor seating data | NOT DISCUSSED | Zero rooftop/outdoor attributes in venue data today (item 2 audit). Data-collection + surfacing priority across filters/cards/FTM/Discover → §20 |
@@ -756,6 +756,35 @@ re-suspect them.
   **⚠️ Design conflict to resolve at the gate (raised by Colton 2026-08-05):** he wants ratings to "show up on your friends' profile," but this line historically read *"recap trail private-to-self, never visible to others"* and the 2026-08-05 RLS fix deliberately time-bounds friend SELECTs to live rows so friends **cannot** read history. Proposed resolution: split **ratings** (shareable content) from the **trail** (private location history) — a friend sees the score, never the timestamped visit. Nothing here is approved.
 - **Night feed + venue ratings that feed recommendations** (added 2026-08-05, Colton) — per-night feed of where you went, with rate/score per bar; scores feed back into suggested outputs and surface on friends' profiles. Supersedes the narrow "Night Recap" framing above and is the **feedback half of the personalization loop** with §3/§32. **SLICE 1 SHIPPED 2026-08-06** — the rating engine and the private last-night recap, all of it invisible to other users: `src/lib/night/*` (night window + bucket/comparison ranking, 27 tests), `venue_ratings` with owner-only RLS, `RecapCard` + `RateSheet` on `/social`. Spec `docs/superpowers/specs/2026-08-06-night-feed-design.md`, plan `docs/superpowers/plans/2026-08-06-night-feed-slice-1-ratings.md`. **Still deferred and NOT approved:** `night_posts`, the feed itself, school-scoped visibility, moderation/reporting, photos + storage bucket, and §3 actually reading `venue_ratings` — that last one is what closes the personalization loop, and it is the point of the whole feature.
 - **"Find the vibe" — natural-language recommendation input** (added 2026-08-05, Colton) — describe what you want in your own words instead of tapping the seven `VibeFinder` chips; conversational refinement ("cheaper", "quieter"). Audited 2026-08-05: this is a new **front door onto §3**, not a new recommender — `vibeScore.ts:5` and `VibeFinder.tsx:3` already anticipate it ("a Claude-backed scorer can replace this module without UI changes"). Recommended architecture: model parses free text → `VibePrefs`, existing `scoreVenues()` ranks, so the model never sees venue data and cannot invent claims about a real business. Haiku 4.5 (~$0.0014/call; ~$13/mo at 100 users × 3/night). Not specced, not approved.
+- **Durable Find the Move impressions — DDL WRITTEN, NOT APPLIED (2026-08-09).** The
+  cooldown that stops the same three repeating is `localStorage` only, so it is
+  per-device: the same user on a laptop and a phone gets no shared memory. Built
+  that way because DDL needs Colton to paste it in the SQL editor and he was
+  asleep. To make it durable, apply:
+
+  ```sql
+  create table public.venue_impressions (
+    user_id   uuid not null references auth.users(id) on delete cascade,
+    venue_id  uuid not null references public.venues(id) on delete cascade,
+    shown_at  timestamptz not null default now(),
+    primary key (user_id, venue_id)
+  );
+  alter table public.venue_impressions enable row level security;
+  create policy "own impressions read"   on public.venue_impressions
+    for select to authenticated using (auth.uid() = user_id);
+  create policy "own impressions write"  on public.venue_impressions
+    for insert to authenticated with check (auth.uid() = user_id);
+  create policy "own impressions update" on public.venue_impressions
+    for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  create index venue_impressions_recent on public.venue_impressions (user_id, shown_at desc);
+  ```
+
+  Note both policies are scoped `to authenticated` — a policy with no `to` clause
+  applies to PUBLIC and reaches anon, which is exactly how the check-in leak
+  happened. Then swap `readImpressions()`/`recordImpressions()` in
+  `src/lib/move/cooldown.ts` for the table; the rest of the module is storage-
+  agnostic. Signed-out users keep localStorage.
+
 - **Personalized + social scoring for Find the Move** (added 2026-08-05, Colton) — recommendations driven by friends' activity/saves, the user's own taste and saves, age, and stated requirements, refreshed by live data. Audited 2026-08-05: `friendsOutTonight()`, `friendSavesByVenue()` and the heat engine's friend-weighting already exist; §32 taste capture supplies cold-start taste; **crowd-age claims remain blocked on §28** (52% coverage — `vibeScore.ts:97-99` deliberately refuses to assert crowd age). "Ever-changing" must come from §3's cooldown/diversity rules and real changing inputs, never shuffling. Must honor `getSaveVisibility()` — a reason string may never leak a friend's private save. Not specced, not approved.
 - **Venue photography — legal finding (2026-08-05).** Google Places photos are **not a viable stored source**: Places content may not be pre-fetched, cached or stored (only `place_id` is exempt), photo names expire and are explicitly non-cacheable (§3.2.3(b)), and the terms bar modification/derivative works — which also rules out AI "cleanup" of Google photos, independently of the honesty objection. Only legal use is a live passthrough with `authorAttributions` + `googleMapsUri`, costing a Place Details call per venue view. Colton ruled out shooting them himself, so the remaining path is **venue-supplied press shots** (outreach, non-code task). Parked 2026-08-05.
 - ~~🐛 setVibe() silently broken~~ **FIXED 2026-07-14** — `check_ins` had RLS enabled but no UPDATE policy, so the `setVibe()` UPDATE (`src/lib/checkins.ts:72`) matched 0 rows without erroring and vibes never saved. Patched live via SQL editor: "users update own checkins" policy (owner-only; identity columns immutable via pre-update snapshot; `expires_at` may only move earlier — which pre-satisfies the delete→expire DDL the Night Recap needs). Verified: 4 policies on `check_ins`. DDL recorded in `endz-schema.sql` check_ins section.
@@ -1358,9 +1387,36 @@ requires native, and it is only needed for auto check-in (see line 416).
 - App Tracking Transparency is likely **not** required — analytics is
   first-party and nothing is shared with data brokers. Confirm before filing.
 
+### Launch screen — DONE 2026-08-09
+
+Merged `86e0c74`. The PWA showed ~2s of blank white on a home-screen launch
+because there were **no `apple-touch-startup-image` links at all**; the inline
+splash cannot cover that window because it *is* the document. 13 startup PNGs
+now ship (`public/splash/`), plus a redesigned mark: the icon's gradient E in a
+still ring with one dot orbiting it, over the ENDZ wordmark.
+
+Design and constraints:
+`docs/superpowers/specs/2026-08-09-ios-launch-screen-design.md`.
+
+Carries into the Capacitor wrap: a native iOS target needs its own
+`LaunchScreen.storyboard`, which is a **separate** asset from these web startup
+images. `scripts/lib/splash-art.mjs` already renders the artwork at any size,
+so producing it is a size list, not a redesign.
+
+⚠️ **Open, needs a real device:** the startup image is full-screen while the
+standalone web view sits below the status bar, so the mark can land up to ~12pt
+off at the handoff. Not corrected on purpose — the per-device inset values
+cannot be verified without the device, and a wrong correction is worse than the
+known one.
+
+⚠️ **To test any of this, the home-screen icon must be DELETED and re-added** —
+iOS caches startup images at install time.
+
 ### App Store Connect assets still to produce
 
-- **1024×1024 app icon** — `public/` has 192 and 512 only.
+- ~~**1024×1024 app icon**~~ — **DONE.** `assets/appstore-icon-1024.png`,
+  verified 1024×1024 and colour type 2 (no alpha, which Apple rejects).
+  Regenerate with `node scripts/make-app-icon.mjs 1024 <out>`.
 - Screenshots for the current required iPhone sizes.
 - Name, subtitle, description, keywords, promo text.
 - Support URL and Privacy Policy URL. `/privacy` (127 lines) and `/terms` (75)
