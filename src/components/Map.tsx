@@ -585,8 +585,11 @@ const Map: React.FC<MapProps> = ({ venues, selectedId, onSelect, onViewportChang
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full" aria-label="Nightlife map" />
 
-      {/* Legend — ring colors carry live activity; the glyph carries category. */}
-      <div className="absolute top-32 left-3 z-30 glass rounded-xl px-3 py-2 text-[11px] text-foreground space-y-1.5 animate-fade-in">
+      {/* Legend — ring colors carry live activity; the glyph carries category.
+          `top-36` clears the filter chip row, which is fixed above the map and
+          ends at y≈138; at `top-32` this box started at 128 and tucked its top
+          corner under the chips. */}
+      <div className="absolute top-36 left-3 z-30 glass rounded-xl px-3 py-2 text-[11px] text-foreground space-y-1.5 animate-fade-in">
         <div className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">Activity</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-[#9CA3AF]" /> Quiet</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-white border-2 border-[hsl(var(--trending))]" /> Trending</div>

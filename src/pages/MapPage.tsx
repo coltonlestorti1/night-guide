@@ -151,17 +151,27 @@ const FilterChips = ({
   onOpenFilters,
   showHot,
   filterCount,
+  showCount,
 }: {
   count: number;
   onVibeFinder: () => void;
   onOpenFilters: () => void;
   showHot: boolean;
   filterCount: number;
+  /**
+   * List view only. On the map this line sat at y≈146, directly underneath the
+   * activity legend's box (y 128–251, and `z-30` above it) — the count was
+   * never actually readable there, and scrolling the two past each other was
+   * the only thing that ever revealed it.
+   */
+  showCount: boolean;
 }) => {
   const f = useFilterStore();
   const { set, reset } = f;
 
   const chips = PRIMARY_FILTERS.filter((c) => c.value !== "hot" || showHot);
+
+  const showClear = filterCount > 0 || !!f.search;
 
   const isActive = (v: string) => {
     if (v === "all") return filterCount === 0;
@@ -232,16 +242,23 @@ const FilterChips = ({
           </button>
         </div>
 
-        <div className="flex items-center justify-between mt-2 px-1">
-          <span className="text-xs text-muted-foreground">
-            <span className="text-foreground font-semibold">{count}</span> spots found
-          </span>
-          {(filterCount > 0 || f.search) && (
-            <button onClick={reset} className="text-xs text-primary flex items-center gap-1 hover:underline">
-              <X className="h-3 w-3" /> Clear filters
-            </button>
-          )}
-        </div>
+        {/* Skipped entirely when it would be empty, so the map doesn't carry a
+            blank row's worth of height under the chips. `ml-auto` keeps Clear
+            filters on the right once the count beside it is gone. */}
+        {(showCount || showClear) && (
+          <div className="flex items-center justify-between mt-2 px-1">
+            {showCount && (
+              <span className="text-xs text-muted-foreground">
+                <span className="text-foreground font-semibold">{count}</span> spots found
+              </span>
+            )}
+            {showClear && (
+              <button onClick={reset} className="text-xs text-primary flex items-center gap-1 ml-auto hover:underline">
+                <X className="h-3 w-3" /> Clear filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -391,6 +408,7 @@ const MapPage = () => {
         onOpenFilters={() => setFiltersOpen(true)}
         showHot={showHot}
         filterCount={filterCount}
+        showCount={view === "list"}
       />
       <FiltersSheet
         open={filtersOpen}
@@ -441,7 +459,21 @@ const MapPage = () => {
       </div>
 
       {view === "map" ? (
-        <div className="w-full h-[calc(100vh-5rem)]">
+        /*
+         * Fixed, so the map contributes no document height at all. In flow it
+         * was `h-[calc(100vh-5rem)]` inside a <main> that reserves 110px at the
+         * bottom for the tab bar, which overflowed the viewport by 30px — and
+         * on iOS by ~120px once the safe-area insets are added on top of
+         * `100vh`. That overflow was the whole bug: the header is `fixed` and
+         * held still while the legend, positioned inside the page, rode the
+         * scroll up underneath the frosted header.
+         *
+         * Bottom stops at the tab bar (56px + its 1px top border) rather than
+         * running under it, which keeps the map's attribution visible — it
+         * lives in the map's own bottom-right corner. Desktop keeps its
+         * previous 5rem gap and clears the left rail.
+         */
+        <div className="fixed inset-x-0 top-[env(safe-area-inset-top)] bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] lg:left-20 lg:bottom-20">
           <Map
             venues={displayVenues}
             activity={activityCounts}
