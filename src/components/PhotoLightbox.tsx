@@ -51,12 +51,15 @@ const PhotoLightbox = ({ url, onClose, alt = "" }: Props) => (
           // animations translate by half the element's width, which is half
           // the screen once the element is the screen.
           //
-          // The padding is the point, not decoration: a portrait photo on a
-          // portrait phone is width-constrained, so without it the only
-          // backdrop beside the photo is a couple of pixels. `px-10` buys a
-          // 40px strip down each side — a real thumb target — for about a
-          // tenth of the photo's width.
-          className="fixed inset-0 z-50 flex items-center justify-center px-10 py-12 duration-200 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          // Padding is vertical only, and that asymmetry is deliberate. Side
+          // padding was tried and rejected: on a phone the photo is
+          // width-constrained, so every pixel of side strip comes straight out
+          // of how big the picture is, and the picture matters more. The
+          // photo keeps the full width it has always had; the bands above and
+          // below are where you tap to dismiss. `py-20` guarantees one even
+          // for a tall photo, and clears the close button so the two never
+          // overlap.
+          className="fixed inset-0 z-50 flex items-center justify-center px-0 py-20 duration-200 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           onClick={onClose}
         >
           <DialogTitle className="sr-only">Photo</DialogTitle>
@@ -82,9 +85,15 @@ const PhotoLightbox = ({ url, onClose, alt = "" }: Props) => (
             // Kept for desktop, where there is no tap-anywhere instinct, and
             // as the focusable control Radix lands on. Clear of the status
             // bar when the PWA runs standalone.
-            className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] rounded-full bg-black/50 p-2 text-white/90 ring-offset-black transition-opacity hover:text-white focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2"
+            //
+            // `focus-visible`, not `focus`: Radix autofocuses this on open, so
+            // a plain `focus:ring` painted a bright ring around the X every
+            // time a photo was opened by touch. The solid fill is what keeps
+            // it readable when a tall photo reaches up behind it — over the
+            // dark band it simply disappears into the backdrop.
+            className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] rounded-full bg-black/60 p-2.5 text-white transition-colors hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
           >
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         </DialogPrimitive.Content>
