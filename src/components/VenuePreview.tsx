@@ -18,6 +18,8 @@ import VenueStatTiles from "@/components/VenueStatTiles";
 import VenueRatingRow from "@/components/lists/VenueRatingRow";
 import CheckInCard from "@/components/CheckInCard";
 import DirectionsButton from "@/components/DirectionsButton";
+import CallVenueButton from "@/components/CallVenueButton";
+import { hasPhone } from "@/lib/venueContact";
 import VenueQuickInfo from "@/components/VenueQuickInfo";
 import ActivitySection from "@/components/ActivitySection";
 import VenueMoreInfo from "@/components/VenueMoreInfo";
@@ -188,7 +190,11 @@ export default function VenuePreview({
       {/* Actions. Making a plan is a peer of Directions, not something buried
           behind the More-info expander — it's the surface's social payoff and
           the only path that produces a shareable link. */}
-      <div className={cn("mt-4 grid gap-2", signedIn ? "grid-cols-2" : "grid-cols-1")}>
+      {/* Getting there and getting hold of them are both utility, and both
+          have short labels, so they pair on one row. Making a plan keeps the
+          full width beneath: three buttons abreast wrap "Make a plan" on a
+          narrow phone, and it is the social payoff rather than a utility. */}
+      <div className={cn("mt-4 grid gap-2", hasPhone(venue) ? "grid-cols-2" : "grid-cols-1")}>
         <DirectionsButton
           title={venue.title}
           venueId={venue.id}
@@ -196,7 +202,11 @@ export default function VenuePreview({
           longitude={venue.longitude}
           className="h-11 rounded-xl w-full"
         />
-        {signedIn && (
+        {/* Renders nothing when the venue has no number on file. */}
+        <CallVenueButton venue={venue} className="h-11 w-full rounded-xl" />
+      </div>
+      {signedIn && (
+        <div className="mt-2">
           <Button
             variant="secondary"
             className="h-11 w-full rounded-xl"
@@ -204,8 +214,8 @@ export default function VenuePreview({
           >
             <CalendarClock className="h-4 w-4 mr-2" /> Make a plan
           </Button>
-        )}
-      </div>
+        </div>
+      )}
       {signedIn && (
         <CreatePlanSheet
           open={planOpen}
