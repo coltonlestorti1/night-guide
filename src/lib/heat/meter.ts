@@ -1,4 +1,9 @@
 import { HeatLabel } from "@/lib/heat/types";
+import {
+  ACTIVITY_HOT,
+  ACTIVITY_QUIET,
+  ACTIVITY_TRENDING,
+} from "@/lib/heat/activityColors";
 
 /** How many of the five segments a score fills. */
 export const METER_SEGMENTS = 5;
@@ -37,15 +42,10 @@ export function segmentsForScore(score: number): number {
  * the colour says which band, the count says how much. A rainbow here would
  * imply the segments mean different things individually, which they do not.
  *
- * Every band gets its own HUE, including Quiet. That is not decoration — it is
- * what makes the meter readable. A grey "Quiet" fill sits in the same family as
- * the grey empty track, so lit and unlit could only be told apart by lightness,
- * and on a near-white panel there is not enough room between them: measured in
- * the browser, the empty track came out at 1.17:1 against the card and the
- * whole scale read as one floating block instead of "1 of 5".
- *
- * The progression matches the crowd dots BarCard already uses (emerald, amber,
- * rose), so the two surfaces speak one colour language.
+ * The three values ARE the map pin rings — same palette, same meaning, shared
+ * from one module so the two surfaces cannot drift. An earlier version used
+ * green for Quiet, which appears nowhere in the map legend and made the meter
+ * and the map disagree about what "quiet" looks like.
  *
  * Building and Busy deliberately share a hue — the segment COUNT is what
  * separates them, which is exactly the information the label was losing.
@@ -53,22 +53,12 @@ export function segmentsForScore(score: number): number {
 export function meterFill(label: HeatLabel): string {
   switch (label) {
     case "Hot Now":
-      return "bg-[hsl(var(--hot))]";
+      return ACTIVITY_HOT;
     case "Busy":
     case "Building":
-      return "bg-[hsl(var(--trending))]";
+      return ACTIVITY_TRENDING;
     default:
-      // Quiet, and Closed if it ever reaches here. Green reads as "easy door"
-      // rather than "broken", and keeps a lit segment distinct from the track.
-      return "bg-[hsl(var(--friends))]";
+      // Quiet, and Closed if it ever reaches here.
+      return ACTIVITY_QUIET;
   }
 }
-
-/**
- * The unlit track.
- *
- * Deliberately darker than the card it sits on. `bg-border` measured 1.17:1
- * against the Activity panel — invisible, which destroys the "of five" that
- * makes this a scale rather than a count.
- */
-export const METER_EMPTY = "bg-muted-foreground/35";

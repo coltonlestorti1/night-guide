@@ -225,7 +225,13 @@ export default function CheckInCard({ venueId }: { venueId: string }) {
       ) : (
         <div>
           <Button className="w-full h-12 rounded-xl" disabled={busy} onClick={doCheckIn}>
-            {checkedInElsewhere ? "Check in here instead" : "Check in"}
+            {/* "I'm here" rather than "Check in" (Colton, 2026-08-11): it is what
+                you would actually say, and it pairs with the confirmed state
+                right above, which already reads "You're here ✓".
+                The signed-out and needs-setup variants keep the words "check
+                in" — they are explaining a feature to someone who has not used
+                it yet, where the product term is clearer than the phrase. */}
+            {checkedInElsewhere ? "I'm here instead" : "I'm here"}
           </Button>
           <CheckInVisibility value={visibility} onChange={changeVisibility} />
         </div>

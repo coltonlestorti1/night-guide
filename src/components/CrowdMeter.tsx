@@ -12,7 +12,8 @@
  */
 import { cn } from "@/lib/utils";
 import { HeatLabel } from "@/lib/heat/types";
-import { METER_EMPTY, METER_SEGMENTS, meterFill, segmentsForScore } from "@/lib/heat/meter";
+import { METER_SEGMENTS, meterFill, segmentsForScore } from "@/lib/heat/meter";
+import { ACTIVITY_TRACK } from "@/lib/heat/activityColors";
 
 export default function CrowdMeter({
   score,
@@ -43,10 +44,11 @@ export default function CrowdMeter({
         <span
           key={i}
           aria-hidden="true"
-          className={cn(
-            "h-2.5 w-2.5 rounded-[2px] transition-colors",
-            i < lit ? fill : METER_EMPTY,
-          )}
+          // Inline rather than a Tailwind class: these values are shared with
+          // the map's pin rings, and the JIT cannot build a class name from a
+          // runtime value.
+          style={{ backgroundColor: i < lit ? fill : ACTIVITY_TRACK }}
+          className="h-2.5 w-2.5 rounded-[2px] transition-colors"
         />
       ))}
     </span>

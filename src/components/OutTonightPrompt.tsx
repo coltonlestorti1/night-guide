@@ -76,7 +76,7 @@ export default function OutTonightPrompt() {
             <p className="text-sm text-muted-foreground mt-1 mb-3">Check in?</p>
             <div className="flex gap-2">
               <Button className="flex-1 rounded-xl" disabled={busy} onClick={() => doCheckIn(promptVenue)}>
-                Check in
+                I&apos;m here
               </Button>
               <Button variant="secondary" className="rounded-xl" disabled={busy} onClick={() => setPickOther(true)}>
                 Not here

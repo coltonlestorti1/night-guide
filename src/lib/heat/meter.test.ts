@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { METER_EMPTY, METER_SEGMENTS, meterFill, segmentsForScore } from "./meter";
+import { METER_SEGMENTS, meterFill, segmentsForScore } from "./meter";
+import {
+  ACTIVITY_HOT,
+  ACTIVITY_QUIET,
+  ACTIVITY_TRACK,
+  ACTIVITY_TRENDING,
+} from "./activityColors";
 import { scoreLabel } from "./labels";
 
 describe("segmentsForScore", () => {
@@ -51,26 +57,26 @@ describe("segmentsForScore", () => {
 });
 
 describe("meterFill", () => {
-  it("uses the hot token only at the top band", () => {
-    expect(meterFill("Hot Now")).toContain("--hot");
-    expect(meterFill("Busy")).not.toContain("--hot");
+  it("speaks the map's palette exactly — one vocabulary, two surfaces", () => {
+    // A pin and a meter disagreeing about what "hot" looks like is the drift
+    // this shares a module to prevent.
+    expect(meterFill("Hot Now")).toBe(ACTIVITY_HOT);
+    expect(meterFill("Busy")).toBe(ACTIVITY_TRENDING);
+    expect(meterFill("Quiet")).toBe(ACTIVITY_QUIET);
   });
 
   it("gives Building and Busy the same hue — the count separates them", () => {
     expect(meterFill("Building")).toBe(meterFill("Busy"));
   });
 
-  it("gives Quiet its own hue, not a grey that melts into the track", () => {
-    // Measured at 1.17:1 against the card when Quiet was grey — the scale read
-    // as one floating block. Every band must differ from the track by HUE.
+  it("never paints Quiet green, which exists nowhere in the map legend", () => {
     expect(meterFill("Quiet")).not.toBe(meterFill("Busy"));
     expect(meterFill("Quiet")).not.toBe(meterFill("Hot Now"));
-    expect(meterFill("Quiet")).not.toContain("muted-foreground");
   });
 
   it("keeps every lit colour distinct from the empty track", () => {
     for (const l of ["Quiet", "Building", "Busy", "Hot Now"] as const) {
-      expect(meterFill(l)).not.toBe(METER_EMPTY);
+      expect(meterFill(l)).not.toBe(ACTIVITY_TRACK);
     }
   });
 });

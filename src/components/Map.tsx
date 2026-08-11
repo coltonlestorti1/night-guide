@@ -18,6 +18,11 @@ import { toast } from "sonner";
 import LocationDeniedDialog from "@/components/LocationDeniedDialog";
 import { HeatResult } from "@/lib/heat/types";
 import { heatTier } from "@/lib/heat/tier";
+import {
+  ACTIVITY_HOT,
+  ACTIVITY_QUIET,
+  ACTIVITY_TRENDING,
+} from "@/lib/heat/activityColors";
 
 export type PinFriend = { id: string; name: string; avatarUrl: string | null };
 
@@ -44,10 +49,12 @@ export type MapProps = {
 // "something's happening here." Category is carried by the glyph (🍺/🍸/🪩),
 // never the ring — otherwise a red club reads as "Hot", a purple lounge as
 // "Selected". Normal venues get a quiet neutral-gray ring.
-const NORMAL_RING = "#9CA3AF";   // quiet — no live check-ins
-const SELECTED_RING = "#6C45FF"; // ENDZ purple — the pin you tapped
-const TRENDING_RING = "#FF8A3D"; // 3–5 people checked in
-const HOT_RING = "#FF4D67";      // 6+ people checked in
+// Shared with the crowd meter on venue detail — one palette, so a pin and a
+// meter can never disagree about what "quiet" or "hot" looks like.
+const NORMAL_RING = ACTIVITY_QUIET;     // quiet — no live check-ins
+const SELECTED_RING = "#6C45FF";        // ENDZ purple — the pin you tapped
+const TRENDING_RING = ACTIVITY_TRENDING; // 3–5 people checked in
+const HOT_RING = ACTIVITY_HOT;          // 6+ people checked in
 
 // GeoJSON source/layer id for the accuracy halo (see updateHalo below).
 const HALO_ID = "user-accuracy";
