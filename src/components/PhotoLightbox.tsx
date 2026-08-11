@@ -57,45 +57,52 @@ const PhotoLightbox = ({ url, onClose, alt = "" }: Props) => (
           // of how big the picture is, and the picture matters more. The
           // photo keeps the full width it has always had; the bands above and
           // below are where you tap to dismiss. `py-20` guarantees one even
-          // for a tall photo, and clears the close button so the two never
-          // overlap.
+          // for a tall photo. Keep it in step with the `10rem` the image caps
+          // itself against.
           className="fixed inset-0 z-50 flex items-center justify-center px-0 py-20 duration-200 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           onClick={onClose}
         >
           <DialogTitle className="sr-only">Photo</DialogTitle>
           {url && (
-            <img
-              src={url}
-              alt={alt}
-              // No `w-full`: letting the image size itself under both caps
-              // keeps its box the same shape as the picture, so there is no
-              // transparent margin inside it swallowing taps meant for the
-              // backdrop.
-              className="max-h-full max-w-full rounded-2xl object-contain"
-              // The photo itself is the one thing that does not close: a tap
-              // that lands on it is someone looking, and a long press there
-              // is iOS's save-image menu.
-              onClick={(e) => e.stopPropagation()}
-              // If the full-size image fails, close rather than leaving a broken
-              // image inside a modal the user then has to dismiss.
-              onError={onClose}
-            />
-          )}
-          <DialogPrimitive.Close
-            // Kept for desktop, where there is no tap-anywhere instinct, and
-            // as the focusable control Radix lands on. Clear of the status
-            // bar when the PWA runs standalone.
+            // This wrapper exists to give the close button something to anchor
+            // to. It shrink-wraps the photo, so `absolute` inside it means the
+            // photo's corner rather than the screen's — which is why the caps
+            // below are viewport-relative rather than `max-h-full`: a
+            // percentage would resolve against this wrapper's own auto height
+            // and collapse to no limit at all. `10rem` is the content's `py-20`
+            // top and bottom.
             //
-            // `focus-visible`, not `focus`: Radix autofocuses this on open, so
-            // a plain `focus:ring` painted a bright ring around the X every
-            // time a photo was opened by touch. The solid fill is what keeps
-            // it readable when a tall photo reaches up behind it — over the
-            // dark band it simply disappears into the backdrop.
-            className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] rounded-full bg-black/60 p-2.5 text-white transition-colors hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-          >
-            <X className="h-6 w-6" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+            // Stopping the click here covers the photo and its button in one
+            // place. The button still closes: Radix's own handler runs on the
+            // button itself, before this ever sees the event.
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <img
+                src={url}
+                alt={alt}
+                // No `w-full`: letting the image size itself under both caps
+                // keeps its box the same shape as the picture, so there is no
+                // transparent margin inside it swallowing taps meant for the
+                // backdrop.
+                className="block max-h-[calc(100dvh-10rem)] max-w-[100vw] rounded-2xl object-contain"
+                // If the full-size image fails, close rather than leaving a broken
+                // image inside a modal the user then has to dismiss.
+                onError={onClose}
+              />
+              <DialogPrimitive.Close
+                // Sits on the photo's top-right corner. It needs the solid
+                // fill and the ring to stay findable against whatever happens
+                // to be in that corner of the picture.
+                //
+                // `focus-visible`, not `focus`: Radix autofocuses this on open,
+                // so a plain `focus:ring` painted a bright ring around the X
+                // every time a photo was opened by touch.
+                className="absolute right-2 top-2 rounded-full bg-black/60 p-2.5 text-white ring-1 ring-white/20 transition-colors hover:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+              >
+                <X className="h-6 w-6" />
+                <span className="sr-only">Close</span>
+              </DialogPrimitive.Close>
+            </div>
+          )}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </Dialog>
