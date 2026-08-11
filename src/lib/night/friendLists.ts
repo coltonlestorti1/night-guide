@@ -32,6 +32,38 @@ type ListRow = {
   score: number | string;
 };
 
+/** True only for "that function does not exist", never for a network failure. */
+export function isMissingFunction(error: { code?: string } | null): boolean {
+  return error?.code === UNKNOWN_FUNCTION;
+}
+
+/**
+ * Shape the RPC's rows. Pure and exported so the numeric coercion and the
+ * empty cases are testable without a database — this is the layer that decides
+ * whether someone sees a list, so it should not be the untested one.
+ */
+export function mapListRows(data: unknown): RatingRow[] {
+  return ((data ?? []) as ListRow[]).map((r) => ({
+    venueId: r.venue_id,
+    bucket: r.bucket,
+    rankPosition: r.rank_position,
+    // Postgres numeric arrives as a string through PostgREST. Left as-is, every
+    // score comparison downstream becomes a string comparison.
+    score: Number(r.score),
+  }));
+}
+
+/**
+ * Shape the stats row, or null when the function's gate returned nothing.
+ * Null rather than zeroes: "0 spots" is a claim about a person, and it would be
+ * a false one for a friend whose list you simply may not read.
+ */
+export function mapStatsRow(data: unknown): FriendStats | null {
+  const row = (data as { been_count: number; friend_count: number }[] | null)?.[0];
+  if (!row) return null;
+  return { beenCount: row.been_count, friendCount: row.friend_count };
+}
+
 /**
  * The target's ranked list, best first — or an empty list if the caller is not
  * an accepted friend. "Not a friend" and "has rated nothing" are deliberately
@@ -44,18 +76,13 @@ export async function friendRankedList(targetUserId: string): Promise<RatingRow[
 
   const { data, error } = await supabase.rpc("friend_ranked_list", { p_user: targetUserId });
   if (error) {
-    if (error.code === UNKNOWN_FUNCTION) return [];
-    throw error;
+    if (!isMissingFunction(error)) throw error;
+    // Not silent: a function that vanishes in production would otherwise show
+    // every friend an empty list forever with nothing anywhere to explain it.
+    console.warn("friend_ranked_list is not installed — lists will read empty");
+    return [];
   }
-
-  // numeric comes back as a string through PostgREST — coerce, or every score
-  // comparison downstream is a string comparison.
-  return ((data ?? []) as ListRow[]).map((r) => ({
-    venueId: r.venue_id,
-    bucket: r.bucket,
-    rankPosition: r.rank_position,
-    score: Number(r.score),
-  }));
+  return mapListRows(data);
 }
 
 /**
@@ -69,11 +96,9 @@ export async function friendProfileStats(targetUserId: string): Promise<FriendSt
 
   const { data, error } = await supabase.rpc("friend_profile_stats", { p_user: targetUserId });
   if (error) {
-    if (error.code === UNKNOWN_FUNCTION) return null;
-    throw error;
+    if (!isMissingFunction(error)) throw error;
+    console.warn("friend_profile_stats is not installed — counts will be hidden");
+    return null;
   }
-
-  const row = (data as { been_count: number; friend_count: number }[] | null)?.[0];
-  if (!row) return null; // the function's WHERE gate returned no row: not allowed
-  return { beenCount: row.been_count, friendCount: row.friend_count };
+  return mapStatsRow(data);
 }

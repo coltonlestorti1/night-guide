@@ -18,8 +18,24 @@
 -- function would silently overrule a user who set their saves to nobody.
 
 -- ----------------------------------------------------------------------------
--- Are these two people accepted friends? Extracted because both functions below
--- need it and the same predicate is already inlined in half a dozen policies.
+-- Are these two people accepted friends?
+--
+-- ⚠️ NOT CALLABLE BY CLIENTS, and anchored to the caller on top of that. A
+-- SECURITY DEFINER predicate that takes two arbitrary person ids bypasses
+-- friendships' RLS ("you may only read rows you are party to",
+-- endz-schema.sql:276) and answers questions about strangers. Since every
+-- signed-in user can read every profile id, a client-callable version is a
+-- pairwise oracle: iterate the profile list and reconstruct the app's entire
+-- social graph. That is the exact trap post_has_collab_for_me documents at
+-- endz-schema.sql:2053 — "takes no viewer argument ... so it cannot be used to
+-- probe a third party's friendships".
+--
+-- Two independent defences, because one of them is a grant and grants drift:
+--   1. EXECUTE is revoked from anon, public AND authenticated below. The two
+--      functions that call it are themselves SECURITY DEFINER and run as the
+--      owner, which owns this function, so no caller grant is needed.
+--   2. The body refuses to answer about a pair the caller is not part of, so
+--      re-granting it later cannot reopen the oracle.
 -- ----------------------------------------------------------------------------
 create or replace function public.are_friends(a uuid, b uuid)
 returns boolean
@@ -28,7 +44,7 @@ stable
 security definer
 set search_path = public, pg_temp
 as $$
-  select exists (
+  select auth.uid() in (a, b) and exists (
     select 1
       from friendships f
      where f.status = 'accepted'
@@ -73,8 +89,18 @@ security definer
 set search_path = public, pg_temp
 as $$
   select
-    (select count(*)::int from venue_ratings r where r.user_id = p_user),
-    (select count(*)::int from friendships f
+    -- Joined to venues on is_active so this matches the list it links to. The
+    -- client drops ratings whose venue was deactivated, and a header reading
+    -- "12 Been" above eleven rows reads as a bug.
+    (select count(*)::int
+       from venue_ratings r
+       join venues v on v.id = r.venue_id and v.is_active
+      where r.user_id = p_user),
+    -- count(distinct other party): friendships is unique on (user_id,
+    -- friend_id), so a pair CAN hold two accepted rows in opposite directions
+    -- and a plain count(*) would show that person twice.
+    (select count(distinct case when f.user_id = p_user then f.friend_id else f.user_id end)::int
+       from friendships f
       where f.status = 'accepted'
         and (f.user_id = p_user or f.friend_id = p_user))
   where p_user = auth.uid() or public.are_friends(auth.uid(), p_user);
@@ -91,11 +117,11 @@ $$;
 -- for a signed-out caller. Revoking anyway means that safety does not depend on
 -- reading the function body correctly.
 -- ----------------------------------------------------------------------------
-revoke execute on function public.are_friends(uuid, uuid) from public, anon;
+-- are_friends is internal only — authenticated is revoked too. See its header.
+revoke execute on function public.are_friends(uuid, uuid) from public, anon, authenticated;
 revoke execute on function public.friend_ranked_list(uuid) from public, anon;
 revoke execute on function public.friend_profile_stats(uuid) from public, anon;
 
-grant execute on function public.are_friends(uuid, uuid) to authenticated;
 grant execute on function public.friend_ranked_list(uuid) to authenticated;
 grant execute on function public.friend_profile_stats(uuid) to authenticated;
 
@@ -112,6 +138,11 @@ select p.proname,
  where n.nspname = 'public'
    and p.proname in ('are_friends', 'friend_ranked_list', 'friend_profile_stats');
 -- Expect: anon_can_execute = false on all three rows.
+
+-- 1b. are_friends must not be callable by signed-in users either.
+select has_function_privilege('authenticated', 'public.are_friends(uuid, uuid)', 'execute')
+         as authenticated_can_execute_are_friends;
+-- Expect: false. If this is true, the social graph is enumerable pairwise.
 
 -- 2. Every one of them must pin search_path, including pg_temp. A SECURITY
 --    DEFINER function without pg_temp can be hijacked via a temp-schema object.

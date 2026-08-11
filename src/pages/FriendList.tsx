@@ -16,7 +16,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Star } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useProfileByUsername } from "@/hooks/useFriends";
-import { useFriendRankedList } from "@/hooks/useFriendList";
+import { useFriendProfileStats, useFriendRankedList } from "@/hooks/useFriendList";
 import { useVenues } from "@/hooks/useVenues";
 import { beenList } from "@/lib/night/lists";
 import VenueListRow from "@/components/lists/VenueListRow";
@@ -29,15 +29,30 @@ const FriendList = () => {
   const handle = username.replace(/^@/, "").toLowerCase();
   const signedIn = useAuthStore((s) => s.status) === "signedIn";
 
-  const { data: profile, isLoading: profileLoading } = useProfileByUsername(
-    signedIn ? handle : undefined,
-  );
-  const { data: ratings, isLoading: listLoading, isError } = useFriendRankedList(profile?.id);
-  const { data: venues, isLoading: venuesLoading } = useVenues({});
+  const authLoading = useAuthStore((s) => s.status) === "loading";
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+  } = useProfileByUsername(signedIn ? handle : undefined);
+  const {
+    data: ratings,
+    isLoading: listLoading,
+    isError: listError,
+  } = useFriendRankedList(profile?.id);
+  const { data: venues, isLoading: venuesLoading, isError: venuesError } = useVenues({});
+  // Already cached from their profile page. Distinguishes "we are friends and
+  // they have rated nothing" from "you cannot see this", which the list call
+  // alone cannot — it answers both with zero rows on purpose.
+  const { data: stats } = useFriendProfileStats(profile?.id);
 
   const entries = useMemo(() => beenList(ratings, venues ?? []), [ratings, venues]);
   const name = profile?.display_name || (profile ? `@${profile.username}` : "");
-  const loading = profileLoading || listLoading || venuesLoading;
+  // authLoading counts as loading: status starts at "loading" while the session
+  // is fetched, and treating that as signed-out flashes the sign-in prompt at a
+  // signed-in user every cold load and refresh.
+  const loading = authLoading || profileLoading || listLoading || venuesLoading;
+  const isError = profileError || listError || venuesError;
 
   const back = (
     <Button
@@ -63,9 +78,8 @@ const FriendList = () => {
   );
 
   const body = () => {
-    if (!signedIn) return empty("Sign in to see this list.", "Ranked lists are friends only.");
-    if (isError)
-      return empty("Couldn't load that list.", "Check your connection and try again.");
+    // Order matters: loading before signed-out, or a cold load renders the
+    // sign-in prompt before the session resolves.
     if (loading)
       return (
         <div className="space-y-2">
@@ -74,12 +88,22 @@ const FriendList = () => {
           ))}
         </div>
       );
+    if (!signedIn) return empty("Sign in to see this list.", "Ranked lists are friends only.");
+    // A failed fetch must never be reported as "they aren't your friend" or
+    // "no such user" — both are claims about a person, made on the evidence of
+    // a dropped request.
+    if (isError)
+      return empty("Couldn't load that list.", "Check your connection and try again.");
     if (!profile) return empty("No one by that handle.", `@${handle} doesn't exist.`);
     if (entries.length === 0)
-      // Deliberately the same message whether they are not your friend or have
-      // simply rated nothing — the function returns zero rows either way, and
-      // telling the two apart would leak that a stranger has a list at all.
-      return empty("Nothing to see here.", "Ranked lists are friends only.");
+      // `stats` is non-null only for someone allowed to see this list, so a
+      // friend gets the truthful empty message. For everyone else the message
+      // stays ambiguous on purpose: the list call answers "not your friend" and
+      // "rated nothing" with the same zero rows, and telling them apart would
+      // leak that a stranger has a list at all.
+      return stats
+        ? empty("No rankings yet.", `${name} hasn't ranked anywhere.`)
+        : empty("Nothing to see here.", "Ranked lists are friends only.");
 
     return (
       <ul className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">

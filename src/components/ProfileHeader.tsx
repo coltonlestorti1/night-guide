@@ -85,7 +85,10 @@ export default function ProfileHeader({
         </div>
 
         {stats.length > 0 && (
-          <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border/60 pt-4">
+          <div
+            className="mt-5 grid gap-2 border-t border-border/60 pt-4"
+            style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
+          >
             {stats.map((s) => {
               const inner = (
                 <>
