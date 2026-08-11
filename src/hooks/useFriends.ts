@@ -113,6 +113,9 @@ function useFriendshipMutation<TVars>(
       // no refetch at all after you unfriend them.
       queryClient.invalidateQueries({ queryKey: ["friend-ranked-list", userId] });
       queryClient.invalidateQueries({ queryKey: ["friend-profile-stats", userId] });
+      // Blocking also hides that person from every OTHER friend's list, so
+      // this key has to go too — not just the blocked person's own page.
+      queryClient.invalidateQueries({ queryKey: ["friend-friend-list", userId] });
     },
   });
 }

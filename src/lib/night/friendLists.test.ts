@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isMissingFunction, mapListRows, mapStatsRow } from "./friendLists";
+import { isMissingFunction, mapFriendRows, mapListRows, mapStatsRow } from "./friendLists";
 
 describe("mapListRows", () => {
   it("coerces the numeric score, which PostgREST sends as a string", () => {
@@ -63,5 +63,50 @@ describe("isMissingFunction", () => {
     expect(isMissingFunction({ code: "PGRST301" })).toBe(false);
     expect(isMissingFunction({})).toBe(false);
     expect(isMissingFunction(null)).toBe(false);
+  });
+});
+
+describe("mapFriendRows", () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    id: "u1",
+    username: "sam",
+    display_name: "Sam",
+    avatar_url: "http://x/a.png",
+    ...over,
+  });
+
+  it("maps a person through unchanged", () => {
+    const out = mapFriendRows([row()]);
+    expect(out).toEqual([
+      { id: "u1", username: "sam", display_name: "Sam", avatar_url: "http://x/a.png" },
+    ]);
+  });
+
+  it("normalises a missing display name to null, not undefined", () => {
+    // ProfileAvatar falls back to the username on null. undefined would make
+    // `display_name && ...` render nothing while still taking the truthy path
+    // elsewhere.
+    const out = mapFriendRows([row({ display_name: undefined })]);
+    expect(out[0].display_name).toBeNull();
+  });
+
+  it("normalises a missing avatar to null", () => {
+    expect(mapFriendRows([row({ avatar_url: undefined })])[0].avatar_url).toBeNull();
+  });
+
+  it("returns an empty list for null and undefined", () => {
+    // The RPC answers "not your friend" and "has no friends" with the same
+    // zero rows on purpose, so this path is the common one, not an edge case.
+    expect(mapFriendRows(null)).toEqual([]);
+    expect(mapFriendRows(undefined)).toEqual([]);
+    expect(mapFriendRows([])).toEqual([]);
+  });
+
+  it("preserves order, which the function sorts by name", () => {
+    const out = mapFriendRows([
+      row({ id: "a", username: "alex", display_name: "Alex" }),
+      row({ id: "b", username: "sam", display_name: "Sam" }),
+    ]);
+    expect(out.map((p) => p.id)).toEqual(["a", "b"]);
   });
 });

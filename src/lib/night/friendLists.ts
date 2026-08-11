@@ -25,6 +25,14 @@ const UNKNOWN_FUNCTION = "PGRST202";
 
 export type FriendStats = { beenCount: number; friendCount: number };
 
+/** A person on someone else's friends list. Same shape as FriendProfile. */
+export type FriendPerson = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
 type ListRow = {
   venue_id: string;
   bucket: Bucket;
@@ -101,4 +109,42 @@ export async function friendProfileStats(targetUserId: string): Promise<FriendSt
     return null;
   }
   return mapStatsRow(data);
+}
+
+/**
+ * Shape the friends-list rows. Pure and exported for the same reason
+ * mapListRows is: this decides who appears on someone's friends list, so it
+ * should not be the untested layer.
+ */
+export function mapFriendRows(data: unknown): FriendPerson[] {
+  return ((data ?? []) as FriendPerson[]).map((r) => ({
+    id: r.id,
+    username: r.username,
+    display_name: r.display_name ?? null,
+    avatar_url: r.avatar_url ?? null,
+  }));
+}
+
+/**
+ * The target's friends — or an empty list if the caller is not an accepted
+ * friend. Same deliberate ambiguity as the ranked list: "not a friend" and
+ * "has no friends" are the same answer, because distinguishing them would leak
+ * whether a stranger has any friends at all.
+ *
+ * The function also drops anyone the CALLER has blocked, so two viewers of the
+ * same profile can correctly see different lists.
+ */
+export async function friendFriendList(targetUserId: string): Promise<FriendPerson[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.rpc("friend_friend_list", { p_user: targetUserId });
+  if (error) {
+    if (!isMissingFunction(error)) throw error;
+    // Not silent: a function that vanishes in production would otherwise show
+    // every friend an empty list forever with nothing anywhere to explain it.
+    console.warn("friend_friend_list is not installed — friends lists will read empty");
+    return [];
+  }
+  return mapFriendRows(data);
 }

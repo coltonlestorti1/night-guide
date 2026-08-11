@@ -13,6 +13,7 @@ import Profile from "@/pages/Profile";
 import Lists from "@/pages/Lists";
 import Friends from "@/pages/Friends";
 import FriendList from "@/pages/FriendList";
+import FriendFriends from "@/pages/FriendFriends";
 import Settings from "@/pages/Settings";
 import UserProfile from "@/pages/UserProfile";
 import VenueDetail from "@/pages/VenueDetail";
@@ -60,6 +61,7 @@ const App = () => {
                 <Route path="friends" element={<Friends />} />
                 <Route path="u/:username" element={<UserProfile />} />
                 <Route path="u/:username/been" element={<FriendList />} />
+                <Route path="u/:username/friends" element={<FriendFriends />} />
               </Route>
               <Route path="welcome" element={<PickUsername />} />
               <Route path="welcome/about" element={<AboutYou />} />

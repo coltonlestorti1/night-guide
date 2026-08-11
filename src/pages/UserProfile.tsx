@@ -114,7 +114,7 @@ const UserProfile = () => {
         stats={
           stats
             ? [
-                { label: "Friends", value: stats.friendCount },
+                { label: "Friends", value: stats.friendCount, to: `/u/${handle}/friends` },
                 { label: "Been", value: stats.beenCount, to: `/u/${handle}/been` },
               ]
             : []
