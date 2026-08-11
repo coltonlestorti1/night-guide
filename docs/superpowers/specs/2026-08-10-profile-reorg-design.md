@@ -292,10 +292,21 @@ rollback never go in the same paste.
 
 ## Risks
 
-- **The DDL is a hard dependency and is not self-serve.** Only the anon key
-  exists locally. The Tagged tab ships without other people's scores until
-  Colton pastes it; the UI must render a null score correctly in the meantime,
-  which it does by design (§5).
+- **The DDL must land BEFORE this branch merges.** Not "should" — must. The
+  Tagged query selects `score` inside the tag embed, and PostgREST rejects an
+  unknown column outright with `42703` rather than returning null. Probed
+  directly on 2026-08-10: the column does not exist, and the query 400s. So
+  until the SQL is pasted, the Tagged tab is a hard error for every user, not a
+  degraded one. Only the anon key exists locally, so this is Colton's step.
+
+- **The schema drift guard cannot catch this.** `plainColumns`
+  (`scripts/check-schema.mjs:180`) filters out every part containing `(`, which
+  drops embedded joins wholesale — it validated only `night_posts`' top-level
+  columns and reported `ok` for a select PostgREST refuses. Pre-existing, and
+  it applies to every embed in the app (`author:profiles!…`,
+  `person:profiles!…`), not just this one. Logged as follow-up work; not fixed
+  here, because widening the guard will surface unrelated drift that deserves
+  its own pass.
 - **`sync_night_post_score()` is a live, working trigger.** Extending it means
   editing something that currently protects a shipped surface. It gets its own
   verification, not a drive-by edit.
