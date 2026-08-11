@@ -1755,3 +1755,29 @@ spends money or touches private data must resolve the caller itself
 after every deploy. `plan-guest` is the deliberate exception — it is
 `--no-verify-jwt` because guests have no account, and its safety comes from
 returning only the one plan a valid token names.
+
+## §33 — Venue accounts / ENDZ Media content (NOT DISCUSSED — gate applies)
+
+Added 2026-08-11. Companion to the ENDZ Media service arm (bar social media
+management + nightlife photography — planning lives OUTSIDE this repo at
+`~/Documents/endz/business/`, see `venue-accounts-plan.md` there for the full
+product plan). Nothing here is approved for build.
+
+The ask: our team posts official content *as* client venues inside the app.
+
+- **P0 (smallest slice):** admin-only "post as venue" — separate `venue_posts`
+  table (never `night_posts` — no scores/tags/audience semantics), "From the
+  venue" strip on the venue page, Venue-badged optional feed rows. No new
+  auth; `is_admin()` gates writes.
+- **P1:** `venue_members` roles + RLS for owner self-serve (RLS lessons apply:
+  no two-person-id SECURITY DEFINER predicates, explicit `to authenticated`,
+  probe views by name).
+- **P2:** venue subscriptions; events + specials return as *paid* features;
+  sponsored placement is additive UI only — never touches taste ranking.
+- **P3:** owner analytics dashboard.
+
+Feed-integrity rules (hold forever): venue content always badged, never
+scored, never feeds taste/heat, frequency-capped, muteable.
+
+Sequencing: after §31 or a quiet week — P0 is small and admin-only. The agency
+can operate on Instagram alone before P0 exists.
