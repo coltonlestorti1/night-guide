@@ -165,15 +165,10 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Scrollable and viewport-capped. DialogContent is fixed at top-50%
-          with translate-y-[-50%] and sets NO max-height and NO overflow, so a
-          dialog taller than the screen is clipped at BOTH ends with no way to
-          reach either. This one crossed that line when the age field arrived,
-          and the iOS keyboard shrinks the visual viewport further — leaving
-          the name and username fields unreachable behind the top edge.
-          dvh, not vh: vh on iOS is the tallest-possible viewport and ignores
-          the keyboard entirely. */}
-      <DialogContent className="max-w-sm rounded-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
+      {/* The cap and the scroll now live on DialogContent itself — every
+          dialog had the same latent bug, this one just grew tall enough to
+          hit it first. */}
+      <DialogContent className="max-w-sm rounded-3xl">
         <DialogHeader>
           <DialogTitle>Edit profile</DialogTitle>
           <DialogDescription>Your name, handle, and photo.</DialogDescription>

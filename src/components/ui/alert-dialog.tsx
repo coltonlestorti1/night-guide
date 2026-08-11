@@ -33,8 +33,22 @@ const AlertDialogContent = React.forwardRef<
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
       ref={ref}
+      // Capped and scrollable. Without this a dialog taller than the viewport
+      // is unreachable at BOTH ends: the content is fixed at top-50% and pulled
+      // back by translate-y-[-50%], so overflow spills equally off the top and
+      // the bottom with nothing to scroll. Edit Profile hit this the moment it
+      // grew an age field, and the iOS keyboard — which shrinks the visual
+      // viewport, not the layout viewport — put the name and username fields
+      // behind the top edge with no way back to them.
+      //
+      // dvh, never vh: on iOS vh is the TALLEST possible viewport and ignores
+      // the keyboard entirely, so a vh cap would not have fixed it.
+      //
+      // A dialog that wants to manage its own height passes its own max-h or
+      // overflow — tailwind-merge lets the caller win. PhotoLightbox does not
+      // come through here at all; it composes the Radix primitives directly.
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] max-h-[calc(100dvh-2rem)] overflow-y-auto gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
         className
       )}
       {...props}
