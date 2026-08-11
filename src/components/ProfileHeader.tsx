@@ -14,7 +14,13 @@ import type { ReactNode } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatMemberSince } from "@/lib/format";
 
-export type ProfileStat = { label: string; value: number; to: string };
+export type ProfileStat = {
+  label: string;
+  value: number;
+  /** Omit for a stat with nowhere to go — a tap that lands on the page you are
+   *  already on reads as broken. */
+  to?: string;
+};
 
 export default function ProfileHeader({
   displayName,
@@ -80,16 +86,27 @@ export default function ProfileHeader({
 
         {stats.length > 0 && (
           <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border/60 pt-4">
-            {stats.map((s) => (
-              <Link
-                key={s.label}
-                to={s.to}
-                className="rounded-xl py-1 text-center transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <div className="font-display text-lg font-bold tabular-nums">{s.value}</div>
-                <div className="text-xs text-muted-foreground">{s.label}</div>
-              </Link>
-            ))}
+            {stats.map((s) => {
+              const inner = (
+                <>
+                  <div className="font-display text-lg font-bold tabular-nums">{s.value}</div>
+                  <div className="text-xs text-muted-foreground">{s.label}</div>
+                </>
+              );
+              return s.to ? (
+                <Link
+                  key={s.label}
+                  to={s.to}
+                  className="rounded-xl py-1 text-center transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <div key={s.label} className="rounded-xl py-1 text-center">
+                  {inner}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
