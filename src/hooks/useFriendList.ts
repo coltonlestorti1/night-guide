@@ -13,7 +13,13 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
-import { friendProfileStats, friendRankedList, type FriendStats } from "@/lib/night/friendLists";
+import {
+  friendFriendList,
+  friendProfileStats,
+  friendRankedList,
+  type FriendPerson,
+  type FriendStats,
+} from "@/lib/night/friendLists";
 import type { RatingRow } from "@/lib/night/ratings";
 
 export function useFriendRankedList(targetUserId: string | undefined) {
@@ -37,5 +43,19 @@ export function useFriendProfileStats(targetUserId: string | undefined) {
     enabled: !!targetUserId && signedIn,
     staleTime: 30_000,
     queryFn: () => friendProfileStats(targetUserId!),
+  });
+}
+
+/** The target's friends. Keyed on the viewer too — the blocked filter makes
+ *  the answer depend on who is asking, not just who is being asked about. */
+export function useFriendFriendList(targetUserId: string | undefined) {
+  const myId = useAuthStore((s) => s.session?.user.id);
+  const signedIn = useAuthStore((s) => s.status) === "signedIn";
+
+  return useQuery<FriendPerson[]>({
+    queryKey: ["friend-friend-list", myId, targetUserId],
+    enabled: !!targetUserId && signedIn,
+    staleTime: 30_000,
+    queryFn: () => friendFriendList(targetUserId!),
   });
 }
