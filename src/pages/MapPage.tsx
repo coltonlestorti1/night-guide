@@ -65,7 +65,11 @@ const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => 
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 px-3 pt-3 pb-2 lg:pl-24 bg-gradient-to-b from-background via-background/90 to-background/0">
+    /* `pointer-events-none` because this bar is mostly gradient and a title,
+       but its box spans the full width and sits over the map — it was eating
+       every drag in the top 139px, right across the screen. Only the things
+       you actually touch opt back in. */
+    <div className="fixed top-0 left-0 right-0 z-40 px-3 pt-3 pb-2 lg:pl-24 bg-gradient-to-b from-background via-background/90 to-background/0 pointer-events-none">
       <div className="mx-auto max-w-xl lg:mx-0 lg:max-w-sm">
         <div className="flex items-baseline justify-between gap-3 px-1">
           <div>
@@ -75,7 +79,7 @@ const TopHeader = ({ venues, onPick }: { venues: Venue[]; onPick: (v: Venue) => 
             <p className="text-xs text-muted-foreground -mt-0.5">Find your night in the East Village</p>
           </div>
         </div>
-        <div className="relative mt-2">
+        <div className="relative mt-2 pointer-events-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={query}
@@ -193,10 +197,14 @@ const FilterChips = ({
   };
 
   return (
-    <div className="fixed top-[6.25rem] left-0 right-0 z-30 px-3 lg:pl-24">
+    /* Same reasoning as the header above: full-width box, mostly empty, sitting
+       on the map. The chip strip itself keeps its pointer events — it is a
+       horizontal scroller, so it needs to catch the swipe, not just the taps
+       that happen to land on a chip. */
+    <div className="fixed top-[6.25rem] left-0 right-0 z-30 px-3 lg:pl-24 pointer-events-none">
       <div className="mx-auto max-w-xl lg:mx-0 lg:max-w-sm">
         <div
-          className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1"
+          className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 pointer-events-auto"
           style={{
             maskImage: "linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
             WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
@@ -253,7 +261,7 @@ const FilterChips = ({
               </span>
             )}
             {showClear && (
-              <button onClick={reset} className="text-xs text-primary flex items-center gap-1 ml-auto hover:underline">
+              <button onClick={reset} className="text-xs text-primary flex items-center gap-1 ml-auto pointer-events-auto hover:underline">
                 <X className="h-3 w-3" /> Clear filters
               </button>
             )}
