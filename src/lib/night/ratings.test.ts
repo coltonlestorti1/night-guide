@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { bucketRows } from "./ratings";
-import { scoreFor } from "./ranking";
+import { BANDS, scoreFor } from "./ranking";
 
 /**
  * Only the pure row-builder is covered. There is no Supabase mock in this repo,
@@ -40,6 +40,6 @@ describe("bucketRows", () => {
 
   it("keeps every score inside its own band, so a rewrite can never cross a boundary", () => {
     const rows = bucketRows("u1", "good", ["a", "b", "c", "d", "e"]);
-    expect(rows.every((r) => r.score >= 3.4 && r.score <= 6.6)).toBe(true);
+    expect(rows.every((r) => r.score >= BANDS.good.lo && r.score <= BANDS.good.hi)).toBe(true);
   });
 });

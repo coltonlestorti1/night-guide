@@ -1,12 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  scoreFor,
-  nextComparison,
-  insertAt,
-  BANDS,
-  BUCKET_LABELS,
-  type Bucket,
-} from "./ranking";
+import { BANDS, BUCKET_LABELS, TOP_SCORE_MIN, bucketForScore, insertAt, nextComparison, scoreFor, type Bucket } from "./ranking";
 
 describe("BUCKET_LABELS", () => {
   it("uses the exact agreed copy", () => {
@@ -17,8 +10,10 @@ describe("BUCKET_LABELS", () => {
 });
 
 describe("BANDS", () => {
-  it("does not overlap and covers 0-10 in order", () => {
-    expect(BANDS.not_great.lo).toBe(0);
+  it("does not overlap, and stays inside 0-10 in order", () => {
+    // The floor is deliberately 3.0, not 0: "Not great" means the night was a
+    // let-down, not that the place should be condemned.
+    expect(BANDS.not_great.lo).toBe(3.0);
     expect(BANDS.great.hi).toBe(10);
     expect(BANDS.not_great.hi).toBeLessThan(BANDS.good.lo);
     expect(BANDS.good.hi).toBeLessThan(BANDS.great.lo);
@@ -26,12 +21,11 @@ describe("BANDS", () => {
 });
 
 describe("scoreFor", () => {
-  it("puts a lone entry at the band midpoint", () => {
-    // 6.7-10.0 -> 8.35, rounded to one decimal. The design doc originally
-    // said 8.3; 8.4 is the correct rounding and the doc was corrected.
-    expect(scoreFor("great", 0, 1)).toBe(8.4);
-    expect(scoreFor("good", 0, 1)).toBe(5.0);
-    expect(scoreFor("not_great", 0, 1)).toBe(1.7);
+  it("starts a lone entry on the baseline Colton set", () => {
+    // 7.0-10.0 -> 8.5, and the other two follow from their own bands.
+    expect(scoreFor("great", 0, 1)).toBe(8.5);
+    expect(scoreFor("good", 0, 1)).toBe(6.0);
+    expect(scoreFor("not_great", 0, 1)).toBe(4.0);
   });
 
   it("derives that midpoint from the bands rather than a magic number", () => {
@@ -133,5 +127,51 @@ describe("insertAt", () => {
     const original = ["a", "b"];
     insertAt(original, "z", 1);
     expect(original).toEqual(["a", "b"]);
+  });
+});
+
+describe("the top of a Great list", () => {
+  it("is a flat 10.0 once the bucket reaches TOP_SCORE_MIN", () => {
+    expect(scoreFor("great", 0, TOP_SCORE_MIN)).toBe(10);
+    expect(scoreFor("great", 0, TOP_SCORE_MIN + 12)).toBe(10);
+  });
+
+  it("is not yet a 10 while the ranking is too thin to have earned it", () => {
+    for (let n = 1; n < TOP_SCORE_MIN; n++) {
+      expect(scoreFor("great", 0, n)).toBeLessThan(10);
+    }
+  });
+
+  it("only ever lifts #1, and only in Great", () => {
+    expect(scoreFor("great", 1, TOP_SCORE_MIN)).toBeLessThan(10);
+    expect(scoreFor("good", 0, TOP_SCORE_MIN)).toBeLessThanOrEqual(BANDS.good.hi);
+    expect(scoreFor("not_great", 0, TOP_SCORE_MIN)).toBeLessThanOrEqual(BANDS.not_great.hi);
+  });
+
+  it("still ranks strictly downward with the 10 pinned on top", () => {
+    const scores = [0, 1, 2, 3, 4].map((i) => scoreFor("great", i, 5));
+    for (let i = 1; i < scores.length; i++) {
+      expect(scores[i]).toBeLessThan(scores[i - 1]);
+    }
+  });
+});
+
+describe("bucketForScore", () => {
+  it("maps a score back to the bucket that produced it", () => {
+    const buckets: Bucket[] = ["great", "good", "not_great"];
+    for (const b of buckets) {
+      for (const n of [1, 2, 7]) {
+        for (let i = 0; i < n; i++) {
+          expect(bucketForScore(scoreFor(b, i, n))).toBe(b);
+        }
+      }
+    }
+  });
+
+  it("does not crash on a score from the old bands", () => {
+    // Rows written before 2026-08-10 can still be in flight when the backfill
+    // runs. A 1.7 has no bucket any more; it must read as the lowest one.
+    expect(bucketForScore(1.7)).toBe("not_great");
+    expect(bucketForScore(0)).toBe("not_great");
   });
 });
