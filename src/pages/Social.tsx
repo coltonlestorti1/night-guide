@@ -26,6 +26,7 @@ import SectionCard from "@/components/social/SectionCard";
 import OutTonightRow from "@/components/social/OutTonightRow";
 import FriendsSheet from "@/components/social/FriendsSheet";
 import ActivitySheet from "@/components/social/ActivitySheet";
+import { useMyPendingTags } from "@/hooks/useTags";
 import PlansSheet from "@/components/social/PlansSheet";
 import CreatePlanSheet from "@/components/social/CreatePlanSheet";
 import RecapCard from "@/components/night/RecapCard";
@@ -59,6 +60,16 @@ const Social = () => {
   // One badge for everything Plans needs from you: invites to answer and guest
   // requests to approve.
   const planAlerts = openInvites + requestCount;
+  // The bell had no badge while Plans and Friends both did, so a tag waiting on
+  // you sat in a sheet with nothing pointing at it — the person who tagged you
+  // saw silence, and so did you.
+  //
+  // Counts ONLY pending tags, deliberately. Likes and comments would need
+  // per-user read state (a new table written on nearly every view, per the
+  // tracker); a pending tag needs none, because it is outstanding until you
+  // ACT on it, not until you glance at it. That is why this is cheap.
+  const { data: pendingTags } = useMyPendingTags();
+  const tagAlerts = (pendingTags ?? []).length;
   const incoming = rows && userId ? deriveIncoming(rows, userId) : [];
   const friends = rows && userId ? deriveFriends(rows, userId) : [];
 
@@ -90,11 +101,20 @@ const Social = () => {
           <Button
             variant="secondary"
             size="icon"
-            className="h-10 w-10 rounded-full"
-            aria-label="Activity — likes and comments on your nights"
+            className="relative h-10 w-10 rounded-full"
+            aria-label={
+              tagAlerts > 0
+                ? `Activity — ${tagAlerts} tag${tagAlerts === 1 ? "" : "s"} waiting on you`
+                : "Activity — likes and comments on your nights"
+            }
             onClick={() => setActivityOpen(true)}
           >
             <Bell className="h-4 w-4" aria-hidden="true" />
+            {tagAlerts > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {tagAlerts}
+              </span>
+            )}
           </Button>
           <Button
             size="icon"

@@ -190,7 +190,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!supabase) return;
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/profile` },
+      options: {
+        redirectTo: `${window.location.origin}/profile`,
+        // Always offer the account chooser. Without this Google reuses whatever
+        // session the browser already holds, so signing out and back in lands
+        // you straight back in the SAME account with no prompt — which reads as
+        // "sign out is broken" rather than "Google remembered you", and makes
+        // testing with a second account impossible on one device.
+        queryParams: { prompt: "select_account" },
+      },
     });
   },
 
