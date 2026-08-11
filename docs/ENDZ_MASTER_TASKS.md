@@ -524,6 +524,50 @@ It now calls `bucketForScore()`, so the edges live in one place.
 **If the bands ever move again, the SQL script moves with them** — it is the
 same arithmetic as `scoreFor()` in a second language.
 
+### Friend-visible ranked lists — SHIPPED 2026-08-10, gate NOT yet proved live
+
+Your Been list is visible to accepted friends: a `Been` stat on `/u/:username`
+opening `/u/:username/been`, read-only by construction. `venue_ratings` stays
+owner-only — the friendship check lives in three SECURITY DEFINER functions
+(`are_friends`, `friend_ranked_list`, `friend_profile_stats`), because widening
+that table's SELECT policy would put a `friendships` subquery inside a policy
+other policies already read: the 42P17 recursion shape that took the feed down
+on 2026-08-09. Merged `5d7d043`. SQL in `scripts/2026-08-10-friend-ranked-list.sql`,
+pasted and recorded in `endz-schema.sql`.
+
+**Colton's calls:** the whole list is shared, tail included — friends-only
+rather than public, and a list people believe is truncated is one they rate
+dishonestly, which poisons the recommendations reading the same ratings. Saves
+are NOT shared: `venue_saves` has its own per-user visibility setting and
+folding it in here would overrule someone who set their saves to nobody.
+
+**⚠️ THE FINDING WORTH REMEMBERING.** `are_friends(a, b)` shipped in review
+granted to `authenticated`. SECURITY DEFINER, so it bypasses `friendships` RLS,
+and it took two arbitrary person ids without anchoring either to the caller.
+Every signed-in user can read every profile id, so it was a pairwise oracle —
+iterate the profile list, reconstruct the app's entire friendship graph. This
+schema **already documented that exact trap** on `post_has_collab_for_me`
+(endz-schema.sql:2053: "takes no viewer argument ... so it cannot be used to
+probe a third party's friendships"). Caught by the security review agent, not by
+types or tests. Fixed twice over: EXECUTE revoked from `authenticated` as well
+as anon/public, and the body now refuses to answer about a pair the caller is
+not part of.
+
+**Proved live 2026-08-10** (11/11): anon cannot execute any of the three,
+`are_friends` is not client-callable, `pg_temp` is pinned on all three,
+`venue_ratings`' four policies unchanged.
+
+**STILL OWED — needs Colton's second account.** None of the above proves the
+gate's *behaviour*. Sign in as `clsneaks01` and confirm: as an accepted friend
+you see the Been count and the full list; not as a friend you see neither, and
+`/u/<handle>/been` typed directly returns the ambiguous empty state. Until that
+runs, the friendship gate is proved by reading, not by evidence.
+
+**Also fixed in review:** viewer-keyed cache (an unfriended user kept seeing the
+list for 30s with no refetch), `been_count` joined on `is_active` so it matches
+the list length, `friend_count` deduped (a pair can hold two accepted rows), and
+failed fetches no longer rendering as "they aren't your friend".
+
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
 ### Open after the 2026-08-09 session — NOT built, each needs its own gate
