@@ -12,6 +12,7 @@ import { getEnrichment } from "@/data/enrichment";
 import { activityCopy } from "@/lib/heat/copy";
 import { useOneVenueHeat } from "@/hooks/useVenueHeat";
 import { cn } from "@/lib/utils";
+import CrowdMeter from "@/components/CrowdMeter";
 
 /** The blurb plus its Google attribution, in the typography both paths share. */
 function Blurb({ venue, about }: { venue: Venue; about: string }) {
@@ -52,6 +53,9 @@ export default function ActivitySection({ venue }: { venue: Venue }) {
       <h3 className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">Activity</h3>
 
       <p className="flex items-center gap-1.5 flex-wrap">
+        {/* Before the words, so the eye gets the magnitude first and the
+            sentence explains it — the meter is the summary, not a footnote. */}
+        <CrowdMeter score={heat.score} label={heat.label} />
         <span className={cn("text-sm font-semibold", hot && "text-[hsl(var(--hot))]")}>
           {hot && <Flame className="h-3.5 w-3.5 inline mr-1 -mt-0.5" />}
           {copy.status}
