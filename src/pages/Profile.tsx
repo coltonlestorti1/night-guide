@@ -1,9 +1,14 @@
+/**
+ * Your profile — who you are and what you've been up to. Nothing else.
+ *
+ * Settings used to live below the Activity feed on this page, which meant they
+ * sat underneath an unbounded list: you scrolled past your nights to reach
+ * Ghost mode, and every setting queued in §14 would have pushed sign-out
+ * further down. They now live at /settings behind the ☰ button.
+ */
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useConfigStore } from "@/store/config";
 import { useAuthStore } from "@/store/auth";
-import { AGE_BANDS, AgeBand, getStoredAgeBand, storeAgeBand } from "@/lib/agePref";
-import { useMyAge } from "@/hooks/useMyAge";
 import { useMyFriendships } from "@/hooks/useFriends";
 import { useMyRatings } from "@/hooks/useMyRatings";
 import { useSaves } from "@/hooks/useSaves";
@@ -12,98 +17,18 @@ import { beenList } from "@/lib/night/lists";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import ProfileHeader from "@/components/ProfileHeader";
 import MyActivity from "@/components/night/MyActivity";
-import SaveVisibilityRow from "@/components/SaveVisibilityRow";
-import DeleteAccountDialog from "@/components/DeleteAccountDialog";
-import { Input } from "@/components/ui/input";
+import TaggedPosts from "@/components/night/TaggedPosts";
+import ProfileTabs, { type ProfileTab } from "@/components/night/ProfileTabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Switch } from "@/components/ui/switch";
-import { ChevronDown, Flag, Ghost, LogOut, MapPin, Pencil } from "lucide-react";
+import { MapPin, Menu, Pencil } from "lucide-react";
 import { collegeLabel } from "@/data/colleges";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-
-import { SUPPORT_EMAIL } from "@/lib/constants";
-
-/** Uppercase-tracking section label, matching the app's header vocabulary. */
-const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <p className="mb-2 mt-8 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-    {children}
-  </p>
-);
-
-/** Developer-only config (API base URL, Supabase overrides). */
-const DevSettings = () => {
-  const { apiBaseUrl, supabaseUrl, supabaseAnonKey, setConfig } = useConfigStore();
-  const [api, setApi] = useState(apiBaseUrl ?? "");
-  const [sUrl, setSUrl] = useState(supabaseUrl ?? "");
-  const [sAnon, setSAnon] = useState(supabaseAnonKey ?? "");
-  const [open, setOpen] = useState(false);
-
-  const save = () =>
-    setConfig({
-      apiBaseUrl: api || undefined,
-      supabaseUrl: sUrl || undefined,
-      supabaseAnonKey: sAnon || undefined,
-    });
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen} className="mt-10">
-      <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-        <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-        Developer settings
-      </CollapsibleTrigger>
-      <CollapsibleContent className="mt-4 grid gap-4 max-w-2xl">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Public API Base URL</label>
-          <Input placeholder="https://api.yourdomain.com" value={api} onChange={(e) => setApi(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Supabase URL</label>
-          <Input placeholder="https://xyzcompany.supabase.co" value={sUrl} onChange={(e) => setSUrl(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Supabase Publishable Key</label>
-          <Input placeholder="sb_publishable_..." value={sAnon} onChange={(e) => setSAnon(e.target.value)} />
-        </div>
-        <div>
-          <Button onClick={save} variant="secondary" size="sm">Save</Button>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
 
 const Profile = () => {
-  const { status, session, profile, signInWithGoogle, signOut, setGhostMode } = useAuthStore();
+  const { status, session, profile, signInWithGoogle } = useAuthStore();
   const [signingIn, setSigningIn] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [ageBand, setAgeBand] = useState<AgeBand | null>(() => getStoredAgeBand());
-  const { age: myAge, fromBirthday } = useMyAge();
-
-  const pickAgeBand = (band: AgeBand) => {
-    storeAgeBand(band);
-    setAgeBand(band);
-  };
-
-  // Disabled while in flight. The store's sequence guard keeps a stale
-  // response from repainting the toggle, but it cannot control which write
-  // lands last in the DATABASE — and "older write wins" can leave the switch
-  // reading hidden while the policies still see false. One request at a time
-  // removes that possibility instead of trying to reconcile it.
-  const [ghostBusy, setGhostBusy] = useState(false);
-
-  const handleGhostToggle = async (next: boolean) => {
-    setGhostBusy(true);
-    try {
-      await setGhostMode(next);
-    } catch {
-      toast.error("Couldn't update ghost mode. Try again.");
-    } finally {
-      setGhostBusy(false);
-    }
-  };
+  const [tab, setTab] = useState<ProfileTab>("activity");
 
   const handleSignIn = async () => {
     setSigningIn(true);
@@ -131,6 +56,7 @@ const Profile = () => {
   const meta = session?.user.user_metadata as { full_name?: string; name?: string; avatar_url?: string; picture?: string } | undefined;
   const displayName = profile?.display_name || meta?.full_name || meta?.name || "";
   const avatarUrl = profile?.avatar_url || meta?.avatar_url || meta?.picture || "";
+  const myId = session?.user.id;
 
   return (
     <section className="relative container pt-6 pb-24 max-w-lg">
@@ -141,11 +67,27 @@ const Profile = () => {
         style={{ background: "radial-gradient(ellipse 70% 100% at 18% 0%, hsl(var(--primary)) 0%, transparent 65%)" }}
       />
 
-      <header className="relative mb-6 animate-fade-in">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-          You on the map
-        </p>
-        <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Profile</h1>
+      <header className="relative mb-6 flex items-start justify-between gap-4 animate-fade-in">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+            You on the map
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Profile</h1>
+        </div>
+
+        {/* Present even when signed out: /settings has its own signed-out
+            state, and a control that appears only sometimes is harder to find
+            than one that is always in the same corner. */}
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="-mr-2 mt-1 rounded-xl text-muted-foreground"
+        >
+          <Link to="/settings" aria-label="Settings">
+            <Menu className="h-5 w-5" aria-hidden="true" />
+          </Link>
+        </Button>
       </header>
 
       {status === "loading" ? (
@@ -186,6 +128,7 @@ const Profile = () => {
             avatarUrl={avatarUrl}
             createdAt={profile?.created_at}
             collegeLine={collegeLabel(profile?.college_slug, profile?.class_year)}
+            bio={profile?.bio}
             stats={[
               { label: "Friends", value: friendCount, to: "/friends" },
               { label: "Been", value: beenCount, to: "/lists?tab=been" },
@@ -203,114 +146,21 @@ const Profile = () => {
             }
           />
 
-          <SectionLabel>Activity</SectionLabel>
-          <div className="mb-6">
-            <MyActivity />
+          <div className="mt-6">
+            <ProfileTabs value={tab} onChange={setTab} />
           </div>
 
-          <SectionLabel>Preferences</SectionLabel>
-          {myAge != null && fromBirthday ? (
-            // Real age from the onboarding birthday. Shown to the account owner
-            // only — birthday and gender live in profile_private precisely
-            // because `profiles` is readable by every signed-in user, and this
-            // renders inside the owner's own settings page (Colton, 2026-08-07:
-            // "just me for now").
-            <div className="glass rounded-2xl p-4">
-              <div className="font-medium text-sm">
-                Your age <span className="text-muted-foreground font-normal">· {myAge}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                From the birthday you gave when you signed up. Only you can see it — it
-                sharpens your picks and is never shown on your profile.
-              </p>
-            </div>
-          ) : (
-          <div className="glass rounded-2xl p-4">
-            <div className="font-medium text-sm">Your age range</div>
-            <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-              Sharpens your picks in Discover. Stays on this device.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {AGE_BANDS.map((band) => (
-                <button
-                  key={band}
-                  type="button"
-                  onClick={() => pickAgeBand(band)}
-                  aria-pressed={ageBand === band}
-                  className={cn(
-                    "rounded-xl px-4 py-2.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    ageBand === band
-                      ? "bg-primary text-primary-foreground shadow-glow"
-                      : "bg-secondary/60 text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {band}
-                </button>
-              ))}
-            </div>
-          </div>
-          )}
-
-          <SectionLabel>Privacy</SectionLabel>
-          <div className="flex items-start gap-3 glass rounded-2xl p-4">
-            <span
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
-                profile?.ghost_mode
-                  ? "bg-primary-soft text-primary"
-                  : "bg-card text-muted-foreground border border-border",
-              )}
-            >
-              <Ghost className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium text-sm">Ghost mode</div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                When on, your check-ins won't show to your friends.
-              </p>
-            </div>
-            <Switch
-              checked={!!profile?.ghost_mode}
-              onCheckedChange={handleGhostToggle}
-              disabled={ghostBusy}
-              aria-label="Ghost mode"
-              className="mt-1.5"
-            />
-          </div>
-
-          <SaveVisibilityRow />
-
-          <SectionLabel>Account &amp; support</SectionLabel>
-          <div className="glass rounded-2xl divide-y divide-border/60 overflow-hidden">
-            <a
-              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("ENDZ problem report")}`}
-              className="flex items-center gap-3 p-4 text-sm font-medium transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-            >
-              <Flag className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              Report a problem
-            </a>
-            <DeleteAccountDialog username={profile?.username ?? ""} />
-            <button
-              type="button"
-              onClick={signOut}
-              className="flex w-full items-center gap-3 p-4 text-sm font-medium text-left transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-            >
-              <LogOut className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              Sign out
-            </button>
+          <div className="mt-4">
+            {tab === "activity" ? (
+              <MyActivity />
+            ) : (
+              myId && <TaggedPosts userId={myId} isSelf />
+            )}
           </div>
 
           <EditProfileDialog open={editing} onOpenChange={setEditing} />
         </>
       )}
-
-      <DevSettings />
-
-      <div className="mt-6 text-center text-xs text-muted-foreground">
-        <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-        <span className="mx-1.5">·</span>
-        <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-      </div>
     </section>
   );
 };

@@ -22,7 +22,7 @@ Decision Log as they're made.
 | 11 | Sign-up demographics (gender, age, …) | NOT DISCUSSED | Today `profiles` = username/avatar/ghost_mode only; no gender/age collected. Needs profiles schema change + privacy disclosure → §11 |
 | 12 | Group check-in & party size | NOT DISCUSSED | Today check-in is solo, counts 1 head; `activity` count drives pin tiers + "N here now". Party size would change the live crowd signal → §12 |
 | 13 | Heat map layer | NOT DISCUSSED | No heat layer today; map uses discrete category pins + activity rings. A density/activity heat map is a new visualization → §13 |
-| 14 | Profile buildout (profile + settings hub) | PHASE 1 SHIPPED (2026-07-19) | Edit profile (name/username/photo), saved spots, age pref, privacy + account sections live on main + production. Avatars bucket live; photo upload verified E2E 2026-07-19. Destination = full IG-style profile/settings → §14 + Decision Log |
+| 14 | Profile buildout (profile + settings hub) | PHASE 2 BUILT 2026-08-10 (`feat/profile-reorg`) — settings split to `/settings` behind ☰, age moved into Edit profile, Activity/Tagged tabs on both profiles, rate-on-accept. **BLOCKED ON DDL:** `scripts/2026-08-10-tagged-post-score.sql` must be pasted before merge. Phase 1 shipped 2026-07-19 | Edit profile (name/username/photo), saved spots, age pref, privacy + account sections live on main + production. Avatars bucket live; photo upload verified E2E 2026-07-19. Destination = full IG-style profile/settings → §14 + Decision Log |
 | 15 | Social page buildout | NOT DISCUSSED | Foundation exists (`Social.tsx` + `components/social/`): requests, search, suggested friends, friends list, share handle, blocked section, out-tonight rows. No plans/crew/friends-tonight surfaces → §15 |
 | 16 | Going-out crew | NOT DISCUSSED | Promoted from backlog (tabled 2026-07-13). Nothing built; needs `close_groups`/`close_group_members`. Naming + privacy defaults open → §16 |
 | 17 | Group-size-aware discovery | **SHIPPED 2026-08-09** (gate passed, built, merged, pushed) | Find the Move now asks "Who's coming?" — Just me · Two of us · 3–5 · 6+. **`goodForGroups` was evaluated against the live Google API and REJECTED: 46 true / 0 false / 10 absent across 56 venues — it never says no, so it ranks nothing.** `reservable` was adopted instead (28 true / 22 false / 6 absent), and it is the ONLY group fact the app states out loud, because no capacity data exists anywhere. Big groups get reservations +1.5, outdoor/rooftop +1, cheap +0.5, club +0.5; solo/two lean cocktail bars and lounges. **A stated vibe preference beats the group-size inference** — group size only touches the crowd dimension when the user left it blank. Curated `group_capacity` (the only path to ever saying "fits your six") remains content work, not built. → §17 |
@@ -604,6 +604,17 @@ zoom · sheets panning sideways · splash screen · desktop date picker.
 
 **Known work, not started:**
 
+- **The schema drift guard cannot see embedded joins** (found 2026-08-10).
+  `plainColumns` (`scripts/check-schema.mjs:180`) filters out every part of a
+  select containing `(`, so `author:profiles!fk(...)`, `person:profiles!fk(...)`
+  and `tag:night_post_tags!inner(...)` are dropped wholesale — only the named
+  relation's top-level columns are ever checked. Proved by pointing it at a
+  select for `night_post_tags.score`, a column that did not exist: PostgREST
+  rejects the query with 42703, and the guard printed `ok`. This is the guard's
+  own failure mode (a silently-skipped query is exactly the one that breaks in
+  production) and it covers most post queries in the app. Fixing it will
+  surface unrelated drift, so it wants its own pass rather than a drive-by.
+
 - **Cap `listCommentPreviews`.** It fetches every comment BODY for every post
   on the feed just to count them. Fine at current volume; it is also the
   pattern likes copied and the next feature will copy again. Cap it or move to
@@ -615,10 +626,10 @@ zoom · sheets panning sideways · splash screen · desktop date picker.
   drive-by edit.
 - **Tagged people contributing photos** (collab slice C as originally scoped).
   Needs the photo policy widened from author-only.
-- **Managing existing tags from your profile.** Pending tags surface in
-  Activity, but there is no list of tags you have already accepted where you
-  could change your mind between `tag` and `collab`, or remove one later.
-  Colton asked for this on 2026-08-09; only the pending half was built.
+- ~~**Managing existing tags from your profile.**~~ **BUILT 2026-08-10** on
+  `feat/profile-reorg` as the Tagged tab — see §14. Each accepted tag now
+  carries an overflow menu (switch `tag` ⇄ `collab`, rate the spot, remove
+  yourself).
 - **Fold friend requests and plan invites into Activity** (the "Option C" we
   deliberately deferred). Chosen against on 2026-08-09 because a like clears
   when seen and a request must not. Revisit if distribution widens and three

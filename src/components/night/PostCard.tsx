@@ -77,6 +77,7 @@ export default function PostCard({
   commentPreview,
   likes,
   tags,
+  menuExtra,
 }: {
   post: FeedPost;
   venue?: Venue;
@@ -86,6 +87,14 @@ export default function PostCard({
   likes?: LikeSummary;
   /** Accepted tags on this post ('tag' | 'collab'), for the "with Sam" line. */
   tags?: PostTag[];
+  /**
+   * Extra items for the overflow menu, rendered above the built-in ones.
+   *
+   * A slot rather than a `tagState` prop: managing your tag on someone else's
+   * post is the Tagged tab's business, and PostCard renders posts in four
+   * different places that have no such concept.
+   */
+  menuExtra?: React.ReactNode;
 }) {
   const myId = useAuthStore((s) => s.session?.user.id);
   const remove = useDeletePost();
@@ -163,6 +172,7 @@ export default function PostCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {menuExtra}
               {mine ? (
                 <>
                   {/* Editing reuses the publish flow rather than duplicating

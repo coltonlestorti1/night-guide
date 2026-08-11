@@ -13,6 +13,7 @@
 import { getSupabase } from "@/lib/supabase";
 import type { Audience } from "@/lib/night/audience";
 import type { FriendProfile } from "@/lib/friends";
+import type { TagState } from "@/lib/night/tags";
 import { listPhotoPathsForPost, removeStoredPhotos } from "@/lib/night/photos";
 
 const AUTHOR_COLS = "id, username, display_name, avatar_url";
@@ -36,7 +37,7 @@ const POST_SELECT = `id, venue_id, night_date, note, visibility, score, created_
  */
 const PROFILE_TAGGED_SELECT = `id, venue_id, night_date, note, visibility, score, created_at,
    author:profiles!night_posts_user_id_fkey(${AUTHOR_COLS}),
-   tag:night_post_tags!inner(tagged_user_id, state)`;
+   tag:night_post_tags!inner(tagged_user_id, state, score)`;
 
 export type FeedPost = {
   id: string;
@@ -47,6 +48,12 @@ export type FeedPost = {
   /** The rating as it stood when this was published. Null if never rated. */
   score: number | null;
   createdAt: string;
+  /**
+   * Set only on posts from the Tagged tab: the caller's tag state on this
+   * post, which the overflow menu needs to render the right choice. Undefined
+   * on authored posts, where the concept does not apply.
+   */
+  tagState?: TagState;
   author: FriendProfile;
 };
 
@@ -61,6 +68,28 @@ type DbPost = {
   author: FriendProfile;
 };
 
+/**
+ * A post row carrying the tag embed, for the Tagged tab.
+ *
+ * `night_post_tags` is to-many off `night_posts` (a night can name several
+ * people), so PostgREST returns the embed as an ARRAY even though the
+ * `tagged_user_id` filter narrows it to one row. Typed as both because a
+ * single-object embed would silently become `undefined` under `[0]` and every
+ * tagged card would lose its score.
+ */
+export type DbTaggedPost = DbPost & {
+  tag: DbTagEmbed | DbTagEmbed[] | null;
+};
+
+type DbTagEmbed = {
+  tagged_user_id: string;
+  state: TagState;
+  score: number | string | null;
+};
+
+const firstTag = (t: DbTaggedPost["tag"]): DbTagEmbed | undefined =>
+  Array.isArray(t) ? t[0] : (t ?? undefined);
+
 const toFeedPost = (r: DbPost): FeedPost => ({
   id: r.id,
   venueId: r.venue_id,
@@ -72,6 +101,24 @@ const toFeedPost = (r: DbPost): FeedPost => ({
   createdAt: r.created_at,
   author: r.author,
 });
+
+/**
+ * Same mapping, except the score is the TAGGED person's off the tag row.
+ *
+ * The post's own `score` column is the author's and is deliberately discarded
+ * here: on your profile, a night shows what YOU thought of the place. A tag
+ * accepted but never rated has a null score, which PostCard already renders as
+ * "went to" with no ring.
+ */
+export const toTaggedFeedPost = (r: DbTaggedPost): FeedPost => {
+  const tag = firstTag(r.tag);
+  const raw = tag?.score;
+  return {
+    ...toFeedPost(r),
+    score: raw === null || raw === undefined ? null : Number(raw),
+    tagState: tag?.state,
+  };
+};
 
 /** Everything the caller is allowed to see, newest first. */
 export async function listFeed(limit = 50): Promise<FeedPost[]> {
@@ -102,13 +149,6 @@ export async function listMyPostsForNight(
   return ((data ?? []) as unknown as DbPost[]).map(toFeedPost);
 }
 
-/**
- * Publish, or update an existing post for the same venue and night.
- *
- * Upsert rather than insert: reopening the sheet to change a note or narrow the
- * audience is the same act as publishing, and the unique constraint makes a
- * second insert an error the user did not cause.
- */
 /** The caller's own posts, newest first — the profile Activity tab. Includes
  *  `nobody` posts: a private entry is still your activity. */
 export async function listMyPosts(userId: string, limit = 20): Promise<FeedPost[]> {
@@ -124,6 +164,13 @@ export async function listMyPosts(userId: string, limit = 20): Promise<FeedPost[
   return ((data ?? []) as unknown as DbPost[]).map(toFeedPost);
 }
 
+/**
+ * Publish, or update an existing post for the same venue and night.
+ *
+ * Upsert rather than insert: reopening the sheet to change a note or narrow the
+ * audience is the same act as publishing, and the unique constraint makes a
+ * second insert an error the user did not cause.
+ */
 export async function publishPost(input: {
   userId: string;
   venueId: string;
@@ -177,54 +224,49 @@ export async function deletePost(postId: string): Promise<void> {
 
 
 /**
- * Someone else's nights, for their profile.
- *
- * Two sources, because a collab is meant to land here: posts they AUTHORED,
- * and posts they were TAGGED in and accepted ('tag' or 'collab'). Without the
- * second half, approving a collab would have no visible effect anywhere, which
- * is the whole payoff of the feature.
+ * Posts someone AUTHORED — the Activity tab on their profile.
  *
  * RLS does the filtering. Every row returned is one the CALLER is allowed to
  * see, so this shows a different set to different viewers by design — a
  * friends-only post is simply absent for a stranger. There is deliberately no
  * client-side audience check to disagree with the policy.
  */
-export async function listProfilePosts(profileUserId: string, limit = 20): Promise<FeedPost[]> {
+export async function listAuthoredPosts(profileUserId: string, limit = 20): Promise<FeedPost[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("night_posts")
+    .select(POST_SELECT)
+    .eq("user_id", profileUserId)
+    .order("night_date", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as unknown as DbPost[]).map(toFeedPost);
+}
 
-  const [mine, tagged] = await Promise.all([
-    supabase
-      .from("night_posts")
-      .select(POST_SELECT)
-      .eq("user_id", profileUserId)
-      .order("night_date", { ascending: false })
-      .limit(limit),
-    // !inner so the join FILTERS. Without it every post comes back with a null
-    // tag embed rather than only the tagged ones.
-    supabase
-      .from("night_posts")
-      .select(PROFILE_TAGGED_SELECT)
-      .eq("tag.tagged_user_id", profileUserId)
-      .in("tag.state", ["tag", "collab"])
-      .order("night_date", { ascending: false })
-      .limit(limit),
-  ]);
-  if (mine.error) throw mine.error;
-  if (tagged.error) throw tagged.error;
-
-  const rows = [
-    ...((mine.data ?? []) as unknown as DbPost[]),
-    ...((tagged.data ?? []) as unknown as DbPost[]),
-  ];
-  // A post can arrive from both queries only if someone tagged themselves,
-  // which the INSERT policy forbids — but dedupe anyway rather than trust it,
-  // because a duplicate here is a React key collision.
-  const seen = new Set<string>();
-  const unique = rows.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)));
-
-  return unique
-    .map(toFeedPost)
-    .sort((a, b) => (a.nightDate < b.nightDate ? 1 : a.nightDate > b.nightDate ? -1 : 0))
-    .slice(0, limit);
+/**
+ * Posts someone was TAGGED in and accepted — the Tagged tab.
+ *
+ * The score shown is the TAGGED person's, read off the tag row, not the
+ * author's off the post. Both are denormalized snapshots for the same reason:
+ * `venue_ratings` is owner-only, so a viewer can never read either party's
+ * rating directly. Whose profile you are on decides whose opinion you see.
+ *
+ * 'pending' is excluded — an undecided tag is an item of business in Activity,
+ * not a night on a profile.
+ */
+export async function listTaggedPosts(profileUserId: string, limit = 20): Promise<FeedPost[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  // !inner so the join FILTERS. Without it every post comes back with a null
+  // tag embed rather than only the tagged ones.
+  const { data, error } = await supabase
+    .from("night_posts")
+    .select(PROFILE_TAGGED_SELECT)
+    .eq("tag.tagged_user_id", profileUserId)
+    .in("tag.state", ["tag", "collab"])
+    .order("night_date", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return ((data ?? []) as unknown as DbTaggedPost[]).map(toTaggedFeedPost);
 }

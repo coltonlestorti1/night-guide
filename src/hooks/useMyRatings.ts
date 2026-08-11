@@ -22,7 +22,16 @@ import type { Bucket } from "@/lib/night/ranking";
  * on the client knows a post just changed. Without this, rating a second venue
  * re-spreads the band and the feed keeps showing the old number until a reload.
  */
-const POST_SCORE_KEYS = ["night-feed", "my-posts", "my-activity", "profile-posts"];
+const POST_SCORE_KEYS = [
+  "night-feed",
+  "my-posts",
+  "my-activity",
+  "authored-posts",
+  // Tagged cards render the TAGGED person's score off night_post_tags,
+  // kept in step by the same trigger. Without this key, rating a spot you
+  // were tagged at leaves the old ring on your Tagged tab until a reload.
+  "tagged-posts",
+];
 
 function invalidateRatingViews(qc: ReturnType<typeof useQueryClient>, userId?: string) {
   qc.invalidateQueries({ queryKey: ["my-ratings", userId] });
