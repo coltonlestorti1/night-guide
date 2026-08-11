@@ -34,11 +34,22 @@ const PERSON = "id, username, display_name, avatar_url";
 type DbTag = { post_id: string; state: TagState; person: FriendProfile };
 
 /**
- * Accepted tags on the given posts, for the "with Sam" line.
+ * Tags on the given posts, for the "with Sam" line.
  *
- * RLS already hides 'pending' and 'private' from third parties, but the filter
- * is here too because the AUTHOR can see their own pending tags and must not
- * see them rendered as though the person had agreed.
+ * Includes 'pending' since 2026-08-11. Being NAMED on a post rides the post's
+ * own audience — if you can see the night, you can see who was on it — and RLS
+ * enforces exactly that, so there is no client-side filtering to disagree with
+ * it. Accepting is a different question: it is what makes the night a MUTUAL
+ * post and puts it on the tagged person's profile, and listTaggedPosts still
+ * requires 'tag' or 'collab' for that.
+ *
+ * This previously filtered to accepted states, on the reasoning that the author
+ * must not see a pending tag "rendered as though the person had agreed". The
+ * result was that a tag was invisible to everyone including the person who made
+ * it — a saved tag and a failed one looked identical, which is how three real
+ * tags went unnoticed by both sides.
+ *
+ * 'private' stays excluded: that state belongs to posts narrowed to 'nobody'.
  */
 export async function listTagsForPosts(postIds: string[]): Promise<PostTag[]> {
   const supabase = getSupabase();
@@ -47,7 +58,7 @@ export async function listTagsForPosts(postIds: string[]): Promise<PostTag[]> {
     .from("night_post_tags")
     .select(`post_id, state, person:profiles!night_post_tags_tagged_user_id_fkey(${PERSON})`)
     .in("post_id", postIds)
-    .in("state", ["tag", "collab"]);
+    .in("state", ["pending", "tag", "collab"]);
   if (error) throw error;
   return ((data ?? []) as unknown as DbTag[]).map((r) => ({
     postId: r.post_id,

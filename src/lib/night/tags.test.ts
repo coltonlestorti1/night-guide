@@ -28,3 +28,23 @@ describe("withLine", () => {
     expect(withLine(undefined)).toBeNull();
   });
 });
+
+describe("pending tags render like any other (2026-08-11)", () => {
+  // Being NAMED on a post rides the post's audience; ACCEPTING is what makes it
+  // a mutual post on the tagged person's profile. These two assert the first
+  // half — the half that used to be invisible to everyone, including the person
+  // who created the tag.
+  it("names a pending person on the with-line", () => {
+    expect(withLine([t("p", "will", "pending")])).toBe("with will");
+  });
+
+  it("does not distinguish pending from accepted in the line", () => {
+    const mixed = [t("p", "will", "pending"), t("p", "sam", "collab")];
+    expect(withLine(mixed)).toBe("with will and sam");
+  });
+
+  it("groups pending tags onto their post", () => {
+    const out = tagsByPost([t("p1", "will", "pending")]);
+    expect(out.get("p1")).toHaveLength(1);
+  });
+});
