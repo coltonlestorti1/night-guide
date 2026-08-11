@@ -212,8 +212,19 @@ export async function deletePost(postId: string): Promise<void> {
   // to it and they are stranded in the bucket permanently.
   const paths = await listPhotoPathsForPost(postId);
 
-  const { error } = await supabase.from("night_posts").delete().eq("id", postId);
+  // `.select()` so the delete reports what it actually removed. Without it a
+  // delete RLS refuses returns no rows AND no error, and the caller reports
+  // success — the same silence that hid the 2026-07-14 vibe bug for weeks, and
+  // that publishPost immediately above already guards against. The DELETE
+  // policy currently permits this, so today it is defence rather than a fix;
+  // the point is that a future policy change must fail loudly, not quietly.
+  const { data, error } = await supabase
+    .from("night_posts")
+    .delete()
+    .eq("id", postId)
+    .select("id");
   if (error) throw error;
+  if (!data?.length) throw new Error("Post delete matched no rows");
 
   // Files last, and a failure here does not fail the delete: a retained file
   // with no row is invisible and the admin sweep collects it, whereas a
