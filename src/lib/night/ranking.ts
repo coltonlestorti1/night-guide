@@ -13,7 +13,8 @@
  * which put a lone "Good" at 5.0 and a lone "Not great" at 1.7 — the scale read
  * as far harsher than the words did, and a 1.7 looks like a place burned down.
  * A lone "Great" now starts at 8.5, "Good" at 6.0, "Not great" at 4.0, and
- * nothing scores below 3.0.
+ * nothing scores below 3.0. The Great band stops at 9.9 because 10.0 is an
+ * award (see TOP_SCORE), not a ceiling.
  * Comparisons only ever run inside one bucket, so a venue you loved is never
  * weighed against one you disliked — that is the whole reason for asking for a
  * bucket before asking for a comparison.
@@ -27,13 +28,24 @@ export const BUCKET_LABELS: Record<Bucket, string> = {
 };
 
 export const BANDS: Record<Bucket, { lo: number; hi: number }> = {
-  great: { lo: 7.0, hi: 10.0 },
+  great: { lo: 7.0, hi: 9.9 },
   good: { lo: 5.0, hi: 6.9 },
   not_great: { lo: 3.0, hi: 4.9 },
 };
 
 /**
- * How many venues must sit in "Great" before its #1 is awarded a flat 10.0.
+ * A perfect score. Deliberately OUTSIDE every band: it is an award for the top
+ * of a big enough Great list, not the ceiling the spread creeps toward.
+ *
+ * Making it the band ceiling instead had two costs. It could never actually be
+ * reached, so "10" was decorative; and it pulled the whole Great spread upward,
+ * which put #1 of two at 9.3 when 9.2 is the number that reads right for a list
+ * that small.
+ */
+export const TOP_SCORE = 10.0;
+
+/**
+ * How many venues must sit in "Great" before its #1 is awarded TOP_SCORE.
  *
  * Below this the top of the band is approached but never reached, which is
  * correct while a ranking is thin: a 10 should mean "the best of a set I have
@@ -48,14 +60,14 @@ export const TOP_SCORE_MIN = 5;
  * the band. Rounded to one decimal, which is also how it is displayed.
  *
  * One exception: the top of a Great list with TOP_SCORE_MIN or more entries
- * scores a flat 10.0. The even spread only ever approaches the band ceiling, so
- * without this a favourite place could never actually be a 10 — and "my number
- * one is a 10" is the whole reward for keeping the list honest.
+ * scores TOP_SCORE, which sits above the band entirely. "My number one is a 10"
+ * is the reward for keeping the list honest, and it has to be reachable to mean
+ * anything.
  */
 export function scoreFor(bucket: Bucket, rankPosition: number, bucketSize: number): number {
   const { lo, hi } = BANDS[bucket];
   const n = Math.max(bucketSize, 1); // a caller passing 0 means "just this one"
-  if (bucket === "great" && rankPosition === 0 && n >= TOP_SCORE_MIN) return hi;
+  if (bucket === "great" && rankPosition === 0 && n >= TOP_SCORE_MIN) return TOP_SCORE;
   const raw = hi - ((rankPosition + 0.5) * (hi - lo)) / n;
   return Math.round(raw * 10) / 10;
 }

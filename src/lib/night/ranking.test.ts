@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BANDS, BUCKET_LABELS, TOP_SCORE_MIN, bucketForScore, insertAt, nextComparison, scoreFor, type Bucket } from "./ranking";
+import { BANDS, BUCKET_LABELS, TOP_SCORE, TOP_SCORE_MIN, bucketForScore, insertAt, nextComparison, scoreFor, type Bucket } from "./ranking";
 
 describe("BUCKET_LABELS", () => {
   it("uses the exact agreed copy", () => {
@@ -14,7 +14,8 @@ describe("BANDS", () => {
     // The floor is deliberately 3.0, not 0: "Not great" means the night was a
     // let-down, not that the place should be condemned.
     expect(BANDS.not_great.lo).toBe(3.0);
-    expect(BANDS.great.hi).toBe(10);
+    expect(BANDS.great.hi).toBe(9.9);
+    expect(TOP_SCORE).toBeGreaterThan(BANDS.great.hi);
     expect(BANDS.not_great.hi).toBeLessThan(BANDS.good.lo);
     expect(BANDS.good.hi).toBeLessThan(BANDS.great.lo);
   });
@@ -22,7 +23,7 @@ describe("BANDS", () => {
 
 describe("scoreFor", () => {
   it("starts a lone entry on the baseline Colton set", () => {
-    // 7.0-10.0 -> 8.5, and the other two follow from their own bands.
+    // 7.0-9.9 -> 8.45 -> 8.5, and the other two follow from their own bands.
     expect(scoreFor("great", 0, 1)).toBe(8.5);
     expect(scoreFor("good", 0, 1)).toBe(6.0);
     expect(scoreFor("not_great", 0, 1)).toBe(4.0);
@@ -40,17 +41,36 @@ describe("scoreFor", () => {
     expect(scoreFor("great", 0, 2)).toBeGreaterThan(scoreFor("great", 1, 2));
   });
 
-  it("never leaves its band, at any bucket size", () => {
+  it("never leaves its band, at any bucket size — except the awarded top score", () => {
     const buckets: Bucket[] = ["great", "good", "not_great"];
     for (const b of buckets) {
       for (const size of [1, 2, 5, 20, 56]) {
         for (let i = 0; i < size; i++) {
           const s = scoreFor(b, i, size);
+          // TOP_SCORE is deliberately outside the band: it is an award for the
+          // top of a big enough Great list, not a point on the spread.
+          if (s === TOP_SCORE) {
+            expect(b).toBe("great");
+            expect(i).toBe(0);
+            expect(size).toBeGreaterThanOrEqual(TOP_SCORE_MIN);
+            continue;
+          }
           expect(s).toBeGreaterThanOrEqual(BANDS[b].lo);
           expect(s).toBeLessThanOrEqual(BANDS[b].hi);
         }
       }
     }
+  });
+
+  it("still orders every bucket strictly above the one below it", () => {
+    // The award must not break the guarantee the bands exist for: the worst
+    // Great still has to beat the best Good.
+    const worstGreat = scoreFor("great", 55, 56);
+    const bestGood = scoreFor("good", 0, 56);
+    const worstGood = scoreFor("good", 55, 56);
+    const bestNotGreat = scoreFor("not_great", 0, 56);
+    expect(worstGreat).toBeGreaterThan(bestGood);
+    expect(worstGood).toBeGreaterThan(bestNotGreat);
   });
 
   it("keeps buckets from overlapping even at their extremes", () => {
@@ -132,18 +152,18 @@ describe("insertAt", () => {
 
 describe("the top of a Great list", () => {
   it("is a flat 10.0 once the bucket reaches TOP_SCORE_MIN", () => {
-    expect(scoreFor("great", 0, TOP_SCORE_MIN)).toBe(10);
-    expect(scoreFor("great", 0, TOP_SCORE_MIN + 12)).toBe(10);
+    expect(scoreFor("great", 0, TOP_SCORE_MIN)).toBe(TOP_SCORE);
+    expect(scoreFor("great", 0, TOP_SCORE_MIN + 12)).toBe(TOP_SCORE);
   });
 
   it("is not yet a 10 while the ranking is too thin to have earned it", () => {
     for (let n = 1; n < TOP_SCORE_MIN; n++) {
-      expect(scoreFor("great", 0, n)).toBeLessThan(10);
+      expect(scoreFor("great", 0, n)).toBeLessThan(TOP_SCORE);
     }
   });
 
   it("only ever lifts #1, and only in Great", () => {
-    expect(scoreFor("great", 1, TOP_SCORE_MIN)).toBeLessThan(10);
+    expect(scoreFor("great", 1, TOP_SCORE_MIN)).toBeLessThan(TOP_SCORE);
     expect(scoreFor("good", 0, TOP_SCORE_MIN)).toBeLessThanOrEqual(BANDS.good.hi);
     expect(scoreFor("not_great", 0, TOP_SCORE_MIN)).toBeLessThanOrEqual(BANDS.not_great.hi);
   });
@@ -173,5 +193,24 @@ describe("bucketForScore", () => {
     // runs. A 1.7 has no bucket any more; it must read as the lowest one.
     expect(bucketForScore(1.7)).toBe("not_great");
     expect(bucketForScore(0)).toBe("not_great");
+  });
+});
+
+describe("the shape of a small Great list", () => {
+  it("gives #1 of two a 9.2 — the spread stops at 9.9, so 10 is not pulled into it", () => {
+    expect(scoreFor("great", 0, 2)).toBe(9.2);
+    expect(scoreFor("great", 1, 2)).toBe(7.7);
+  });
+
+  it("keeps the lone-entry baseline at 8.5 despite the lower ceiling", () => {
+    expect(scoreFor("great", 0, 1)).toBe(8.5);
+  });
+
+  it("never emits a 10 from the spread itself, at any bucket size", () => {
+    for (let n = 1; n <= 40; n++) {
+      for (let i = n === 1 ? 0 : 1; i < n; i++) {
+        expect(scoreFor("great", i, n)).toBeLessThanOrEqual(BANDS.great.hi);
+      }
+    }
   });
 });

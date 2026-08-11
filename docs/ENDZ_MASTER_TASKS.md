@@ -495,6 +495,35 @@ every rating write and delete.
 and deleting a rating nulls it (the card's verb falls back to "went to"). A post
 is no longer a frozen record of that night's score. Colton's call.
 
+### Score scale re-cut — SHIPPED + BACKFILLED 2026-08-10
+
+The bands ran 0-10 end to end, so a lone "Good" scored 5.0 and a lone "Not
+great" 1.7. The scale read far harsher than the words did. Colton set new
+baselines; the bands follow from them.
+
+**Now:** Great `7.0-9.9`, Good `5.0-6.9`, Not great `3.0-4.9`. A lone entry
+starts at **8.5 / 6.0 / 4.0** and nothing scores below 3.0.
+
+**10.0 is an award, not a ceiling** (`TOP_SCORE`, outside every band). The even
+spread only ever approaches a ceiling, so a perfect score was previously
+unreachable and therefore decorative. The top of a Great list scores a flat 10.0
+once it holds `TOP_SCORE_MIN` (5) venues — below that it stays short, because a
+10 out of two entries is a claim the ranking has not earned. Keeping the spread
+at 9.9 rather than 10.0 is also what puts #1 of a two-venue list at 9.2 instead
+of 9.3.
+
+**Caught during the change:** `PostCard` hardcoded `6.7` and `3.4` — the old band
+edges — to tint its score ring, and would have silently mistiered every score.
+It now calls `bucketForScore()`, so the edges live in one place.
+
+**Backfill:** stored scores do not recompute on read, so
+`scripts/2026-08-10-rescore-bands.sql` rewrote every existing row. Run by Colton
+2026-08-10; its in-band proof query returned **0 rows**. That write fired
+`trg_sync_night_post_score`, so posts followed automatically.
+
+**If the bands ever move again, the SQL script moves with them** — it is the
+same arithmetic as `scoreFor()` in a second language.
+
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
 ### Open after the 2026-08-09 session — NOT built, each needs its own gate
