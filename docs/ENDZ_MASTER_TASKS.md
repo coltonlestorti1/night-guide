@@ -22,7 +22,7 @@ Decision Log as they're made.
 | 11 | Sign-up demographics (gender, age, …) | NOT DISCUSSED | Today `profiles` = username/avatar/ghost_mode only; no gender/age collected. Needs profiles schema change + privacy disclosure → §11 |
 | 12 | Group check-in & party size | NOT DISCUSSED | Today check-in is solo, counts 1 head; `activity` count drives pin tiers + "N here now". Party size would change the live crowd signal → §12 |
 | 13 | Heat map layer | NOT DISCUSSED | No heat layer today; map uses discrete category pins + activity rings. A density/activity heat map is a new visualization → §13 |
-| 14 | Profile buildout (profile + settings hub) | PHASE 1 SHIPPED (2026-07-19) | Edit profile (name/username/photo), saved spots, age pref, privacy + account sections live on main + production. Avatars bucket live; photo upload verified E2E 2026-07-19. Destination = full IG-style profile/settings → §14 + Decision Log |
+| 14 | Profile buildout (profile + settings hub) | PHASE 2 BUILT 2026-08-10 (`feat/profile-reorg`) — settings split to `/settings` behind ☰, age moved into Edit profile, Activity/Tagged tabs on both profiles, rate-on-accept. **BLOCKED ON DDL:** `scripts/2026-08-10-tagged-post-score.sql` must be pasted before merge. Phase 1 shipped 2026-07-19 | Edit profile (name/username/photo), saved spots, age pref, privacy + account sections live on main + production. Avatars bucket live; photo upload verified E2E 2026-07-19. Destination = full IG-style profile/settings → §14 + Decision Log |
 | 15 | Social page buildout | NOT DISCUSSED | Foundation exists (`Social.tsx` + `components/social/`): requests, search, suggested friends, friends list, share handle, blocked section, out-tonight rows. No plans/crew/friends-tonight surfaces → §15 |
 | 16 | Going-out crew | NOT DISCUSSED | Promoted from backlog (tabled 2026-07-13). Nothing built; needs `close_groups`/`close_group_members`. Naming + privacy defaults open → §16 |
 | 17 | Group-size-aware discovery | **SHIPPED 2026-08-09** (gate passed, built, merged, pushed) | Find the Move now asks "Who's coming?" — Just me · Two of us · 3–5 · 6+. **`goodForGroups` was evaluated against the live Google API and REJECTED: 46 true / 0 false / 10 absent across 56 venues — it never says no, so it ranks nothing.** `reservable` was adopted instead (28 true / 22 false / 6 absent), and it is the ONLY group fact the app states out loud, because no capacity data exists anywhere. Big groups get reservations +1.5, outdoor/rooftop +1, cheap +0.5, club +0.5; solo/two lean cocktail bars and lounges. **A stated vibe preference beats the group-size inference** — group size only touches the crowd dimension when the user left it blank. Curated `group_capacity` (the only path to ever saying "fits your six") remains content work, not built. → §17 |
@@ -524,6 +524,50 @@ It now calls `bucketForScore()`, so the edges live in one place.
 **If the bands ever move again, the SQL script moves with them** — it is the
 same arithmetic as `scoreFor()` in a second language.
 
+### Friend-visible ranked lists — SHIPPED 2026-08-10, gate NOT yet proved live
+
+Your Been list is visible to accepted friends: a `Been` stat on `/u/:username`
+opening `/u/:username/been`, read-only by construction. `venue_ratings` stays
+owner-only — the friendship check lives in three SECURITY DEFINER functions
+(`are_friends`, `friend_ranked_list`, `friend_profile_stats`), because widening
+that table's SELECT policy would put a `friendships` subquery inside a policy
+other policies already read: the 42P17 recursion shape that took the feed down
+on 2026-08-09. Merged `5d7d043`. SQL in `scripts/2026-08-10-friend-ranked-list.sql`,
+pasted and recorded in `endz-schema.sql`.
+
+**Colton's calls:** the whole list is shared, tail included — friends-only
+rather than public, and a list people believe is truncated is one they rate
+dishonestly, which poisons the recommendations reading the same ratings. Saves
+are NOT shared: `venue_saves` has its own per-user visibility setting and
+folding it in here would overrule someone who set their saves to nobody.
+
+**⚠️ THE FINDING WORTH REMEMBERING.** `are_friends(a, b)` shipped in review
+granted to `authenticated`. SECURITY DEFINER, so it bypasses `friendships` RLS,
+and it took two arbitrary person ids without anchoring either to the caller.
+Every signed-in user can read every profile id, so it was a pairwise oracle —
+iterate the profile list, reconstruct the app's entire friendship graph. This
+schema **already documented that exact trap** on `post_has_collab_for_me`
+(endz-schema.sql:2053: "takes no viewer argument ... so it cannot be used to
+probe a third party's friendships"). Caught by the security review agent, not by
+types or tests. Fixed twice over: EXECUTE revoked from `authenticated` as well
+as anon/public, and the body now refuses to answer about a pair the caller is
+not part of.
+
+**Proved live 2026-08-10** (11/11): anon cannot execute any of the three,
+`are_friends` is not client-callable, `pg_temp` is pinned on all three,
+`venue_ratings`' four policies unchanged.
+
+**STILL OWED — needs Colton's second account.** None of the above proves the
+gate's *behaviour*. Sign in as `clsneaks01` and confirm: as an accepted friend
+you see the Been count and the full list; not as a friend you see neither, and
+`/u/<handle>/been` typed directly returns the ambiguous empty state. Until that
+runs, the friendship gate is proved by reading, not by evidence.
+
+**Also fixed in review:** viewer-keyed cache (an unfriended user kept seeing the
+list for 30s with no refetch), `been_count` joined on `is_active` so it matches
+the list length, `friend_count` deduped (a pair can hold two accepted rows), and
+failed fetches no longer rendering as "they aren't your friend".
+
 ## Backlog (known, not yet specced — smaller than the numbered features)
 
 ### Open after the 2026-08-09 session — NOT built, each needs its own gate
@@ -560,6 +604,17 @@ zoom · sheets panning sideways · splash screen · desktop date picker.
 
 **Known work, not started:**
 
+- **The schema drift guard cannot see embedded joins** (found 2026-08-10).
+  `plainColumns` (`scripts/check-schema.mjs:180`) filters out every part of a
+  select containing `(`, so `author:profiles!fk(...)`, `person:profiles!fk(...)`
+  and `tag:night_post_tags!inner(...)` are dropped wholesale — only the named
+  relation's top-level columns are ever checked. Proved by pointing it at a
+  select for `night_post_tags.score`, a column that did not exist: PostgREST
+  rejects the query with 42703, and the guard printed `ok`. This is the guard's
+  own failure mode (a silently-skipped query is exactly the one that breaks in
+  production) and it covers most post queries in the app. Fixing it will
+  surface unrelated drift, so it wants its own pass rather than a drive-by.
+
 - **Cap `listCommentPreviews`.** It fetches every comment BODY for every post
   on the feed just to count them. Fine at current volume; it is also the
   pattern likes copied and the next feature will copy again. Cap it or move to
@@ -571,10 +626,10 @@ zoom · sheets panning sideways · splash screen · desktop date picker.
   drive-by edit.
 - **Tagged people contributing photos** (collab slice C as originally scoped).
   Needs the photo policy widened from author-only.
-- **Managing existing tags from your profile.** Pending tags surface in
-  Activity, but there is no list of tags you have already accepted where you
-  could change your mind between `tag` and `collab`, or remove one later.
-  Colton asked for this on 2026-08-09; only the pending half was built.
+- ~~**Managing existing tags from your profile.**~~ **BUILT 2026-08-10** on
+  `feat/profile-reorg` as the Tagged tab — see §14. Each accepted tag now
+  carries an overflow menu (switch `tag` ⇄ `collab`, rate the spot, remove
+  yourself).
 - **Fold friend requests and plan invites into Activity** (the "Option C" we
   deliberately deferred). Chosen against on 2026-08-09 because a like clears
   when seen and a request must not. Revisit if distribution widens and three

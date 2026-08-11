@@ -18,6 +18,8 @@ import { Camera, Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import CollegeField from "@/components/CollegeField";
+import { AGE_BANDS, AgeBand, getStoredAgeBand, storeAgeBand } from "@/lib/agePref";
+import { useMyAge } from "@/hooks/useMyAge";
 
 interface Props {
   open: boolean;
@@ -31,6 +33,12 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const [bio, setBio] = useState("");
   const [collegeSlug, setCollegeSlug] = useState<string | null>(null);
   const [classYear, setClassYear] = useState<number | null>(null);
+  // Pending, NOT committed. On the Profile page tapping a band called
+  // storeAgeBand() immediately, which is fine for a page whose every control
+  // self-saves. In here it would be a trap: every other field waits for Save,
+  // so a tap-then-dismiss would silently persist a change the user backed out
+  // of. Held as state and written only in save(), like the fields above.
+  const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -38,6 +46,7 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
     open ? username : "",
     profile?.username,
   );
+  const { age: myAge, fromBirthday } = useMyAge();
 
   // Seed the fields ONLY on the open transition — a profile update landing
   // mid-edit (photo upload, token-refresh refetch) must not wipe typed input.
@@ -51,6 +60,9 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
         setCollegeSlug(p.college_slug ?? null);
         setClassYear(p.class_year ?? null);
       }
+      // Reseeded from storage on every open so a dismissed edit is genuinely
+      // discarded — reopening shows what is stored, not what was abandoned.
+      setAgeBand(getStoredAgeBand());
     }
   }, [open]);
 
@@ -66,8 +78,18 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
   const bioChanged = bio.trim() !== (profile.bio ?? "");
   const collegeChanged = collegeSlug !== (profile.college_slug ?? null);
   const classYearChanged = classYear !== (profile.class_year ?? null);
+  // A real birthday outranks the band outright, so the chips aren't offered and
+  // can't be dirty. useMyAge() already reads storage during render, so the
+  // stored value is the live baseline here the way `profile` is for the rest.
+  const showAgeBands = !(myAge != null && fromBirthday);
+  const ageBandChanged = showAgeBands && ageBand !== getStoredAgeBand();
   const dirty =
-    usernameChanged || nameChanged || bioChanged || collegeChanged || classYearChanged;
+    usernameChanged ||
+    nameChanged ||
+    bioChanged ||
+    collegeChanged ||
+    classYearChanged ||
+    ageBandChanged;
   const usernameBlocked =
     usernameChanged && availability !== "available";
 
@@ -107,7 +129,15 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
     if (collegeChanged) patch.college_slug = collegeSlug;
     if (classYearChanged) patch.class_year = classYear;
     try {
-      await updateProfile(patch);
+      // Skipped when the band is the only edit: an empty patch is a
+      // `.update({})` with nothing to set, and a pointless round trip.
+      if (Object.keys(patch).length > 0) await updateProfile(patch);
+      // Written only once the profile write has survived. Save reads as one
+      // action, so a rejected save (a username taken out from under us) has to
+      // leave the band alone too — committing it here anyway would half-apply
+      // a save the user was just told had failed, and the dialog stays open
+      // still showing the band as pending.
+      if (ageBandChanged && ageBand) storeAgeBand(ageBand);
       toast.success("Profile updated.");
       onOpenChange(false);
     } catch (err) {
@@ -230,6 +260,51 @@ const EditProfileDialog = ({ open, onOpenChange }: Props) => {
             disabled={saving}
           />
         </div>
+
+        {!showAgeBands ? (
+          // Real age from the onboarding birthday. Shown to the account owner
+          // only — birthday and gender live in profile_private precisely
+          // because `profiles` is readable by every signed-in user, and this
+          // dialog is only ever opened by the owner of the profile it edits
+          // (Colton, 2026-08-07: "just me for now").
+          //
+          // Read-only on purpose: the birthday is the source of truth, so the
+          // band would be a second, weaker copy of an answer already given.
+          <div className="glass rounded-2xl p-4">
+            <div className="font-medium text-sm">
+              Your age <span className="text-muted-foreground font-normal">· {myAge}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              From the birthday you gave when you signed up. Only you can see it — it
+              sharpens your picks and is never shown on your profile.
+            </p>
+          </div>
+        ) : (
+          <div className="glass rounded-2xl p-4">
+            <div className="font-medium text-sm">Your age range</div>
+            <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+              Sharpens your picks in Discover. Stays on this device.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {AGE_BANDS.map((band) => (
+                <button
+                  key={band}
+                  type="button"
+                  onClick={() => setAgeBand(band)}
+                  aria-pressed={ageBand === band}
+                  className={cn(
+                    "rounded-xl px-4 py-2.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    ageBand === band
+                      ? "bg-primary text-primary-foreground shadow-glow"
+                      : "bg-secondary/60 text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {band}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-baseline justify-between">

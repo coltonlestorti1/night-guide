@@ -108,6 +108,11 @@ function useFriendshipMutation<TVars>(
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["friendships", userId] });
       queryClient.invalidateQueries({ queryKey: ["friends-out-tonight", userId] });
+      // Removing or blocking someone revokes access to their ranked list, and
+      // these are cached for 30s — without this the list stays on screen with
+      // no refetch at all after you unfriend them.
+      queryClient.invalidateQueries({ queryKey: ["friend-ranked-list", userId] });
+      queryClient.invalidateQueries({ queryKey: ["friend-profile-stats", userId] });
     },
   });
 }

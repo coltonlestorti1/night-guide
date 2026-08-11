@@ -4,11 +4,14 @@
  * out-tonight line only ever has data for friends because it reads the
  * RLS-scoped friends-out-tonight feed — no client-side privacy filtering.
  */
+import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, MapPin, UserX } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useFriendsOutTonight, useProfileByUsername } from "@/hooks/useFriends";
 import ProfilePosts from "@/components/night/ProfilePosts";
+import TaggedPosts from "@/components/night/TaggedPosts";
+import ProfileTabs, { type ProfileTab } from "@/components/night/ProfileTabs";
 import { timeAgo } from "@/lib/format";
 import { collegeLabel } from "@/data/colleges";
 import { Button } from "@/components/ui/button";
@@ -16,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AddButton from "@/components/social/AddButton";
 import ReportDialog from "@/components/social/ReportDialog";
 import ProfileHeader from "@/components/ProfileHeader";
+import { useFriendProfileStats } from "@/hooks/useFriendList";
 
 const UserProfile = () => {
   const { username = "" } = useParams();
@@ -28,6 +32,8 @@ const UserProfile = () => {
     status === "signedIn" ? handle : undefined
   );
   const { data: out } = useFriendsOutTonight();
+  const { data: stats } = useFriendProfileStats(profile?.id);
+  const [tab, setTab] = useState<ProfileTab>("activity");
 
   // Own handle → the real profile page (edit lives there).
   if (myUsername && handle === myUsername) return <Navigate to="/profile" replace />;
@@ -105,9 +111,20 @@ const UserProfile = () => {
         createdAt={profile.created_at}
         collegeLine={collegeLabel(profile.college_slug, profile.class_year)}
         bio={profile.bio}
-        /* No stats on someone else's page in this slice: Been and Saved
-           are owner-only at the RLS level, so the only counts this page could
-           fetch are the VIEWER's own. See the note in ProfileHeader. */
+        stats={
+          stats
+            ? [
+                { label: "Friends", value: stats.friendCount },
+                { label: "Been", value: stats.beenCount, to: `/u/${handle}/been` },
+              ]
+            : []
+        }
+        /* Counts come from friend_profile_stats(), which gates on the
+           friendship server-side and returns nothing to anyone else — so
+           `stats` is empty for a stranger rather than filtered here. Saved is
+           absent on purpose: venue_saves has its own per-user visibility
+           setting, and surfacing it here would overrule someone who set their
+           saves to nobody. */
         action={
           /* Guard on id as well as the username redirect above: if the profile
              fetch errored (signedIn but profile null -> myUsername undefined),
@@ -144,12 +161,27 @@ const UserProfile = () => {
         </Link>
       )}
 
+      {/* The same two tabs as your own profile. Before this, this page merged
+          authored and tagged posts into one list while /profile showed only
+          authored ones — so a friend saw a version of your profile that you
+          could not. */}
       <div className="mt-6">
-        <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Nights</p>
-        <ProfilePosts
-          userId={profile.id}
-          name={profile.display_name || `@${profile.username}`}
-        />
+        <ProfileTabs value={tab} onChange={setTab} />
+      </div>
+
+      <div className="mt-4">
+        {tab === "activity" ? (
+          <ProfilePosts
+            userId={profile.id}
+            name={profile.display_name || `@${profile.username}`}
+          />
+        ) : (
+          <TaggedPosts
+            userId={profile.id}
+            isSelf={false}
+            name={profile.display_name || `@${profile.username}`}
+          />
+        )}
       </div>
     </section>
   );
