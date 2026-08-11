@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { nightLabel } from "@/lib/night/nightLabel";
 import { cn } from "@/lib/utils";
+import { bucketForScore } from "@/lib/night/ranking";
 import { toast } from "sonner";
 import CommentPreview from "@/components/night/CommentPreview";
 import LikeButton from "@/components/night/LikeButton";
@@ -40,13 +41,20 @@ import type { LikeSummary } from "@/lib/night/likes";
 import { useCanCommentOn } from "@/hooks/useComments";
 import { withLine, type PostTag } from "@/lib/night/tags";
 
-/** Beli-style ring: warmer as the score climbs, muted when there is none. */
+/**
+ * Beli-style ring: warmer as the score climbs, muted when there is none.
+ *
+ * The tier comes from bucketForScore rather than repeated thresholds. This
+ * function used to hardcode 6.7 and 3.4 — the old band edges — which silently
+ * became wrong the moment the bands were re-cut on 2026-08-10.
+ */
 function ScoreRing({ score }: { score: number | null }) {
   if (score === null) return null;
+  const bucket = bucketForScore(score);
   const tone =
-    score >= 6.7
+    bucket === "great"
       ? "border-emerald-500/60 text-emerald-700"
-      : score >= 3.4
+      : bucket === "good"
         ? "border-amber-500/60 text-amber-700"
         : "border-border text-muted-foreground";
   return (
