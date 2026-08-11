@@ -160,3 +160,22 @@ export function withLine(tags: PostTag[] | undefined): string | null {
   if (names.length === 2) return `with ${names[0]} and ${names[1]}`;
   return `with ${names[0]} and ${names.length - 1} others`;
 }
+
+/**
+ * The caller's OWN tag on a post, if they have one.
+ *
+ * This is what decides whether someone gets tag controls, and it has to give
+ * the same answer on every surface: the feed, your Activity, your Tagged tab
+ * and someone else's profile all render the same post, and "can I take myself
+ * off this?" must not depend on which screen you happened to open.
+ *
+ * RLS guarantees the row is here to be found — a tag naming you is always
+ * readable by you, in any state — so no query needs widening for this.
+ */
+export function myTagOn(tags: PostTag[] | undefined, myId: string | undefined): PostTag | undefined {
+  // Defensive, not load-bearing: no real tag carries an undefined person id, so
+  // the find below already misses when signed out. Mutation-testing confirmed
+  // removing this line breaks nothing — it stays to state the intent.
+  if (!myId) return undefined;
+  return tags?.find((t) => t.person.id === myId);
+}

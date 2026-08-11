@@ -21,9 +21,10 @@ import { reduceCommentPreviews } from "@/lib/night/comments";
 import { usePostLikes } from "@/hooks/useLikes";
 import { summarizeLikes } from "@/lib/night/likes";
 import { usePostTags } from "@/hooks/useTags";
-import { tagsByPost } from "@/lib/night/tags";
+import { myTagOn, tagsByPost } from "@/lib/night/tags";
 import { useAuthStore } from "@/store/auth";
 import PostCard from "@/components/night/PostCard";
+import TaggedPostCard from "@/components/night/TaggedPostCard";
 
 /** Everything this list resolved for one row, handed to renderCard. */
 export type CardProps = React.ComponentProps<typeof PostCard>;
@@ -93,8 +94,22 @@ export default function PostList({
           likes: likes.get(post.id),
           tags: tags.get(post.id),
         };
+        // One rule, every surface: if you are tagged on a post you did not
+        // write, you get the controls for your own tag. Previously only the
+        // Tagged tab wired these up, so the same post offered them on one
+        // screen and only "Report" on another.
+        const mine = myTagOn(props.tags, myId);
+        const canManage = mine && myId && post.author.id !== myId;
         return (
-          <div key={post.id}>{renderCard ? renderCard(props) : <PostCard {...props} />}</div>
+          <div key={post.id}>
+            {renderCard ? (
+              renderCard(props)
+            ) : canManage ? (
+              <TaggedPostCard cardProps={props} myId={myId!} state={mine!.state} />
+            ) : (
+              <PostCard {...props} />
+            )}
+          </div>
         );
       })}
     </div>

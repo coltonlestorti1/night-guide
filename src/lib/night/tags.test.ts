@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tagsByPost, withLine, type PostTag } from "./tags";
+import { myTagOn, tagsByPost, withLine, type PostTag } from "./tags";
 
 const t = (postId: string, name: string, state: PostTag["state"] = "tag"): PostTag => ({
   postId, state,
@@ -46,5 +46,35 @@ describe("pending tags render like any other (2026-08-11)", () => {
   it("groups pending tags onto their post", () => {
     const out = tagsByPost([t("p1", "will", "pending")]);
     expect(out.get("p1")).toHaveLength(1);
+  });
+});
+
+describe("myTagOn — who gets tag controls", () => {
+  const sam = t("p1", "sam");
+  const me = t("p1", "me", "pending");
+
+  it("finds my own tag among several", () => {
+    expect(myTagOn([sam, me], "me")?.person.id).toBe("me");
+  });
+
+  it("finds it whatever state it is in", () => {
+    // Pending especially: an unanswered tag is the case where you most want
+    // to be able to remove yourself.
+    for (const st of ["pending", "tag", "collab"] as const) {
+      expect(myTagOn([t("p1", "me", st)], "me")?.state).toBe(st);
+    }
+  });
+
+  it("is undefined when I am not tagged", () => {
+    expect(myTagOn([sam], "me")).toBeUndefined();
+  });
+
+  it("is undefined when signed out, rather than matching anyone", () => {
+    expect(myTagOn([sam, me], undefined)).toBeUndefined();
+  });
+
+  it("is undefined when the post has no tags", () => {
+    expect(myTagOn(undefined, "me")).toBeUndefined();
+    expect(myTagOn([], "me")).toBeUndefined();
   });
 });

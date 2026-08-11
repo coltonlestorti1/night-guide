@@ -19,38 +19,51 @@
  * menu. Same arrangement as ListRowMenu.
  */
 import { useState } from "react";
-import { Star, UserMinus, Users } from "lucide-react";
+import { Check, Star, UserMinus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useRemoveTag, useSetTagState } from "@/hooks/useTags";
 import RateSheet from "@/components/night/RateSheet";
 import PostCard from "@/components/night/PostCard";
 import type { CardProps } from "@/components/night/PostList";
+import type { TagState } from "@/lib/night/tags";
 
 export default function TaggedPostCard({
   cardProps,
   myId,
+  state,
 }: {
   cardProps: CardProps;
   myId: string;
+  /**
+   * The caller's own tag state on this post, read from the tag rows rather
+   * than the post. The post-level field is only populated by the Tagged tab's
+   * query, so taking it from there would have left these controls behaving
+   * differently on the feed — which is exactly the bug this fixes.
+   */
+  state: TagState;
 }) {
   const { post, venue } = cardProps;
   const [rateOpen, setRateOpen] = useState(false);
   const setState = useSetTagState();
   const remove = useRemoveTag();
 
-  const collab = post.tagState === "collab";
+  const collab = state === "collab";
 
-  const toggleAudience = async () => {
+  const choose = async (next: "tag" | "collab") => {
     try {
-      await setState.mutateAsync({ postId: post.id, state: collab ? "tag" : "collab" });
+      await setState.mutateAsync({ postId: post.id, state: next });
       toast.success(
-        collab ? "Your friends won't see this night." : "Your friends can see this night now.",
+        next === "collab"
+          ? "Your friends can see this night now."
+          : "Your friends won't see this night.",
       );
     } catch {
       toast.error("Couldn't change that. Try again.");
     }
   };
+
+  const toggleAudience = () => choose(collab ? "tag" : "collab");
 
   const removeMe = async () => {
     try {
@@ -67,10 +80,31 @@ export default function TaggedPostCard({
         {...cardProps}
         menuExtra={
           <>
-            <DropdownMenuItem onSelect={toggleAudience} disabled={setState.isPending}>
-              <Users className="h-4 w-4 mr-2" />
-              {collab ? "Hide from my friends" : "Share with my friends too"}
-            </DropdownMenuItem>
+            {/* Pending gets BOTH choices, the same pair the Activity sheet
+                offers — either one accepts the tag, and a single toggle would
+                only ever reach 'collab'. Once accepted it becomes a toggle,
+                because by then the other option is the one you didn't pick. */}
+            {state === "pending" ? (
+              <>
+                <DropdownMenuItem
+                  onSelect={() => choose("collab")}
+                  disabled={setState.isPending}
+                >
+                  <Users className="h-4 w-4 mr-2" /> Share with my friends
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => choose("tag")}
+                  disabled={setState.isPending}
+                >
+                  <Check className="h-4 w-4 mr-2" /> Just a tag
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <DropdownMenuItem onSelect={toggleAudience} disabled={setState.isPending}>
+                <Users className="h-4 w-4 mr-2" />
+                {collab ? "Hide from my friends" : "Share with my friends too"}
+              </DropdownMenuItem>
+            )}
 
             {/* Only when the venue resolved — RateSheet needs a real Venue,
                 and without the guard this opens an empty sheet. Same guard

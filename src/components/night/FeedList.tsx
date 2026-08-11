@@ -9,13 +9,14 @@ import { useNightFeed } from "@/hooks/useNightFeed";
 import { useAuthStore } from "@/store/auth";
 import { useVenues } from "@/hooks/useVenues";
 import PostCard from "@/components/night/PostCard";
+import TaggedPostCard from "@/components/night/TaggedPostCard";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
 import { useCommentPreviews } from "@/hooks/useComments";
 import { usePostLikes } from "@/hooks/useLikes";
 import { usePostTags } from "@/hooks/useTags";
 import { reduceCommentPreviews } from "@/lib/night/comments";
 import { summarizeLikes } from "@/lib/night/likes";
-import { tagsByPost } from "@/lib/night/tags";
+import { myTagOn, tagsByPost } from "@/lib/night/tags";
 
 export default function FeedList() {
   const { data: posts, isLoading, isError } = useNightFeed();
@@ -63,17 +64,29 @@ export default function FeedList() {
 
   return (
     <div className="space-y-3">
-      {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          venue={venues?.find((v) => v.id === post.venueId)}
-          photos={(photos ?? []).filter((ph) => ph.postId === post.id)}
-          commentPreview={previews.get(post.id)}
-          likes={likes.get(post.id)}
-          tags={tags.get(post.id)}
-        />
-      ))}
+      {posts.map((post) => {
+        const props = {
+          post,
+          venue: venues?.find((v) => v.id === post.venueId),
+          photos: (photos ?? []).filter((ph) => ph.postId === post.id),
+          commentPreview: previews.get(post.id),
+          likes: likes.get(post.id),
+          tags: tags.get(post.id),
+        };
+        // Same rule as PostList: tagged on someone else's post means you can
+        // manage your own tag from wherever you are looking at it.
+        const mine = myTagOn(props.tags, myId);
+        const canManage = mine && myId && post.author.id !== myId;
+        return (
+          <div key={post.id}>
+            {canManage ? (
+              <TaggedPostCard cardProps={props} myId={myId!} state={mine!.state} />
+            ) : (
+              <PostCard {...props} />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

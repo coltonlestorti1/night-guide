@@ -10,10 +10,8 @@
  * author's off the post. Whose profile you are on decides whose opinion you
  * see.
  */
-import { useAuthStore } from "@/store/auth";
 import { useTaggedPosts } from "@/hooks/useProfilePosts";
 import PostList from "@/components/night/PostList";
-import TaggedPostCard from "@/components/night/TaggedPostCard";
 
 export default function TaggedPosts({
   userId,
@@ -26,7 +24,6 @@ export default function TaggedPosts({
   isSelf: boolean;
   name?: string;
 }) {
-  const myId = useAuthStore((s) => s.session?.user.id);
   const { data: posts, isLoading, isError } = useTaggedPosts(userId);
 
   return (
@@ -45,13 +42,6 @@ export default function TaggedPosts({
             ? "No one's tagged you in a night yet."
             : `Nothing ${name ?? "they"}'s tagged in that you can see.`}
         </p>
-      }
-      renderCard={
-        // Management is only ever yours to do — and RLS agrees, so a stray
-        // control on someone else's tab would fail rather than misbehave.
-        isSelf && myId
-          ? (props) => <TaggedPostCard cardProps={props} myId={myId} />
-          : undefined
       }
     />
   );
