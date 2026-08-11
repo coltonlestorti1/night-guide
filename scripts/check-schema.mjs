@@ -30,6 +30,8 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 import { execFileSync } from "node:child_process";
 
+import { embeddedSelects, plainColumns } from "./lib/select-parse.mjs";
+
 const SRC = "src";
 const URL_KEY = "VITE_SUPABASE_URL";
 const ANON_KEY = "VITE_SUPABASE_PUBLISHABLE_KEY";
@@ -155,35 +157,21 @@ function extractQueries(files, consts) {
 }
 
 /**
- * Split a PostgREST select list into plain column names.
+ * Column names of a relation, via the introspection function.
  *
- * Embedded resources — `profiles!inner(username)`, `alias:table(col)` — are
- * dropped: they are joins, not columns of this relation, and are validated by
- * PostgREST itself at request time. Aliases (`alias:column`) are unwrapped to
- * the underlying column.
+ * Memoized: `profiles` alone is embedded by about ten different selects, and
+ * checking embeds turned one round trip per query into one per embed. The
+ * schema cannot change mid-run.
  */
-function plainColumns(select) {
-  const parts = [];
-  let depth = 0;
-  let buf = "";
-  for (const ch of select) {
-    if (ch === "(") depth++;
-    if (ch === ")") depth--;
-    if (ch === "," && depth === 0) {
-      parts.push(buf);
-      buf = "";
-    } else buf += ch;
-  }
-  parts.push(buf);
-  return parts
-    .map((p) => p.trim())
-    .filter((p) => p && !p.includes("(") && p !== "*")
-    .map((p) => (p.includes(":") ? p.split(":").pop().trim() : p))
-    .filter(Boolean);
+const relationCache = new Map();
+async function relationColumns(base, key, relation) {
+  if (relationCache.has(relation)) return relationCache.get(relation);
+  const result = await relationColumnsUncached(base, key, relation);
+  relationCache.set(relation, result);
+  return result;
 }
 
-/** Column names of a relation, via the introspection function. */
-async function relationColumns(base, key, relation) {
+async function relationColumnsUncached(base, key, relation) {
   const res = await fetch(`${base}/rest/v1/rpc/relation_columns`, {
     method: "POST",
     headers: {
@@ -216,9 +204,43 @@ async function check(base, key, q) {
       return { ok: false, kind: "missing-relation" };
     }
     const missing = plainColumns(q.columns).filter((c) => !actual.includes(c));
-    return missing.length
-      ? { ok: false, kind: "drift", missing }
-      : { ok: true, via: "introspection" };
+    if (missing.length) return { ok: false, kind: "drift", missing };
+
+    // EMBEDS. This path used to stop at the line above, checking only the top
+    // relation's own columns — so `author:profiles!fk(...)` and every join like
+    // it went unverified. The probe path below never had this hole, because it
+    // hands the whole select to PostgREST; the hole was introspection being
+    // PREFERRED. Proved 2026-08-11 with night_post_tags.score: PostgREST
+    // rejected the query with 42703 and this function returned ok.
+    let allEmbedsResolved = true;
+    for (const e of embeddedSelects(q.columns)) {
+      // An embed we could not resolve must not be reported as drift, same rule
+      // as the top-level interpolation guard above.
+      if (e.select.includes("${")) {
+        allEmbedsResolved = false;
+        break;
+      }
+      const embedActual = await relationColumns(base, key, e.relation);
+      if (!embedActual) {
+        // Cannot introspect this embed's relation. Fall through to the probe,
+        // which validates the whole select at once, rather than claim a pass
+        // we did not earn.
+        allEmbedsResolved = false;
+        break;
+      }
+      if (embedActual.length === 0) {
+        return { ok: false, kind: "drift", missing: [`${e.relation} (relation missing)`] };
+      }
+      const embedMissing = plainColumns(e.select).filter((c) => !embedActual.includes(c));
+      if (embedMissing.length) {
+        return {
+          ok: false,
+          kind: "drift",
+          missing: embedMissing.map((c) => `${e.relation}.${c}`),
+        };
+      }
+    }
+    if (allEmbedsResolved) return { ok: true, via: "introspection" };
   }
 
   // Fallback while the function is not installed: a zero-row probe. PostgREST
