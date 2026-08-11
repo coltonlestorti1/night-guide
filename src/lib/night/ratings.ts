@@ -8,6 +8,11 @@
  * rendering of the ranking: inserting one venue shifts every sibling below it.
  * Buckets are small (a user's "Great" list is tens of venues at most), so a
  * full rewrite is cheaper and far less error-prone than a partial reindex.
+ *
+ * Every rank change goes through rewriteBucket(), which reconciles the caller's
+ * idea of the bucket against the server's before writing. See mergeBucketOrder
+ * for why: these writes are upserts, so an order carrying a venue that has
+ * since been deleted would re-insert it.
  */
 import { getSupabase } from "@/lib/supabase";
 import { Bucket, insertAt, scoreFor } from "@/lib/night/ranking";
@@ -42,6 +47,83 @@ export function bucketRows(userId: string, bucket: Bucket, order: string[]): DbW
     rank_position: i,
     score: scoreFor(bucket, i, order.length),
   }));
+}
+
+/**
+ * Reconcile the order a caller believes a bucket has with the order the server
+ * actually holds.
+ *
+ * Every write in this module is an upsert keyed on (user_id, venue_id), which
+ * means it INSERTS anything it is given that does not already exist. A caller's
+ * order comes from a React Query cache, so it can name a venue that was deleted
+ * since — and upserting that ghost brings a deleted rating back from the dead.
+ * This is the same defect that was fixed inside deleteRating; it lives on every
+ * write path, not just that one.
+ *
+ * Three rules:
+ *   - a venue the caller lists that the server no longer has is dropped,
+ *   - `adding` is kept even though the server has never seen it (it is the
+ *     rating being written),
+ *   - a venue the server has that the caller never knew about is appended, so
+ *     that every row in the bucket is part of the rewrite. Leaving it out would
+ *     strand it on a rank_position this rewrite is about to hand to something
+ *     else. Last is the only position defensible for it: nothing in this flow
+ *     was ever compared against it, and re-rating it puts it right.
+ *
+ * Pure, so the reconciliation is testable without a database.
+ */
+export function mergeBucketOrder(
+  desired: string[],
+  live: string[],
+  adding?: string,
+): string[] {
+  const liveSet = new Set(live);
+  const kept = desired.filter((id) => liveSet.has(id) || id === adding);
+  const keptSet = new Set(kept);
+  return [...kept, ...live.filter((id) => !keptSet.has(id))];
+}
+
+/** The bucket as the server currently holds it, best first. */
+async function liveBucketOrder(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+  userId: string,
+  bucket: Bucket,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("venue_ratings")
+    .select("venue_id")
+    .eq("user_id", userId)
+    .eq("bucket", bucket)
+    .order("rank_position", { ascending: true });
+  if (error) throw error;
+  return ((data ?? []) as { venue_id: string }[]).map((r) => r.venue_id);
+}
+
+/**
+ * Rewrite a whole bucket from `desired`, reconciled against the server first.
+ * The single write path for every rank change — one place to get the upsert
+ * semantics right rather than three.
+ */
+async function rewriteBucket(
+  supabase: NonNullable<ReturnType<typeof getSupabase>>,
+  userId: string,
+  bucket: Bucket,
+  desired: string[],
+  adding?: string,
+): Promise<void> {
+  const live = await liveBucketOrder(supabase, userId, bucket);
+  const order = mergeBucketOrder(desired, live, adding);
+  if (order.length === 0) return; // nothing left to reindex
+
+  const { data, error } = await supabase
+    .from("venue_ratings")
+    .upsert(bucketRows(userId, bucket, order), { onConflict: "user_id,venue_id" })
+    .select("venue_id");
+  if (error) throw error;
+  // Same zero-row silence as setVibe(): an RLS-blocked write returns no error,
+  // so a dropped write is indistinguishable from a successful one unless the
+  // rows are read back.
+  if (!data?.length) throw new Error("Rating write matched no rows");
 }
 
 /** The signed-in user's full ranked list, best first within each bucket. */
@@ -80,6 +162,10 @@ export function orderOf(rows: RatingRow[], bucket: Bucket): string[] {
  *
  * `venueId` is stripped from currentOrder first so re-rating a venue already in
  * this bucket moves it rather than duplicating it.
+ *
+ * `currentOrder` is a snapshot from the client's cache, so it is reconciled
+ * against the server before anything is written — it can name venues that no
+ * longer exist, and miss ones that now do.
  */
 export async function saveRating(
   userId: string,
@@ -91,20 +177,12 @@ export async function saveRating(
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
 
-  const order = insertAt(
+  const desired = insertAt(
     currentOrder.filter((id) => id !== venueId),
     venueId,
     index,
   );
-  const { data, error } = await supabase
-    .from("venue_ratings")
-    .upsert(bucketRows(userId, bucket, order), { onConflict: "user_id,venue_id" })
-    .select("venue_id");
-  if (error) throw error;
-  // Same zero-row silence as setVibe(): an RLS-blocked write returns no error,
-  // so a dropped save is indistinguishable from a successful one unless the
-  // rows are read back.
-  if (!data?.length) throw new Error("Rating write matched no rows");
+  await rewriteBucket(supabase, userId, bucket, desired, venueId);
 }
 
 /**
@@ -120,13 +198,12 @@ export async function removeFromBucket(
   const supabase = getSupabase();
   if (!supabase) throw new Error("Backend not configured");
 
-  const order = currentOrder.filter((id) => id !== venueId);
-  if (order.length === 0) return; // nothing left to reindex
-
-  const { error } = await supabase
-    .from("venue_ratings")
-    .upsert(bucketRows(userId, bucket, order), { onConflict: "user_id,venue_id" });
-  if (error) throw error;
+  await rewriteBucket(
+    supabase,
+    userId,
+    bucket,
+    currentOrder.filter((id) => id !== venueId),
+  );
 }
 
 /**
@@ -137,13 +214,9 @@ export async function removeFromBucket(
  * this bucket repairs them. The other order would leave the deleted venue
  * holding a live rank, which is a wrong list rather than a slightly stale one.
  *
- * The reindex reads the bucket back from the server instead of trusting a
- * caller-supplied order. That is not defensive padding — every write in this
- * module is an upsert keyed on (user_id, venue_id), so a venue that is in the
- * caller's list but no longer in the table is INSERTED rather than updated.
- * Remove two venues in one refetch window, or in two tabs, and the first one
- * comes back from the dead with a fresh rank. Reading the survivors makes the
- * set being rewritten exactly the set that exists.
+ * The reindex takes its order entirely from the server (see rewriteBucket):
+ * after a delete there is no caller-supplied order worth trusting, and the
+ * survivors are exactly the set that should be rewritten.
  */
 export async function deleteRating(
   userId: string,
@@ -164,21 +237,6 @@ export async function deleteRating(
   // error, and the row would appear to vanish from a list it is still in.
   if (!data?.length) throw new Error("Rating delete matched no rows");
 
-  const { data: survivors, error: readError } = await supabase
-    .from("venue_ratings")
-    .select("venue_id")
-    .eq("user_id", userId)
-    .eq("bucket", bucket)
-    .order("rank_position", { ascending: true });
-  if (readError) throw readError;
-
-  const order = (survivors ?? []).map((r) => (r as { venue_id: string }).venue_id);
-  if (order.length === 0) return; // nothing left to reindex
-
-  const { data: written, error: reindexError } = await supabase
-    .from("venue_ratings")
-    .upsert(bucketRows(userId, bucket, order), { onConflict: "user_id,venue_id" })
-    .select("venue_id");
-  if (reindexError) throw reindexError;
-  if (!written?.length) throw new Error("Rating reindex matched no rows");
+  // Empty `desired`: the survivors ARE the order, straight from the server.
+  await rewriteBucket(supabase, userId, bucket, []);
 }
