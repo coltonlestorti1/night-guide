@@ -148,6 +148,9 @@ export default function PublishForm({
   const pendingRef = useRef<{ path: string; preview: string }[]>([]);
   pendingRef.current = pending;
 
+  /** Which venue|night the form has already been seeded for. */
+  const seededRef = useRef<string | null>(null);
+
   const discardPending = (items: { path: string; preview: string }[]) => {
     if (!items.length) return;
     // The previews are object URLs; dropping the state alone leaks them.
@@ -157,30 +160,64 @@ export default function PublishForm({
 
   useEffect(() => {
     return () => discardPending(pendingRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
-   * Seed once per venue AND per night. Seeding on every render would wipe what
-   * the user is typing the moment the posts query refetches.
+   * Clear when the post being written changes.
    *
-   * The nightDate dependency is load-bearing now that the night is editable
-   * here: night_posts is keyed (user_id, venue_id, night_date), so switching
-   * night switches which post is being written. Without this, last night's
-   * note would follow you onto a different night's post.
+   * night_posts is keyed (user_id, venue_id, night_date), so a different venue
+   * OR a different night is a different row — last night's note must not follow
+   * you onto tonight's post. Seeding the new row's values is the NEXT effect's
+   * job, deliberately: see there.
+   *
+   * The bucket is NOT reset here. A rating belongs to the venue, not to the
+   * night, and the night row sits below the circles — "tap a circle, then fix
+   * the night" is the natural order, and resetting would silently throw the
+   * tap away.
    */
   useEffect(() => {
-    setNote(existing?.note ?? "");
-    setAudience(existing?.visibility ?? defaultAudience(collegeSlug));
+    seededRef.current = null;
+    setNote("");
+    setAudience(defaultAudience(collegeSlug));
     setTaggedIds([]);
-    setBucketOverride(null);
-    // Photos are per-post as well: carrying them to another venue would attach
-    // them to the wrong night. Discard the files, not just the state — on the
-    // first run pendingRef is empty, so this is a no-op on mount.
-    discardPending(pendingRef.current);
-    setPending([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venue.id, nightDate]);
+
+  /** Photos and the bucket are per-VENUE, not per-night: switching night keeps
+   *  what you picked, switching venue discards it. Discard the files, not just
+   *  the state — on the first run pendingRef is empty, so this is a no-op on
+   *  mount. */
+  useEffect(() => {
+    setBucketOverride(null);
+    discardPending(pendingRef.current);
+    setPending([]);
+  }, [venue.id]);
+
+  /**
+   * Seed from the post that already exists for THIS venue and night — once the
+   * query has actually resolved.
+   *
+   * This cannot be folded into the clear above. useMyPostsForNight is keyed on
+   * the night, so changing the night hands back `undefined` until the new query
+   * lands; an effect that seeded in the same pass would seed from nothing and
+   * never run again. The form would then show Save and Delete post (both keyed
+   * on `existing`) above an EMPTY note — and publishPost upserts note and
+   * visibility unconditionally, so Save would write null over the real note and
+   * reset a "Just me" post to the default audience.
+   *
+   * seededRef makes it once-per-row rather than once-per-fetch, so a background
+   * refetch cannot wipe what the user is part-way through typing.
+   */
+  useEffect(() => {
+    const key = `${venue.id}|${nightDate}`;
+    if (seededRef.current === key || myPosts === undefined) return;
+    seededRef.current = key;
+    if (existing) {
+      setNote(existing.note ?? "");
+      setAudience(existing.visibility);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venue.id, nightDate, myPosts]);
 
   const userId = useAuthStore((s) => s.session?.user.id);
   const { data: friendshipRows } = useMyFriendships();
@@ -249,6 +286,13 @@ export default function PublishForm({
         // deliberately survives and the cleanup collects the strays.
         pending.forEach((p) => URL.revokeObjectURL(p.preview));
         setPending([]);
+        // The REF too, not just the state. pendingRef is assigned during
+        // render, and onDone() below can unmount this component in the same
+        // batch — VenueRatingRow and RecapCard both mount the sheet
+        // conditionally. The queued setPending is then discarded, the fiber
+        // never re-renders, and the unmount cleanup deletes the very files
+        // that attachPhotos just pointed a row at.
+        pendingRef.current = [];
       }
       if (taggedIds.length) {
         // Tags need a post id, so they can only happen after publish

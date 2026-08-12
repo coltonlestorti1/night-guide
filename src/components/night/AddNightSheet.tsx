@@ -57,6 +57,11 @@ export default function AddNightSheet({
     window.setTimeout(() => {
       setVenue(null);
       setQ("");
+      // The night resets too. This component never unmounts (Social mounts it
+      // permanently), and the night is now a one-line summary inside the sheet
+      // rather than chips on this step — so a night held over from a previous
+      // session would be invisible and would silently backdate the next post.
+      setNightDate(lastCompletedNightDate());
     }, 260);
   };
 
