@@ -128,7 +128,7 @@ and re-tappable until Post.
 
 | Entry point | Venue | Night | Notes |
 |---|---|---|---|
-| Map / venue sheet → "Log it" | pre-filled | last completed night | the path that was broken |
+| Map / venue sheet → "Log the night" | pre-filled | last completed night | the path that was broken |
 | Social → + → Add a night | chosen in step 1 | editable in the sheet | step 1 shrinks to spot search |
 | Recap card → Post | pre-filled | from the check-in | unchanged behaviour |
 | Post card → Edit | pre-filled | **locked** | bucket row shows the existing rating |
@@ -151,9 +151,15 @@ sheet.
    behaviour documented in `PublishForm`.
 3. If a bucket was selected **and** the venue has no rating yet, the comparison
    step runs, then saves to `venue_ratings`.
-4. If a bucket was selected and the venue is already rated at that bucket,
-   nothing re-ranks — the existing position stands.
-5. If no bucket was selected, the post is published with no score. This stays
+4. If a bucket was selected and it is the **same** bucket the venue is already
+   rated at, nothing re-ranks — the existing position stands and no comparison
+   runs. Logging a second night at a place you already love must not cost you
+   the head-to-heads again.
+5. If a bucket was selected and it **differs** from the existing rating, that is
+   a deliberate re-rate: comparisons run inside the new bucket and
+   `useSaveRating` reindexes the old one, exactly as changing a bucket does
+   today.
+6. If no bucket was selected, the post is published with no score. This stays
    legal; "went to" and "ranked" are different claims.
 
 The comparison step is skippable, and skipping it still leaves the post.
@@ -220,7 +226,10 @@ previous night's note into a new post.
   between 18:00 and 06:00 (existing `nightChoices` behaviour, relocated).
 - Post with no bucket → post exists, no rating written.
 - Post with a bucket on an unrated venue → comparisons run, rating written.
-- Post with a bucket on a rated venue → no re-rank.
+- Post with the same bucket on an already-rated venue → no comparison, position
+  unchanged.
+- Post with a different bucket on an already-rated venue → comparisons run in
+  the new bucket, old bucket reindexed.
 - Skipping comparisons leaves the post intact.
 - Edit mode locks the night and pre-selects the existing bucket.
 - Changing the night row re-seeds note/audience/photos from that night's post,
