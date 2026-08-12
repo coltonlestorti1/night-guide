@@ -342,8 +342,11 @@ export default function PublishForm({
           Only you see this — it&apos;s what tunes your recommendations.
         </p>
         <RateSteps venue={venue} bucket={bucket} onDone={() => onDone()} />
+        {/* "Not now", not "Skip": the post is already saved by this point, and
+            "Skip" read as though it might discard it. This only declines the
+            ranking. */}
         <Button variant="ghost" className="w-full h-10 rounded-xl mt-3" onClick={onDone}>
-          Skip
+          Not now
         </Button>
       </>
     );

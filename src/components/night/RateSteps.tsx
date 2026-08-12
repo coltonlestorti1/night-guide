@@ -95,17 +95,17 @@ export default function RateSteps({
   if (!comparison) {
     return (
       <>
-        <p className="text-sm font-semibold mb-1">First one in this group.</p>
+        <p className="text-sm font-semibold mb-1">Nothing to compare it to yet</p>
         <p className="text-sm text-muted-foreground mb-3">
-          Nothing to weigh it against yet — we&apos;ll place it for now and it&apos;ll
-          settle as you rate more.
+          {venue.title} is the first spot in this group, so it goes straight onto
+          your list. You&apos;ll rank it as you add more.
         </p>
         <Button
           className="w-full h-12 rounded-xl text-base"
           disabled={save.isPending}
           onClick={() => void commit(0)}
         >
-          {save.isPending ? "Saving…" : "Save it"}
+          {save.isPending ? "Adding…" : "Add to my list"}
         </Button>
       </>
     );
