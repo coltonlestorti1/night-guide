@@ -1,9 +1,14 @@
 /**
- * "Your rating · 8.4 · #3 on your list", or a Rate it button.
+ * "Your rating · 8.4 · #3 on your list", or an invitation to log the night.
  *
- * This is the only place a venue can be rated outside the night recap. Before
- * it existed a spot could only be rated if it happened to surface in a recap,
- * which is why the Been list had nothing in it.
+ * This is the venue sheet's entry into logging. It used to open RateSheet,
+ * which wrote a rating and nothing else — no night, no post — so a spot rated
+ * from the map never appeared in your Activity and the night you actually went
+ * was never recorded. It now opens the log sheet.
+ *
+ * "Log another night" and "Rank again" are deliberately different things and
+ * live in different places: a second visit is a new post, and re-ranking is not
+ * a visit at all. Re-ranking stays on the list row menu (ListRowMenu).
  *
  * Position comes from beenList — the same function /lists renders — so the
  * number here always names the row you would actually find there.
@@ -15,7 +20,8 @@ import { useAuthStore } from "@/store/auth";
 import { useVenues } from "@/hooks/useVenues";
 import { useMyRatings } from "@/hooks/useMyRatings";
 import { beenList } from "@/lib/night/lists";
-import RateSheet from "@/components/night/RateSheet";
+import { lastCompletedNightDate } from "@/lib/night/window";
+import PublishSheet from "@/components/night/PublishSheet";
 import ScoreBadge from "@/components/lists/ScoreBadge";
 import { Button } from "@/components/ui/button";
 
@@ -30,8 +36,8 @@ export default function VenueRatingRow({ venue }: { venue: Venue }) {
     [ratings, venues, venue.id],
   );
 
-  // Rating is a signed-in action and the list is private, so there is nothing
-  // to show a logged-out visitor.
+  // Logging is a signed-in action, so there is nothing to show a logged-out
+  // visitor.
   if (!signedIn) return null;
 
   return (
@@ -50,7 +56,7 @@ export default function VenueRatingRow({ venue }: { venue: Venue }) {
               className="rounded-xl shrink-0"
               onClick={() => setOpen(true)}
             >
-              Rank again
+              Log another night
             </Button>
           </>
         ) : (
@@ -60,15 +66,30 @@ export default function VenueRatingRow({ venue }: { venue: Venue }) {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Been here?</p>
-              <p className="text-xs text-muted-foreground">Rate it — only you can see this.</p>
+              {/* NOT "only you can see this" any more — this button can now
+                  publish a post, and the audience row on the sheet is where
+                  that choice is actually made. */}
+              <p className="text-xs text-muted-foreground">
+                Log the night — you choose who sees it.
+              </p>
             </div>
             <Button size="sm" className="rounded-xl shrink-0" onClick={() => setOpen(true)}>
-              Rate it
+              Log the night
             </Button>
           </>
         )}
       </div>
-      {open && <RateSheet venue={venue} open onOpenChange={setOpen} />}
+      {/* Mounted only while open — PublishSheet is a drawer, and the venue
+          sheet already has one of its own on mobile. */}
+      {open && (
+        <PublishSheet
+          venue={venue}
+          nightDate={lastCompletedNightDate()}
+          nightEditable
+          open
+          onOpenChange={setOpen}
+        />
+      )}
     </>
   );
 }

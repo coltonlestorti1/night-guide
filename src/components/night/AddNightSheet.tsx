@@ -2,8 +2,9 @@
  * Add a night you didn't check into (Colton, 2026-08-07).
  *
  * The recap is built from check-ins, so anywhere you forgot to check in simply
- * never appears. This is the way back in: pick the night and the spot, then
- * write the post — all inside ONE drawer.
+ * never appears. This is the way back in: pick the spot, then log the night —
+ * all inside ONE drawer. The night itself is asked for in the log sheet, which
+ * is the one place that question lives now.
  *
  * The two steps live in a single Drawer on purpose. Handing off to a separate
  * PublishSheet meant two vaul drawers alive for one flow, and they interrupt
@@ -23,38 +24,10 @@ import { Venue } from "@/data/types";
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import NightDateField from "@/components/night/NightDateField";
 import { useVenues } from "@/hooks/useVenues";
-import { lastCompletedNightDate, nightDateOf } from "@/lib/night/window";
+import { lastCompletedNightDate } from "@/lib/night/window";
 import { normalize } from "@/lib/normalize";
-import { cn } from "@/lib/utils";
 import PublishForm from "@/components/night/PublishForm";
-
-/** Quick night choices, newest first. Value is a night-date. */
-function nightChoices(now: Date = new Date()): { value: string; label: string }[] {
-  const out: { value: string; label: string }[] = [];
-
-  // "Tonight" only when a night is actually in progress — offering it at 11am
-  // would invite logging a night that has not happened.
-  const hour = now.getHours();
-  if (hour >= 18 || hour < 6) out.push({ value: nightDateOf(now), label: "Tonight" });
-
-  const last = lastCompletedNightDate(now);
-  out.push({ value: last, label: "Last night" });
-
-  const [y, m, d] = last.split("-").map(Number);
-  for (let back = 1; back <= 3; back++) {
-    const prev = new Date(y, m - 1, d - back);
-    out.push({
-      value: isoDate(prev),
-      label: prev.toLocaleDateString(undefined, { weekday: "long" }),
-    });
-  }
-  return out;
-}
-
-const isoDate = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function AddNightSheet({
   open,
@@ -67,8 +40,6 @@ export default function AddNightSheet({
   const [q, setQ] = useState("");
   const [nightDate, setNightDate] = useState(() => lastCompletedNightDate());
   const [venue, setVenue] = useState<Venue | null>(null);
-  const choices = useMemo(() => nightChoices(), []);
-  const today = isoDate(new Date());
 
   const matches = useMemo(() => {
     const all = venues ?? [];
@@ -105,6 +76,8 @@ export default function AddNightSheet({
               onPickingChange={setPicking}
               venue={venue}
               nightDate={nightDate}
+              nightEditable
+              onNightDateChange={setNightDate}
               onDone={close}
               onBack={() => setVenue(null)}
             />
@@ -112,38 +85,9 @@ export default function AddNightSheet({
             <>
               <h2 className="text-lg font-display font-bold">Add a night</h2>
               <p className="text-sm text-muted-foreground mt-1 mb-4">
-                Somewhere you went but didn&apos;t check into.
+                Somewhere you went but didn&apos;t check into. You&apos;ll pick the
+                night on the next step.
               </p>
-
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                Which night?
-              </p>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {choices.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setNightDate(c.value)}
-                    aria-pressed={nightDate === c.value}
-                    className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-sm transition-all",
-                      nightDate === c.value
-                        ? "bg-primary text-primary-foreground border-transparent"
-                        : "bg-secondary border-border hover:bg-secondary/70",
-                    )}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Any earlier night, for anything older than the quick chips.
-                  max=today because you cannot have been out tomorrow. */}
-              <NightDateField
-                value={nightDate}
-                max={today}
-                onChange={setNightDate}
-              />
 
               <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Where?</p>
               <div className="relative mb-3">
