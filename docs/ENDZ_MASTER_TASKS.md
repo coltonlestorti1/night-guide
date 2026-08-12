@@ -1781,3 +1781,48 @@ scored, never feeds taste/heat, frequency-capped, muteable.
 
 Sequencing: after §31 or a quiet week — P0 is small and admin-only. The agency
 can operate on Instagram alone before P0 exists.
+
+## §34 — Logging a night: one sheet, Beli-shaped (BUILT 2026-08-12, on `feat/log-night-sheet`, NOT merged)
+
+Full design: `docs/superpowers/specs/2026-08-12-log-night-sheet-design.md`.
+
+**The reported bug:** ranking a spot from the map never asks which night you
+went. That path (`VenueRatingRow` → `RateSheet` → `RateSteps`) writes only a
+`venue_ratings` row — no night date, no post — so a map rating is invisible in
+Activity and the feed forever, and `rated_at` records the day you tapped rather
+than the night you were out.
+
+**The fix, approved in-session:** one `LogNightSheet` behind every entry point
+(map, Social +, recap, post edit), laid out like Beli's — three how-was-it
+circles, then collapsed optional rows (who you were with / note / photos /
+**which night** / who can see this), then Post. Head-to-head comparisons move to
+*after* Post rather than firing on the bucket tap.
+
+Decisions taken:
+
+- Map logging keeps the normal audience default (My school / Friends) and the
+  privacy copy on `VenueRatingRow` is corrected — no per-surface default.
+- The three circles use ENDZ bucket tones, **not** Beli's red — `not_great` stays
+  muted/dashed, per the existing `ScoreBadge` decision.
+- Beli's "add to my list of", "labels" and "favorite dishes" rows are dropped;
+  stealth mode is already covered better by the four-way audience picker.
+- "Log another night" (new entry) and "Rank again" (re-rank only) become
+  separate controls.
+
+No DDL. Data model unchanged.
+
+**Status 2026-08-12:** built and pushed as `feat/log-night-sheet` (8 commits).
+652 tests + typecheck + build + schema guard 43/0 green. Layout verified in
+Chrome at 390x844 device metrics.
+
+⚠️ **NOT merged, and the write path is NOT verified.** The local dev server was
+signed out and this session cannot sign into Google as Colton, so no post has
+actually been written through the new sheet. Acceptance criteria 1 and 2 (the
+night is stored on the resulting post; the post appears in Activity) are
+unproven. Needs one signed-in pass before merge.
+
+An independent review found four real bugs post-implementation, all fixed in
+`2692ee4` — including Save writing null over an existing post's note and
+widening a "Just me" post to "My school", and the unmount cleanup deleting
+photos it had just attached. Worth re-reading that commit message before
+touching this code.

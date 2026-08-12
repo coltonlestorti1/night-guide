@@ -1,15 +1,21 @@
 /**
- * The publish form: note, audience, and the publish/skip controls.
+ * The log sheet body: how it was, who you were with, a note, photos, which
+ * night, and who can see it — one screen, everything below the circles
+ * optional and collapsed.
  *
  * Deliberately NOT a Drawer. It is rendered inside one — by PublishSheet from
- * the recap, and by AddNightSheet as its second step. Two vaul drawers alive
- * for one flow interrupt each other's transitions (the outgoing one stays
- * visible at data-state="closed" while the incoming one mounts stuck at its
- * start transform, with a stale body pointer-events lock). One drawer with two
- * steps makes that impossible rather than merely unlikely.
+ * the recap and the map, and by AddNightSheet as its second step. Two vaul
+ * drawers alive for one flow interrupt each other's transitions (the outgoing
+ * one stays visible at data-state="closed" while the incoming one mounts stuck
+ * at its start transform, with a stale body pointer-events lock). One drawer
+ * with two steps makes that impossible rather than merely unlikely.
+ *
+ * The comparisons run AFTER Post, not on the circle tap: one circle plus one
+ * Post is a complete log, and the ranking is a follow-up rather than a toll.
  */
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, X } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { CalendarDays, Eye, ImagePlus, PencilLine, Users, X } from "lucide-react";
 import { Venue } from "@/data/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +38,11 @@ import { cn } from "@/lib/utils";
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import RateSteps from "@/components/night/RateSteps";
+import BucketCircles from "@/components/night/BucketCircles";
+import LogRow from "@/components/night/LogRow";
+import NightDateField from "@/components/night/NightDateField";
+import { nightChoices, nightLabelFor, ratingAction } from "@/lib/night/logNight";
+import { type Bucket } from "@/lib/night/ranking";
 import {
   MAX_PHOTOS_PER_POST,
   attachPhotos,
@@ -42,12 +53,24 @@ import {
 const NOTE_MAX = 280;
 const LINK_RE = /https?:\/\/|www\./i;
 
+/** Which optional row is expanded. One at a time keeps the sheet short. */
+type RowKey = "who" | "note" | "photos" | "night" | "audience";
+
+const isoToday = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+};
+
 export default function PublishForm({
   venue,
   nightDate,
   onDone,
   onBack,
   onPickingChange,
+  nightEditable = false,
+  onNightDateChange,
 }: {
   venue: Venue;
   nightDate: string;
@@ -61,6 +84,14 @@ export default function PublishForm({
    * away" and dismisses the sheet, losing everything they had typed.
    */
   onPickingChange?: (picking: boolean) => void;
+  /**
+   * Whether the night can be changed here. FALSE for the recap and for editing
+   * an existing post: the upsert key is (user_id, venue_id, night_date), so
+   * changing the night would quietly create a second post rather than move
+   * this one.
+   */
+  nightEditable?: boolean;
+  onNightDateChange?: (next: string) => void;
 }) {
   const collegeSlug = useAuthStore((s) => s.profile?.college_slug);
   const { data: myPosts } = useMyPostsForNight(nightDate);
@@ -72,20 +103,35 @@ export default function PublishForm({
   // Snapshot, not a live join: venue_ratings stays owner-only, so the post
   // carries the score as it stood when published. Editing refreshes it.
   const myScore = ratingFor(ratings, venue.id)?.score ?? null;
+  const existingBucket = ratingFor(ratings, venue.id)?.bucket;
   const options = audienceOptions(collegeSlug);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{ path: string; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
-  // After posting, offer the rating in the SAME sheet rather than sending the
-  // user somewhere else — this is what starts the spot rankings.
+  // After posting, run the comparisons in the SAME sheet rather than sending
+  // the user somewhere else — this is what builds the spot rankings.
   const [rateAfterPost, setRateAfterPost] = useState(false);
   const [note, setNote] = useState("");
   const [audience, setAudience] = useState<Audience>(defaultAudience(collegeSlug));
+  const [openRow, setOpenRow] = useState<RowKey | null>(null);
   // Who to tag on THIS publish. Tags can only be written once the post has an
   // id, so this stays local state and turns into addTag calls after publish
   // succeeds — see doPublish.
   const [taggedIds, setTaggedIds] = useState<string[]>([]);
+
+  /**
+   * The circle selection, as an OVERRIDE of the venue's existing rating rather
+   * than state seeded from it.
+   *
+   * Seeding in an effect would be wrong: useMyRatings can resolve after first
+   * paint, so the effect would either miss the existing bucket or fight the
+   * user's tap when the query refetched. Deriving it means an untouched sheet
+   * always shows the truth, and ratingAction sees `selected === existing` and
+   * correctly skips re-ranking.
+   */
+  const [bucketOverride, setBucketOverride] = useState<Bucket | null>(null);
+  const bucket: Bucket | null = bucketOverride ?? existingBucket ?? null;
 
   /**
    * A photo is uploaded the instant it is picked, so `pending` holds REAL
@@ -102,6 +148,9 @@ export default function PublishForm({
   const pendingRef = useRef<{ path: string; preview: string }[]>([]);
   pendingRef.current = pending;
 
+  /** Which venue|night the form has already been seeded for. */
+  const seededRef = useRef<string | null>(null);
+
   const discardPending = (items: { path: string; preview: string }[]) => {
     if (!items.length) return;
     // The previews are object URLs; dropping the state alone leaks them.
@@ -111,22 +160,64 @@ export default function PublishForm({
 
   useEffect(() => {
     return () => discardPending(pendingRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Seed once per venue. Seeding on every render would wipe what the user is
-  // typing the moment the posts query refetches.
+  /**
+   * Clear when the post being written changes.
+   *
+   * night_posts is keyed (user_id, venue_id, night_date), so a different venue
+   * OR a different night is a different row — last night's note must not follow
+   * you onto tonight's post. Seeding the new row's values is the NEXT effect's
+   * job, deliberately: see there.
+   *
+   * The bucket is NOT reset here. A rating belongs to the venue, not to the
+   * night, and the night row sits below the circles — "tap a circle, then fix
+   * the night" is the natural order, and resetting would silently throw the
+   * tap away.
+   */
   useEffect(() => {
-    setNote(existing?.note ?? "");
-    setAudience(existing?.visibility ?? defaultAudience(collegeSlug));
+    seededRef.current = null;
+    setNote("");
+    setAudience(defaultAudience(collegeSlug));
     setTaggedIds([]);
-    // Photos are per-post as well: carrying them to another venue would attach
-    // them to the wrong night. Discard the files, not just the state — on the
-    // first run pendingRef is empty, so this is a no-op on mount.
-    discardPending(pendingRef.current);
-    setPending([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venue.id, nightDate]);
+
+  /** Photos and the bucket are per-VENUE, not per-night: switching night keeps
+   *  what you picked, switching venue discards it. Discard the files, not just
+   *  the state — on the first run pendingRef is empty, so this is a no-op on
+   *  mount. */
+  useEffect(() => {
+    setBucketOverride(null);
+    discardPending(pendingRef.current);
+    setPending([]);
+  }, [venue.id]);
+
+  /**
+   * Seed from the post that already exists for THIS venue and night — once the
+   * query has actually resolved.
+   *
+   * This cannot be folded into the clear above. useMyPostsForNight is keyed on
+   * the night, so changing the night hands back `undefined` until the new query
+   * lands; an effect that seeded in the same pass would seed from nothing and
+   * never run again. The form would then show Save and Delete post (both keyed
+   * on `existing`) above an EMPTY note — and publishPost upserts note and
+   * visibility unconditionally, so Save would write null over the real note and
+   * reset a "Just me" post to the default audience.
+   *
+   * seededRef makes it once-per-row rather than once-per-fetch, so a background
+   * refetch cannot wipe what the user is part-way through typing.
+   */
+  useEffect(() => {
+    const key = `${venue.id}|${nightDate}`;
+    if (seededRef.current === key || myPosts === undefined) return;
+    seededRef.current = key;
+    if (existing) {
+      setNote(existing.note ?? "");
+      setAudience(existing.visibility);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venue.id, nightDate, myPosts]);
 
   const userId = useAuthStore((s) => s.session?.user.id);
   const { data: friendshipRows } = useMyFriendships();
@@ -195,6 +286,13 @@ export default function PublishForm({
         // deliberately survives and the cleanup collects the strays.
         pending.forEach((p) => URL.revokeObjectURL(p.preview));
         setPending([]);
+        // The REF too, not just the state. pendingRef is assigned during
+        // render, and onDone() below can unmount this component in the same
+        // batch — VenueRatingRow and RecapCard both mount the sheet
+        // conditionally. The queued setPending is then discarded, the fiber
+        // never re-renders, and the unmount cleanup deletes the very files
+        // that attachPhotos just pointed a row at.
+        pendingRef.current = [];
       }
       if (taggedIds.length) {
         // Tags need a post id, so they can only happen after publish
@@ -215,10 +313,10 @@ export default function PublishForm({
         has_note: !!note.trim(),
         photos: pending.length,
       });
-      // Unrated spots get the "how was it?" step now; already-rated ones are
-      // done. Skippable either way — a post without a score is normal, and
-      // "went to" vs "ranked" depends on that staying true.
-      if (myScore === null) setRateAfterPost(true);
+      // Only rank when there is something new to rank: a bucket that matches
+      // the existing rating means a second night at a place already placed,
+      // and re-answering the head-to-heads for it would be a punishment.
+      if (ratingAction(bucket, existingBucket) === "rank") setRateAfterPost(true);
       else onDone();
     } catch {
       toast.error("Couldn't post that. Try again.");
@@ -236,155 +334,255 @@ export default function PublishForm({
     }
   };
 
-  if (rateAfterPost) {
+  if (rateAfterPost && bucket) {
     return (
       <>
-        <h2 className="text-lg font-display font-bold">Posted. How was {venue.title}?</h2>
+        <h2 className="text-lg font-display font-bold">Posted. Where does it sit?</h2>
         <p className="text-sm text-muted-foreground mt-1 mb-5">
-          Only you see this — it's what tunes your recommendations.
+          Only you see this — it&apos;s what tunes your recommendations.
         </p>
-        <RateSteps venue={venue} prompt="" onDone={() => onDone()} />
+        <RateSteps venue={venue} bucket={bucket} onDone={() => onDone()} />
+        {/* "Not now", not "Skip": the post is already saved by this point, and
+            "Skip" read as though it might discard it. This only declines the
+            ranking. */}
         <Button variant="ghost" className="w-full h-10 rounded-xl mt-3" onClick={onDone}>
-          Skip
+          Not now
         </Button>
       </>
     );
   }
 
+  const toggle = (k: RowKey) => setOpenRow((cur) => (cur === k ? null : k));
+
+  const taggedNames = friends
+    .filter((f) => taggedIds.includes(f.profile.id))
+    .map((f) => f.profile.display_name || f.profile.username);
+
+  const nightSummary =
+    nightLabelFor(nightDate) ?? format(parseISO(nightDate), "EEE, d MMM yyyy");
+
   return (
     <>
-      <h2 className="text-lg font-display font-bold">
-        {existing ? "Edit your post" : `Post about ${venue.title}?`}
-      </h2>
-      <p className="text-sm text-muted-foreground mt-1 mb-4">
-        Optional — say something about the night, or just post the spot.
-      </p>
-
-      <Textarea
-        value={note}
-        onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
-        placeholder="How was it? (optional)"
-        rows={3}
-        className="resize-none"
-        aria-label="Note about your night"
-      />
-      <div className="flex items-center justify-between mt-1.5 mb-4 text-xs">
-        <span className={cn("text-muted-foreground", hasLink && "text-destructive")}>
-          {hasLink ? "Links aren't allowed in notes." : " "}
-        </span>
-        <span className={cn("text-muted-foreground", remaining < 20 && "text-destructive")}>
-          {remaining}
-        </span>
-      </div>
-
-      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Photos</p>
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        {pending.map((p) => (
-          <div key={p.path} className="relative h-20 w-20 overflow-hidden rounded-xl border border-border">
-            <img src={p.preview} alt="" className="h-full w-full object-cover" />
-            <button
-              type="button"
-              onClick={() => {
-                setPending((cur) => cur.filter((x) => x.path !== p.path));
-                discardPending([p]);
-              }}
-              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/90 text-foreground"
-              aria-label="Remove photo"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ))}
-
-        {pending.length < MAX_PHOTOS_PER_POST && (
-          <button
-            type="button"
-            onClick={beginPick}
-            disabled={uploading}
-            className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted-foreground hover:bg-secondary/60 disabled:opacity-50"
-            aria-label="Add a photo"
-          >
-            <ImagePlus className="h-5 w-5" aria-hidden="true" />
-            <span className="text-[10px]">{uploading ? "Adding…" : "Add"}</span>
-          </button>
-        )}
-
-        <input
-          ref={fileInput}
-          type="file"
-          accept="image/*"
-          multiple
-          className="sr-only"
-          onChange={(e) => addFiles(e.target.files)}
-        />
-      </div>
-
-      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-        Who can see this?
-      </p>
-      <div className="flex flex-wrap gap-2 mb-5">
-        {options.map((o) => (
-          <button
-            key={o}
-            type="button"
-            onClick={() => setAudience(o)}
-            aria-pressed={audience === o}
-            aria-label={AUDIENCE_LABELS[o]}
+      {/* Header — the spot, then what it is and where. Mirrors the venue
+          sheet's pill so the two read as the same place. */}
+      <div className="mb-4">
+        <h2 className="text-xl font-display font-bold leading-tight">{venue.title}</h2>
+        <div className="mt-1 flex items-center gap-2">
+          <span
             className={cn(
-              "rounded-full border px-3.5 py-1.5 text-sm transition-all",
-              audience === o
-                ? "bg-primary text-primary-foreground border-transparent"
-                : "bg-secondary border-border hover:bg-secondary/70",
+              "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide text-white",
+              venue.category === "bar"
+                ? "bg-[hsl(var(--venue-bar))]"
+                : venue.category === "club"
+                  ? "bg-[hsl(var(--venue-club))]"
+                  : "bg-[hsl(var(--venue-lounge))]",
             )}
           >
-            {AUDIENCE_SHORT[o]}
-          </button>
-        ))}
+            {venue.category}
+          </span>
+          {venue.neighborhood && (
+            <span className="min-w-0 truncate text-xs text-muted-foreground">
+              {venue.neighborhood}
+            </span>
+          )}
+        </div>
       </div>
 
-      {friends.length > 0 && (
-        <>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Tag people you were with
-          </p>
-          <div className="flex flex-wrap gap-2 mb-5">
-            {friends.map((f) => {
-              const selected = taggedIds.includes(f.profile.id);
-              return (
+      {/* How was it? */}
+      <div className="rounded-2xl bg-secondary/40 px-3 py-4 mb-4">
+        <p className="text-center text-sm font-semibold mb-3">How was it?</p>
+        <BucketCircles value={bucket} onChange={setBucketOverride} disabled={busy} />
+      </div>
+
+      <div className="rounded-2xl bg-secondary/40 px-3 mb-5">
+        {friends.length > 0 && (
+          <LogRow
+            icon={Users}
+            label="Who were you with?"
+            summary={taggedNames.length ? taggedNames.join(", ") : undefined}
+            open={openRow === "who"}
+            onToggle={() => toggle("who")}
+          >
+            <div className="flex flex-wrap gap-2">
+              {friends.map((f) => {
+                const selected = taggedIds.includes(f.profile.id);
+                return (
+                  <button
+                    key={f.profile.id}
+                    type="button"
+                    onClick={() =>
+                      setTaggedIds((cur) =>
+                        selected ? cur.filter((id) => id !== f.profile.id) : [...cur, f.profile.id],
+                      )
+                    }
+                    aria-pressed={selected}
+                    aria-label={`Tag ${f.profile.display_name || f.profile.username}`}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border pl-1.5 pr-3 py-1.5 text-sm transition-all",
+                      selected
+                        ? "bg-primary text-primary-foreground border-transparent"
+                        : "bg-secondary border-border hover:bg-secondary/70",
+                    )}
+                  >
+                    <ProfileAvatar profile={f.profile} className="h-6 w-6 shrink-0" />
+                    {/* Bounded width + truncate rather than break-words: a
+                        wrapping chip in a flex-wrap row has no shrink target to
+                        wrap against (min-w-0 only helps inside a flex row that
+                        is itself constrained), so an unbroken long name would
+                        widen the chip past the sheet instead of breaking — the
+                        same page-scroll bug class, blocked here by a hard cap
+                        instead. */}
+                    <span className="max-w-[9rem] truncate">
+                      {f.profile.display_name || f.profile.username}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </LogRow>
+        )}
+
+        <LogRow
+          icon={PencilLine}
+          label="Add a note"
+          summary={note.trim() || undefined}
+          open={openRow === "note"}
+          onToggle={() => toggle("note")}
+        >
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
+            placeholder="How was it? (optional)"
+            rows={3}
+            className="resize-none"
+            aria-label="Note about your night"
+          />
+          <div className="flex items-center justify-between mt-1.5 text-xs">
+            <span className={cn("text-muted-foreground", hasLink && "text-destructive")}>
+              {hasLink ? "Links aren't allowed in notes." : " "}
+            </span>
+            <span className={cn("text-muted-foreground", remaining < 20 && "text-destructive")}>
+              {remaining}
+            </span>
+          </div>
+        </LogRow>
+
+        <LogRow
+          icon={ImagePlus}
+          label="Add photos"
+          summary={
+            pending.length ? `${pending.length} photo${pending.length > 1 ? "s" : ""}` : undefined
+          }
+          open={openRow === "photos"}
+          onToggle={() => toggle("photos")}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            {pending.map((p) => (
+              <div
+                key={p.path}
+                className="relative h-20 w-20 overflow-hidden rounded-xl border border-border"
+              >
+                <img src={p.preview} alt="" className="h-full w-full object-cover" />
                 <button
-                  key={f.profile.id}
                   type="button"
-                  onClick={() =>
-                    setTaggedIds((cur) =>
-                      selected ? cur.filter((id) => id !== f.profile.id) : [...cur, f.profile.id],
-                    )
-                  }
-                  aria-pressed={selected}
-                  aria-label={`Tag ${f.profile.display_name || f.profile.username}`}
+                  onClick={() => {
+                    setPending((cur) => cur.filter((x) => x.path !== p.path));
+                    discardPending([p]);
+                  }}
+                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-background/90 text-foreground"
+                  aria-label="Remove photo"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+
+            {pending.length < MAX_PHOTOS_PER_POST && (
+              <button
+                type="button"
+                onClick={beginPick}
+                disabled={uploading}
+                className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-muted-foreground hover:bg-secondary/60 disabled:opacity-50"
+                aria-label="Add a photo"
+              >
+                <ImagePlus className="h-5 w-5" aria-hidden="true" />
+                <span className="text-[10px]">{uploading ? "Adding…" : "Add"}</span>
+              </button>
+            )}
+
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              multiple
+              className="sr-only"
+              onChange={(e) => addFiles(e.target.files)}
+            />
+          </div>
+        </LogRow>
+
+        {/* The question the map path never asked. Absent when the night is
+            fixed — see the nightEditable prop. */}
+        {nightEditable && onNightDateChange && (
+          <LogRow
+            icon={CalendarDays}
+            label="Which night?"
+            summary={nightSummary}
+            open={openRow === "night"}
+            onToggle={() => toggle("night")}
+          >
+            <div className="flex flex-wrap gap-2 mb-3">
+              {nightChoices().map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => onNightDateChange(c.value)}
+                  aria-pressed={nightDate === c.value}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-full border pl-1.5 pr-3 py-1.5 text-sm transition-all",
-                    selected
+                    "rounded-full border px-3.5 py-1.5 text-sm transition-all",
+                    nightDate === c.value
                       ? "bg-primary text-primary-foreground border-transparent"
                       : "bg-secondary border-border hover:bg-secondary/70",
                   )}
                 >
-                  <ProfileAvatar profile={f.profile} className="h-6 w-6 shrink-0" />
-                  {/* Bounded width + truncate rather than break-words: a
-                      wrapping chip in a flex-wrap row has no shrink target to
-                      wrap against (min-w-0 only helps inside a flex row that
-                      is itself constrained), so an unbroken long name would
-                      widen the chip past the sheet instead of breaking — the
-                      same page-scroll bug class, blocked here by a hard cap
-                      instead. */}
-                  <span className="max-w-[9rem] truncate">
-                    {f.profile.display_name || f.profile.username}
-                  </span>
+                  {c.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+            {/* Any earlier night. max=today because you cannot have been out
+                tomorrow. */}
+            <NightDateField value={nightDate} max={isoToday()} onChange={onNightDateChange} />
+          </LogRow>
+        )}
+
+        <LogRow
+          icon={Eye}
+          label="Who can see this?"
+          summary={AUDIENCE_SHORT[audience]}
+          open={openRow === "audience"}
+          onToggle={() => toggle("audience")}
+        >
+          <div className="flex flex-wrap gap-2">
+            {options.map((o) => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => setAudience(o)}
+                aria-pressed={audience === o}
+                aria-label={AUDIENCE_LABELS[o]}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-sm transition-all",
+                  audience === o
+                    ? "bg-primary text-primary-foreground border-transparent"
+                    : "bg-secondary border-border hover:bg-secondary/70",
+                )}
+              >
+                {AUDIENCE_SHORT[o]}
+              </button>
+            ))}
           </div>
-        </>
-      )}
+        </LogRow>
+      </div>
 
       <div className="grid grid-cols-2 gap-2">
         <Button
