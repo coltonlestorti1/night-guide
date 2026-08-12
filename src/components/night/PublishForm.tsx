@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 import { logEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import RateSteps from "@/components/night/RateSteps";
+import BucketCircles from "@/components/night/BucketCircles";
+import { type Bucket } from "@/lib/night/ranking";
 import {
   MAX_PHOTOS_PER_POST,
   attachPhotos,
@@ -80,6 +82,7 @@ export default function PublishForm({
   // After posting, offer the rating in the SAME sheet rather than sending the
   // user somewhere else — this is what starts the spot rankings.
   const [rateAfterPost, setRateAfterPost] = useState(false);
+  const [rateBucket, setRateBucket] = useState<Bucket | null>(null);
   const [note, setNote] = useState("");
   const [audience, setAudience] = useState<Audience>(defaultAudience(collegeSlug));
   // Who to tag on THIS publish. Tags can only be written once the post has an
@@ -243,7 +246,11 @@ export default function PublishForm({
         <p className="text-sm text-muted-foreground mt-1 mb-5">
           Only you see this — it's what tunes your recommendations.
         </p>
-        <RateSteps venue={venue} prompt="" onDone={() => onDone()} />
+        {rateBucket ? (
+          <RateSteps venue={venue} bucket={rateBucket} onDone={() => onDone()} />
+        ) : (
+          <BucketCircles value={null} onChange={setRateBucket} />
+        )}
         <Button variant="ghost" className="w-full h-10 rounded-xl mt-3" onClick={onDone}>
           Skip
         </Button>
