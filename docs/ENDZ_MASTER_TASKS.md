@@ -1826,3 +1826,43 @@ An independent review found four real bugs post-implementation, all fixed in
 widening a "Just me" post to "My school", and the unmount cleanup deleting
 photos it had just attached. Worth re-reading that commit message before
 touching this code.
+
+## §35 — ENDZ Meet (NOT DISCUSSED — gate applies)
+
+Added 2026-08-17. **Spec:** `docs/superpowers/specs/2026-08-17-endz-meet-design.md`.
+Colton, 2026-08-13: *"this is not for right now but for much later."* Captured
+so it isn't lost. Nothing here is approved for build.
+
+The ask: a Hinge-shaped meeting product where matching runs on ENDZ's behavioral
+data instead of self-report — *"we just have better data."*
+
+- **Matching = five blended signals**, all computable from tables that already
+  exist: Taste 40 (`venue_ratings`, rank-weighted), Scene 20 (`check_ins` ∪
+  `venue_saves` as a set), Area 15 (`venues.neighborhood`), Rhythm 15
+  (`check_ins.created_at` → day-of-week × hour band), Forward intent 10 (new
+  `meet_intent` + `plans`, carries the *visiting this weekend* case).
+- **Exact co-presence is a promoted badge, not the foundation** ("You were both
+  at Amor y Amargo on Friday") — time-boxed 72h, double-opt-in sub-toggle,
+  venue + day only, never a time. Demoted deliberately: it's quadratic in user
+  count and needs both parties checked in, so it stays rare until auto check-in.
+- **Only forward intent needs new collection.** Everything else is derived.
+- Opt-in from inside the app; non-members aren't in the pool or any index.
+  One profile underneath, Meet-facing face = first name + photos + favorite
+  spots, no `@username` link until a mutual unmask after matching.
+- Like → mutual match. Meet DMs sit in the shared DM surface behind an
+  Instagram-style **Requests** tab; text-only until accepted (§22's narrow case).
+
+🚨 **Two hard rules, both load-bearing:**
+1. **Meet never reveals where anyone is now or will be.** No live presence, ever
+   — that's the line between a matching product and a stalking tool.
+2. **No pairwise oracle.** A compatibility score over two arbitrary person ids is
+   exactly the `are_friends(a, b)` trap. `meet_candidates()` takes NO person
+   argument and resolves `auth.uid()` internally.
+
+Only-aggregates rule: Meet may emit "goes out Thursdays in the East Village",
+never a venue list with dates, a timestamp, or a per-venue visit count.
+
+Prerequisites (all four): §31 native app shipped · a density floor of ~300
+opted-in members (~12 users today — the feed is visibly empty below that) ·
+§22 messaging gate · moderation capacity. Relates to §11, §14, §15, §21, §22,
+§31, §32.
