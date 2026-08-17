@@ -91,7 +91,7 @@ a brand-new user with zero ratings still gets a populated feed.
 
 | # | Signal | Weight | Computed from | Method |
 |---|---|---|---|---|
-| 1 | **Taste** | 40 | `venue_ratings` | Rank-weighted overlap of the two ranked lists. A shared `great` at rank 1 counts far more than a shared `good` at rank 20. Disagreement counts too: same venue, opposite buckets, is a mild negative. |
+| 1 | **Taste** | 40 | `venue_ratings` | Rank-weighted overlap of the two ranked lists, **positive signal only**. A shared `great` at rank 1 counts far more than a shared `good` at rank 20. `not_great` is ignored entirely — a disagreement never subtracts, and a shared dislike never adds. |
 | 2 | **Scene** | 20 | `check_ins` ∪ `venue_saves`, as a *set* | Jaccard over distinct venue sets. "We go to the same bars at all," independent of when. |
 | 3 | **Area** | 15 | `venues.neighborhood` via 1+2 | Cosine over normalized neighborhood weight vectors. |
 | 4 | **Rhythm** | 15 | `check_ins.created_at` | Cosine over a day-of-week × hour-band histogram (bands: pre-9, 9–11, 11–1, after-1). "You're both out Thursday late" vs "she's Saturday brunch." |
@@ -349,8 +349,6 @@ last, since it is the piece most dependent on volume.
 4. Do "favorite spots" on a card link to the venue page pre-match? (Leaning **yes** —
    it's the ENDZ-native thing to do, and it costs no privacy.)
 5. Monetization — ignored on purpose here; revisit only after retention exists.
-6. Does a `not_great` bucket collision genuinely predict compatibility (shared dislikes
-   often do) or add noise? Empirical, needs data.
 
 ---
 
@@ -365,3 +363,6 @@ last, since it is the piece most dependent on volume.
   plus a forward-looking *visiting this weekend* case. Exact co-presence demoted to a
   promoted badge. This removed the auto-check-in dependency from the core product.
 - **2026-08-17** — Spec written.
+- **2026-08-17** — Colton: **likes only.** `not_great` is out of the matching engine
+  entirely — no shared-dislike bonus, no disagreement penalty. Scoring stays a simple
+  positive-overlap sum for now; a real algorithm is later work.
