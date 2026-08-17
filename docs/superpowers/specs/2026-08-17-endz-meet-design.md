@@ -149,7 +149,7 @@ The Meet-facing view is *not* the social profile:
 | Photo | Avatar | Dedicated Meet photos (private bucket) |
 | Spots | Been / Saved / ranked lists | **Favorite spots** — curated, capped |
 | Activity | Night posts, tags, friends | **None** |
-| Link between the two | — | **None** — not even after a match, until both sides unmask (§5, below) |
+| Link between the two | — | **None** — not even after a match, until both sides unmask (see below) |
 
 A Meet card must not be resolvable to a `@username`, a friends list, or a night-post
 history. Unmasking to the full social profile is a **separate mutual action after a
@@ -209,7 +209,8 @@ Joining is an explicit action inside the app (Colton's call). A non-member is no
 candidate pool, is not scored, and does not appear in any Meet index — not "hidden," not
 present at all. Leaving Meet purges the derived aggregates, not just a flag.
 
-Whether *friends* can see that you're on Meet is an open question (§10).
+Whether *friends* can see that you're on Meet is an open question — see
+"Open questions" at the end of this document.
 
 ### 6.5 Demographics
 
